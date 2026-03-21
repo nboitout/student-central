@@ -62,3 +62,4 @@ Required repository secrets:
 - `VERCEL_PROJECT_ID`
 
 - Test
+- Secrets updated
