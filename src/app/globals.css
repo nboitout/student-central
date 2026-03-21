@@ -1,0 +1,118 @@
+/* ─── DESIGN TOKENS ─────────────────────────────────────────── */
+:root {
+  --primary:             #003cc2;
+  --primary-container:   #0050fa;
+  --primary-gradient:    linear-gradient(135deg, #003cc2 0%, #0050fa 100%);
+  --tertiary-fixed:      #dceeff;
+  --on-tertiary-fixed:   #003356;
+  --surface-lowest:      #ffffff;
+  --surface:             #f9f9fc;
+  --surface-low:         #f3f3f6;
+  --surface-container:   #eeeef0;
+  --surface-high:        #e8e8ec;
+  --surface-highest:     #e2e2e6;
+  --on-surface:          #1a1c2e;
+  --on-surface-variant:  #434656;
+  --on-primary:          #ffffff;
+  --outline-variant:     rgba(67, 70, 86, 0.15);
+  --shadow-ambient:      0px 12px 32px rgba(26, 28, 30, 0.06);
+  --shadow-float:        0px 24px 56px rgba(26, 28, 30, 0.10);
+  --font-display:        'Space Grotesk', system-ui, sans-serif;
+  --font-body:           'Inter', system-ui, sans-serif;
+}
+
+/* ─── RESET ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--surface);
+  color: var(--on-surface);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ─── SHARED UTILITY CLASSES ─────────────────────────────────── */
+.ribbon {
+  background: var(--tertiary-fixed);
+  color: var(--on-tertiary-fixed);
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  display: inline-block;
+}
+
+.body-md {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--on-surface-variant);
+}
+
+.body-lg {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--on-surface-variant);
+}
+
+/* ─── SCROLL REVEAL ─────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.reveal.visible { opacity: 1; transform: none; }
+.d1 { transition-delay: 0.1s; }
+.d2 { transition-delay: 0.2s; }
+.d3 { transition-delay: 0.3s; }
+.d4 { transition-delay: 0.4s; }
+
+/* ─── BUTTONS ────────────────────────────────────────────────── */
+.btn-p {
+  background: var(--primary-gradient);
+  color: var(--on-primary);
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 14px 28px;
+  display: inline-block;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+  border: none;
+  border-radius: 0;
+}
+.btn-p:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.btn-s {
+  background: var(--surface-highest);
+  color: var(--on-surface);
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 14px 28px;
+  display: inline-block;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+  border-radius: 0;
+}
+.btn-s:hover { background: var(--surface-high); }

@@ -1,0 +1,132 @@
+.section {
+  background: var(--surface);
+  padding: 112px 0 96px;
+}
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.left {}
+
+.eyebrow { margin-bottom: 20px; }
+
+.headline {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--on-surface);
+}
+
+.sub {
+  max-width: 520px;
+  margin-top: 18px;
+  margin-bottom: 40px;
+}
+
+/* Dashboard tiles */
+.dashGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: var(--surface-container);
+  margin-bottom: 2px;
+}
+
+.dashTile {
+  background: var(--surface);
+  padding: 22px 20px;
+  transition: background 0.2s;
+}
+.dashTile:hover { background: var(--surface-low); }
+
+.dashLbl {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  margin-bottom: 7px;
+}
+
+.dashVal {
+  font-family: var(--font-display);
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.acc  { color: var(--primary) !important; }
+.warn { color: #8b3a00 !important; }
+
+.dashRow {
+  background: var(--surface-low);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.dashRlbl {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+}
+
+.dashRval {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary);
+  letter-spacing: -0.01em;
+}
+
+/* Insight cards */
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 44px;
+}
+
+.insightCard {
+  background: var(--surface-lowest);
+  box-shadow: var(--shadow-ambient);
+  padding: 28px;
+}
+
+.icTopic {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.icTitle {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+@media (max-width: 960px) {
+  .inner { grid-template-columns: 1fr; gap: 48px; padding: 0 24px; }
+  .right { padding-top: 0; }
+}

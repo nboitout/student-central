@@ -1,0 +1,37 @@
+.bar {
+  background: var(--surface-container);
+  padding: 16px 48px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  flex-wrap: nowrap;
+}
+
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.item {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+}
+
+.sep {
+  width: 18px;
+  height: 1px;
+  background: var(--outline-variant);
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+@media (max-width: 768px) {
+  .bar { padding: 16px 24px; overflow-x: auto; }
+}

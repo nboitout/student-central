@@ -1,0 +1,96 @@
+.section {
+  background: var(--on-surface);
+  padding: 128px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -10%;
+  width: 60%; height: 200%;
+  background: radial-gradient(ellipse, rgba(0, 80, 250, 0.18) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.section::after {
+  content: '';
+  position: absolute;
+  bottom: -40%; right: -5%;
+  width: 40%; height: 150%;
+  background: radial-gradient(ellipse, rgba(0, 60, 194, 0.10) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+  position: relative;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: #fff;
+  margin-bottom: 20px;
+  max-width: 760px;
+}
+
+.em {
+  font-style: normal;
+  background: linear-gradient(135deg, #6ea8ff 0%, #b0ccff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sub {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.65;
+  max-width: 520px;
+  margin-bottom: 48px;
+}
+
+.actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.primary {
+  background: var(--primary-gradient);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 16px 36px;
+  display: inline-block;
+  transition: opacity 0.2s;
+}
+.primary:hover { opacity: 0.85; }
+
+.ghost {
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 16px 0;
+  border-bottom: 2px solid rgba(0, 80, 250, 0.5);
+  display: inline-block;
+  transition: color 0.2s, border-color 0.2s;
+}
+.ghost:hover {
+  color: rgba(255, 255, 255, 0.9);
+  border-color: var(--primary-container);
+}
+
+@media (max-width: 768px) {
+  .inner { padding: 0 24px; }
+}

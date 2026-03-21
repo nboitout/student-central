@@ -1,0 +1,106 @@
+.section {
+  background: var(--surface-low);
+  padding: 112px 0 96px;
+}
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px 72px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.eyebrow { margin-bottom: 20px; }
+
+.headline {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--on-surface);
+}
+
+.body {
+  max-width: 520px;
+  margin-top: 20px;
+}
+
+/* Bullets */
+.bullets {
+  padding-top: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 15px 18px;
+  background: var(--surface-lowest);
+  box-shadow: var(--shadow-ambient);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+  line-height: 1.5;
+}
+.bullet::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 4px;
+  background: var(--primary);
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+/* Who band */
+.whoBand {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+.whoHl {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.5vw, 2rem);
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+}
+
+.whoGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  background: var(--surface-container);
+}
+
+.whoCard {
+  background: var(--surface-low);
+  padding: 28px 24px;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  transition: background 0.2s;
+}
+.whoCard:hover { background: var(--surface-lowest); }
+
+@media (max-width: 960px) {
+  .inner    { grid-template-columns: 1fr; gap: 0; padding: 0 24px 48px; }
+  .bullets  { padding-top: 28px; }
+  .whoBand  { padding: 0 24px; }
+  .whoGrid  { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .whoGrid { grid-template-columns: 1fr; }
+}
