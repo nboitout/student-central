@@ -17,9 +17,11 @@ export default function Nav() {
         <a className={styles.ghost} href="#workflow">See the workflow</a>
         <a
           className={styles.demo}
-          href="mailto:team@studentcentral.ai?subject=Book%20a%20Demo"
+          href="https://app.stg.tutor.studentcentral.ai/login"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          Book a demo
+          Try it
         </a>
       </div>
     </nav>
