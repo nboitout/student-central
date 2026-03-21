@@ -10,9 +10,8 @@ export default function Hero() {
             <span className="ribbon">Assessment beyond the multiple-choice score</span>
           </div>
           <h1 className={styles.h1}>
-            See whether students{" "}
-            <em className={styles.em}>understood</em> the answer — not just
-            whether they clicked it
+            See the thinking behind{" "}
+            <em className={styles.em}>every answer</em>
           </h1>
           <p className={styles.sub}>
             Student Central helps educators go beyond MCQs by combining answer
@@ -23,9 +22,11 @@ export default function Hero() {
           <div className={styles.actions}>
             <a
               className="btn-p"
-              href="mailto:team@studentcentral.ai?subject=Book%20a%20Demo"
+              href="https://app.stg.tutor.studentcentral.ai/login"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Book a demo
+              Try it
             </a>
             <a className="btn-s" href="#workflow">
               See how it works
