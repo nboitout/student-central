@@ -369,19 +369,24 @@ function MCQModal({ course, onClose }: { course: Course; onClose: () => void }) 
 /* ════════════════════════════════════════════════════════
    COURSE CARD
 ════════════════════════════════════════════════════════ */
-function CourseCard({ course, onDelete, onDetails }: { course: Course; onDelete: (id: string) => void; onDetails: (c: Course) => void }) {
+const EMOJIS = ["📘","🧠","💡","🔬","📊","🌐","⚙️","🎯","📐","🏛️"];
+
+function CourseCard({ course, onDelete, onDetails, index }: { course: Course; onDelete: (id: string) => void; onDetails: (c: Course) => void; index: number }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const progress = Math.round((course.exercisesDone / course.exercisesTotal) * 100);
+  const emoji = EMOJIS[index % EMOJIS.length];
+  const sourceCount = course.source.split(",").length;
+  const date = new Date(parseInt(course.id) || Date.now());
+  const dateStr = isNaN(parseInt(course.id))
+    ? `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][date.getMonth()]} ${date.getFullYear()}`
+    : new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   return (
-    <div className={styles.card}>
-      <div className={styles.cardTop}>
-        <div className={styles.cardMeta}>
-          <h3 className={styles.cardTitle}>{course.title}</h3>
-          <div className={styles.cardAuthor}>{course.author}</div>
-          <div className={styles.cardSource}>{course.source}</div>
-        </div>
-        <div className={styles.cardMenu}>
+    <div className={styles.card} onClick={() => onDetails(course)}>
+      {/* Coloured band with emoji + menu */}
+      <div className={styles.cardBand}>
+        <span className={styles.cardEmoji}>{emoji}</span>
+        <div className={styles.cardMenu} onClick={(e) => e.stopPropagation()}>
           <button className={styles.menuTrigger} onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
           {menuOpen && (
             <div className={styles.menuDropdown}>
@@ -392,6 +397,16 @@ function CourseCard({ course, onDelete, onDetails }: { course: Course; onDelete:
         </div>
       </div>
 
+      {/* Body */}
+      <div className={styles.cardBody}>
+        <h3 className={styles.cardTitle}>{course.title}</h3>
+        <div className={styles.cardMeta}>
+          <div className={`${styles.cardMetaLine} ${styles.cardAuthor}`}>{course.author}</div>
+          <div className={styles.cardMetaLine}>{dateStr} · {sourceCount} source{sourceCount !== 1 ? "s" : ""}</div>
+        </div>
+      </div>
+
+      {/* Status & progress */}
       <div className={styles.cardStatus}>
         <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>{course.status}</div>
         <div className={styles.exerciseBadge}>Exercises: {course.exercisesDone}/{course.exercisesTotal}</div>
@@ -403,7 +418,8 @@ function CourseCard({ course, onDelete, onDetails }: { course: Course; onDelete:
         </div>
       )}
 
-      <div className={styles.cardFooter}>
+      {/* Footer */}
+      <div className={styles.cardFooter} onClick={(e) => e.stopPropagation()}>
         <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>
           Course Details
         </button>
@@ -471,8 +487,8 @@ export default function WorkspacePage() {
             </div>
           ) : (
             <div className={styles.grid}>
-              {courses.map(c => (
-                <CourseCard key={c.id} course={c} onDelete={(id) => setCourses(prev => prev.filter(x => x.id !== id))} onDetails={openDetails} />
+              {courses.map((c, i) => (
+                <CourseCard key={c.id} course={c} index={i} onDelete={(id) => setCourses(prev => prev.filter(x => x.id !== id))} onDetails={openDetails} />
               ))}
             </div>
           )}
