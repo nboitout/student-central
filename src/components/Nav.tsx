@@ -12,9 +12,10 @@ export default function Nav() {
         <li><a href="#faculty">What faculty see</a></li>
         <li><a href="#trust">Academic integrity</a></li>
         <li><a href="#institutional">For institutions</a></li>
+        <li><a href="/workspace">My Workspace</a></li>
       </ul>
       <div className={styles.actions}>
-        <a className={styles.ghost} href="#workflow">See the workflow</a>
+        <a className={styles.ghost} href="/workspace">My Workspace</a>
         <a
           className={styles.demo}
           href="https://app.stg.tutor.studentcentral.ai/login"
