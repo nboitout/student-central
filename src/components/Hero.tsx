@@ -28,8 +28,8 @@ export default function Hero() {
             >
               Try it
             </a>
-            <a className="btn-s" href="#workflow">
-              See how it works
+            <a className="btn-s" href="/workspace">
+              My Workspace
             </a>
           </div>
           <div className={styles.trustStrip}>
