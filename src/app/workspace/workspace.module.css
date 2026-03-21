@@ -172,61 +172,55 @@
 }
 
 /* ── Course grid ────────────────────────────────────────── */
+/* ── Course grid — 3 per row with gaps ──────────────────── */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
-/* ── Course card ────────────────────────────────────────── */
+/* ── Course card — NotebookLM style ─────────────────────── */
 .card {
-  background: #131728;
+  background: #1a1f35;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
   position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  min-height: 200px;
 }
-.card:hover { background: #171d30; }
+.card:hover {
+  background: #1f2540;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
 
-.cardTop {
-  padding: 28px 24px 20px;
+/* Coloured top band per card — cycles through accent colours */
+.card:nth-child(1)  .cardBand { background: #3d2b1f; }
+.card:nth-child(2)  .cardBand { background: #1f3328; }
+.card:nth-child(3)  .cardBand { background: #1f2a3d; }
+.card:nth-child(4)  .cardBand { background: #2d1f3d; }
+.card:nth-child(5)  .cardBand { background: #3d2d1f; }
+.card:nth-child(6)  .cardBand { background: #1f3535; }
+.card:nth-child(7)  .cardBand { background: #2a1f3d; }
+.card:nth-child(8)  .cardBand { background: #3d1f2a; }
+.card:nth-child(9)  .cardBand { background: #1f3d2a; }
+
+.cardBand {
+  height: 100px;
+  padding: 20px 20px 0;
   display: flex;
-  gap: 12px;
-  flex: 1;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
 }
 
-.cardMeta { flex: 1; min-width: 0; }
-
-.cardTitle {
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #fff;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
-  margin-bottom: 8px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.cardAuthor {
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 4px;
-}
-
-.cardSource {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.3);
-  font-style: italic;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.cardEmoji {
+  font-size: 2.25rem;
+  line-height: 1;
+  user-select: none;
 }
 
 /* Three-dot menu */
@@ -235,25 +229,31 @@
 .menuTrigger {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 1.125rem;
   cursor: pointer;
   padding: 4px 8px;
   line-height: 1;
   transition: color 0.2s;
   letter-spacing: 0.05em;
+  border-radius: 4px;
 }
-.menuTrigger:hover { color: rgba(255, 255, 255, 0.8); }
+.menuTrigger:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255,255,255,0.08);
+}
 
 .menuDropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   right: 0;
-  background: #1e2438;
+  background: #252b44;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0px 12px 32px rgba(0, 0, 0, 0.4);
-  z-index: 10;
-  min-width: 140px;
+  box-shadow: 0px 12px 32px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+  min-width: 148px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .menuItem {
@@ -269,28 +269,68 @@
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.menuItem:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.menuItem:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
 
 .menuItemDanger { color: #ff6b6b !important; }
 .menuItemDanger:hover { background: rgba(255, 107, 107, 0.08) !important; }
 
-/* Status & exercises */
-.cardStatus {
-  padding: 0 24px 16px;
+/* Card body */
+.cardBody {
+  padding: 18px 20px 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  flex: 1;
+}
+
+.cardTitle {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardMeta {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cardMetaLine {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardAuthor { color: rgba(255,255,255,0.55); font-weight: 500; }
+
+/* Status & exercises */
+.cardStatus {
+  padding: 0 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .statusBadge {
   font-family: var(--font-display);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  align-self: flex-start;
 }
-.statusNotStarted { color: rgba(255, 255, 255, 0.4); }
+.statusNotStarted { color: rgba(255, 255, 255, 0.35); }
 .statusInProgress  { color: #6ea8ff; }
 .statusCompleted   { color: #52d68a; }
 
@@ -301,11 +341,10 @@
   border: 1px solid rgba(0, 80, 250, 0.3);
   color: #6ea8ff;
   font-family: var(--font-display);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 3px 10px;
   letter-spacing: 0.02em;
-  align-self: flex-start;
   border-radius: 999px;
 }
 
@@ -313,12 +352,14 @@
 .progressTrack {
   height: 2px;
   background: rgba(255, 255, 255, 0.07);
-  margin: 0 24px 16px;
+  margin: 0 20px 14px;
+  border-radius: 1px;
 }
 
 .progressFill {
   height: 100%;
   background: linear-gradient(90deg, #003cc2 0%, #0050fa 100%);
+  border-radius: 1px;
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -330,19 +371,21 @@
 .courseDetailsBtn {
   display: block;
   width: 100%;
-  padding: 16px 24px;
-  background: rgba(0, 80, 250, 0.08);
-  color: rgba(255, 255, 255, 0.65);
+  padding: 14px 20px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   text-align: center;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
   transition: background 0.2s, color 0.2s;
+  border: none;
+  cursor: pointer;
 }
 .courseDetailsBtn:hover {
-  background: rgba(0, 80, 250, 0.2);
-  color: #fff;
+  background: rgba(0, 80, 250, 0.15);
+  color: #6ea8ff;
 }
 
 /* ── Empty state ────────────────────────────────────────── */
