@@ -16,6 +16,11 @@
 .left {}
 
 .eyebrow { margin-bottom: 28px; }
+.eyebrow .ribbon {
+  font-size: 0.9375rem;
+  padding: 8px 14px;
+  letter-spacing: 0.06em;
+}
 
 .h1 {
   font-family: var(--font-display);
