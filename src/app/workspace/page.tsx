@@ -369,23 +369,23 @@ function MCQModal({ course, onClose }: { course: Course; onClose: () => void }) 
 /* ════════════════════════════════════════════════════════
    COURSE CARD
 ════════════════════════════════════════════════════════ */
-const EMOJIS = ["📘","🧠","💡","🔬","📊","🌐","⚙️","🎯","📐","🏛️"];
+const CARD_ACCENTS = [
+  "#3d2b1f","#1f3328","#1f2a3d","#2d1f3d",
+  "#3d2d1f","#1f3535","#2a1f3d","#3d1f2a","#1f3d2a",
+];
 
 function CourseCard({ course, onDelete, onDetails, index }: { course: Course; onDelete: (id: string) => void; onDetails: (c: Course) => void; index: number }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const progress = Math.round((course.exercisesDone / course.exercisesTotal) * 100);
-  const emoji = EMOJIS[index % EMOJIS.length];
+  const accentBg = CARD_ACCENTS[index % CARD_ACCENTS.length];
+  const initials = course.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
   const sourceCount = course.source.split(",").length;
-  const date = new Date(parseInt(course.id) || Date.now());
-  const dateStr = isNaN(parseInt(course.id))
-    ? `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][date.getMonth()]} ${date.getFullYear()}`
-    : new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const dateStr = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <div className={styles.card} onClick={() => onDetails(course)}>
-      {/* Coloured band with emoji + menu */}
-      <div className={styles.cardBand}>
-        <span className={styles.cardEmoji}>{emoji}</span>
+      <div className={styles.cardBand} style={{ background: accentBg }}>
+        <div className={styles.cardInitials}>{initials}</div>
         <div className={styles.cardMenu} onClick={(e) => e.stopPropagation()}>
           <button className={styles.menuTrigger} onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
           {menuOpen && (
@@ -396,8 +396,6 @@ function CourseCard({ course, onDelete, onDetails, index }: { course: Course; on
           )}
         </div>
       </div>
-
-      {/* Body */}
       <div className={styles.cardBody}>
         <h3 className={styles.cardTitle}>{course.title}</h3>
         <div className={styles.cardMeta}>
@@ -405,24 +403,17 @@ function CourseCard({ course, onDelete, onDetails, index }: { course: Course; on
           <div className={styles.cardMetaLine}>{dateStr} · {sourceCount} source{sourceCount !== 1 ? "s" : ""}</div>
         </div>
       </div>
-
-      {/* Status & progress */}
       <div className={styles.cardStatus}>
         <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>{course.status}</div>
         <div className={styles.exerciseBadge}>Exercises: {course.exercisesDone}/{course.exercisesTotal}</div>
       </div>
-
       {course.exercisesDone > 0 && (
         <div className={styles.progressTrack}>
           <div className={styles.progressFill} style={{ width: `${progress}%` }} />
         </div>
       )}
-
-      {/* Footer */}
       <div className={styles.cardFooter} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>
-          Course Details
-        </button>
+        <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>Course Details</button>
       </div>
     </div>
   );
@@ -432,15 +423,37 @@ function CourseCard({ course, onDelete, onDetails, index }: { course: Course; on
    PAGE
 ════════════════════════════════════════════════════════ */
 type ModalView = "none" | "create" | "details" | "mcq";
+type SortKey   = "recent" | "title";
+type ViewMode  = "grid" | "list";
 
 export default function WorkspacePage() {
-  const [courses, setCourses] = useState<Course[]>(DEMO);
-  const [modal, setModal] = useState<ModalView>("none");
+  const [courses, setCourses]           = useState<Course[]>(DEMO);
+  const [modal, setModal]               = useState<ModalView>("none");
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
+  const [search, setSearch]             = useState("");
+  const [viewMode, setViewMode]         = useState<ViewMode>("grid");
+  const [sortKey, setSortKey]           = useState<SortKey>("recent");
+  const [sortOpen, setSortOpen]         = useState(false);
+  const [searchOpen, setSearchOpen]     = useState(false);
 
   const openDetails = (course: Course) => { setActiveCourse(course); setModal("details"); };
   const openMCQ     = () => setModal("mcq");
   const closeModal  = () => { setModal("none"); setActiveCourse(null); };
+
+  /* Filter + sort */
+  const filtered = courses
+    .filter(c =>
+      search === "" ||
+      c.title.toLowerCase().includes(search.toLowerCase()) ||
+      c.author.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) =>
+      sortKey === "title"
+        ? a.title.localeCompare(b.title)
+        : parseInt(b.id) - parseInt(a.id)
+    );
+
+  const SORT_LABELS: Record<SortKey, string> = { recent: "Most recent", title: "Title" };
 
   return (
     <div className={styles.page}>
@@ -459,9 +472,10 @@ export default function WorkspacePage() {
         </div>
       </header>
 
-      {/* Main */}
       <main className={styles.main}>
         <div className={styles.mainInner}>
+
+          {/* Page header */}
           <div className={styles.pageHeader}>
             <h1 className={styles.pageTitle}>My Workspace</h1>
             <button className={styles.createNewBtn} onClick={() => setModal("create")}>
@@ -478,17 +492,112 @@ export default function WorkspacePage() {
             <div className={styles.stat}><div className={styles.statValue}>{courses.reduce((a, c) => a + c.exercisesDone, 0)}</div><div className={styles.statLabel}>Exercises completed</div></div>
           </div>
 
-          {courses.length === 0 ? (
+          {/* ── Toolbar ── */}
+          <div className={styles.toolbar}>
+            {/* Search */}
+            <div className={styles.toolbarLeft}>
+              <div className={`${styles.searchWrap} ${searchOpen ? styles.searchOpen : ""}`}>
+                <button
+                  className={styles.toolBtn}
+                  onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) setSearch(""); }}
+                  title="Search"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                </button>
+                {searchOpen && (
+                  <input
+                    className={styles.searchInput}
+                    autoFocus
+                    placeholder="Search courses…"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* View toggle + sort */}
+            <div className={styles.toolbarRight}>
+              {/* View toggle pill */}
+              <div className={styles.viewToggle}>
+                <button
+                  className={`${styles.viewBtn} ${viewMode === "grid" ? styles.viewBtnActive : ""}`}
+                  onClick={() => setViewMode("grid")}
+                  title="Grid view"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+                  </svg>
+                </button>
+                <button
+                  className={`${styles.viewBtn} ${viewMode === "list" ? styles.viewBtnActive : ""}`}
+                  onClick={() => setViewMode("list")}
+                  title="List view"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Sort dropdown */}
+              <div className={styles.sortWrap}>
+                <button className={styles.sortBtn} onClick={() => setSortOpen(!sortOpen)}>
+                  {SORT_LABELS[sortKey]}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 6 }}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                {sortOpen && (
+                  <div className={styles.sortDropdown}>
+                    {(["recent","title"] as SortKey[]).map(k => (
+                      <button
+                        key={k}
+                        className={`${styles.sortItem} ${sortKey === k ? styles.sortItemActive : ""}`}
+                        onClick={() => { setSortKey(k); setSortOpen(false); }}
+                      >
+                        {SORT_LABELS[k]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Grid or List */}
+          {filtered.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>◻</div>
-              <div className={styles.emptyTitle}>No courses yet</div>
-              <div className={styles.emptyBody}>Create your first course card to get started.</div>
-              <button className={styles.createNewBtn} onClick={() => setModal("create")}><span className={styles.createPlus}>+</span>Create New</button>
+              <div className={styles.emptyTitle}>{search ? "No results found" : "No courses yet"}</div>
+              <div className={styles.emptyBody}>{search ? `No courses match "${search}".` : "Create your first course card to get started."}</div>
+              {!search && <button className={styles.createNewBtn} onClick={() => setModal("create")}><span className={styles.createPlus}>+</span>Create New</button>}
+            </div>
+          ) : viewMode === "grid" ? (
+            <div className={styles.grid}>
+              {filtered.map((c, i) => (
+                <CourseCard key={c.id} course={c} index={i} onDelete={(id) => setCourses(prev => prev.filter(x => x.id !== id))} onDetails={openDetails} />
+              ))}
             </div>
           ) : (
-            <div className={styles.grid}>
-              {courses.map((c, i) => (
-                <CourseCard key={c.id} course={c} index={i} onDelete={(id) => setCourses(prev => prev.filter(x => x.id !== id))} onDetails={openDetails} />
+            <div className={styles.listView}>
+              {filtered.map((c, i) => (
+                <div key={c.id} className={styles.listRow} onClick={() => openDetails(c)}>
+                  <div className={styles.listAccent} style={{ background: CARD_ACCENTS[i % CARD_ACCENTS.length] }}>
+                    <span className={styles.listInitials}>{c.title.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()}</span>
+                  </div>
+                  <div className={styles.listBody}>
+                    <div className={styles.listTitle}>{c.title}</div>
+                    <div className={styles.listMeta}>{c.author} · {new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
+                  </div>
+                  <div className={styles.listRight}>
+                    <div className={`${styles.statusBadge} ${styles[`status${c.status.replace(" ","")}`]}`}>{c.status}</div>
+                    <div className={styles.exerciseBadge}>Exercises: {c.exercisesDone}/{c.exercisesTotal}</div>
+                  </div>
+                </div>
               ))}
             </div>
           )}
