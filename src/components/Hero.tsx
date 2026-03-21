@@ -15,9 +15,9 @@ export default function Hero() {
           </h1>
           <p className={styles.sub}>
             Student Central helps educators go beyond MCQs by combining answer
-            selection with short AI-guided explanation and discussion. The
-            result: a clearer view of student reasoning, misconceptions,
-            confidence, and real topic mastery.
+            selection with short AI-guided discussion. The result: educators
+            gain a deeper view of student reasoning, misconceptions, confidence,
+            and true topic mastery.
           </p>
           <div className={styles.actions}>
             <a
