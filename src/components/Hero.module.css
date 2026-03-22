@@ -75,13 +75,80 @@
   display: inline-block;
 }
 
-/* ── Assessment Visual ── */
-.visual { display: flex; flex-direction: column; gap: 12px; }
+/* ── Assessment Visual: 3-step sequential banner ── */
+.visual {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
-.assessCard {
+/* ── Step wrapper ── */
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Step header: number + label side by side */
+.stepHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+/* Step number: large gradient display figure */
+.stepNum {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--primary-gradient);
+  color: #fff;
+  padding: 3px 9px;
+  flex-shrink: 0;
+}
+
+/* Step label: institutional all-caps metadata */
+.stepLabel {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+/* Step card: white elevated sheet */
+.stepCard {
   background: var(--surface-lowest);
-  box-shadow: var(--shadow-float);
-  padding: 28px 32px;
+  box-shadow: var(--shadow-ambient);
+  padding: 20px 24px;
+}
+
+/* ── Connector between steps ── */
+.connector {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-left: 42px;       /* aligns with card left edge */
+  gap: 0;
+  margin: 8px 0;
+  position: relative;
+}
+
+.connectorLine {
+  width: 2px;
+  height: 20px;
+  background: var(--outline-variant);
+  margin-left: 6px;
+}
+
+.connectorArrow {
+  font-size: 0.875rem;
+  color: var(--primary);
+  font-weight: 700;
+  line-height: 1;
 }
 
 .assessTopic {
@@ -101,15 +168,15 @@
   color: var(--on-surface);
   line-height: 1.4;
   letter-spacing: -0.01em;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .mcqOpt {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 10px 14px;
-  margin-bottom: 6px;
+  padding: 9px 12px;
+  margin-bottom: 5px;
   background: var(--surface-low);
   font-family: var(--font-body);
   font-size: 0.8125rem;
@@ -151,13 +218,12 @@
   color: var(--on-surface-variant);
   line-height: 1.5;
   border-left: 3px solid var(--primary);
-  margin-top: 12px;
+  margin-bottom: 8px;
 }
 
 .responseArea {
   background: var(--surface-low);
   padding: 12px 14px;
-  margin-top: 8px;
   font-family: var(--font-body);
   font-size: 0.8125rem;
   color: var(--on-surface);
@@ -178,7 +244,7 @@
 /* Insight panel */
 .insightPanel {
   background: var(--on-surface);
-  padding: 28px 32px;
+  padding: 20px 24px;
 }
 
 .insightHdr {
@@ -188,7 +254,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -205,7 +271,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 7px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 .sigRow:last-of-type { border-bottom: none; }
@@ -232,7 +298,7 @@
 .insightDiv {
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
-  margin: 14px 0;
+  margin: 12px 0;
 }
 
 .insightSub {
@@ -242,7 +308,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.3);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .insightBul {
@@ -253,7 +319,7 @@
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.65);
   line-height: 1.5;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 .insightBul::before {
   content: '→';
