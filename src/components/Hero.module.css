@@ -434,139 +434,113 @@
 }
 
 /* ── Professor dashboard (step 3) ── */
-.dashHeader {
-  margin-bottom: 16px;
-  padding-bottom: 14px;
+
+/* Verdict: biggest, first, most prominent */
+.dashVerdict {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.dashEyebrow {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.35);
-  margin-bottom: 8px;
-}
-
-.dashAnswerRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.dashCorrectPill {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: rgba(26, 76, 59, 0.85);
-  color: #6ee7b7;
-  padding: 3px 8px;
+.dashVerdictIcon {
+  font-size: 1.125rem;
+  color: #34d399;
   flex-shrink: 0;
+  margin-top: 2px;
+  font-weight: 700;
 }
 
-.dashAnswerText {
+.dashVerdictTitle {
   font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
-  letter-spacing: -0.01em;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  margin-bottom: 3px;
 }
 
-/* Three analysis blocks */
-.dashBlocks {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.dashVerdictSub {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.5;
 }
 
-.dashBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* Sections */
+.dashSection {
+  margin-bottom: 18px;
 }
 
-.dashBlockLabel {
+.dashSectionLabel {
   font-family: var(--font-display);
   font-size: 0.5625rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 9px;
 }
 
-.dashBlockBody {
+.dashPoints {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
 }
 
 .dashPoint {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
+  gap: 10px;
   font-family: var(--font-body);
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.72);
   line-height: 1.45;
 }
 
-/* Status dots */
+/* 3 colors only */
 .dashDotGreen {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   background: #34d399;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 .dashDotAmber {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   background: #fbbf24;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
-/* Robustness bar */
-.dashRobustRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.dashRobustBar {
-  flex: 1;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dashRobustFill {
-  height: 100%;
-  background: linear-gradient(90deg, #003cc2 0%, #0050fa 100%);
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.dashRobustScore {
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: #6ea8ff;
-  letter-spacing: -0.02em;
+.dashDotNeutral {
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
   flex-shrink: 0;
+  margin-top: 5px;
 }
 
-.dashRobustNote {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.4);
-  font-style: italic;
-  line-height: 1.5;
+/* Reliability — bottom, no score, plain judgment */
+.dashReliable {
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashReliableVerdict {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  margin-top: 6px;
 }
 
 @media (max-width: 960px) {
