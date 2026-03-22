@@ -1,3 +1,4 @@
+import { LanguageProvider } from "@/context/LanguageContext";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import DividerBar from "@/components/DividerBar";
@@ -14,7 +15,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 
 export default function Home() {
   return (
-    <>
+    <LanguageProvider>
       <Nav />
       <main>
         <Hero />
@@ -30,6 +31,6 @@ export default function Home() {
       </main>
       <Footer />
       <ScrollReveal />
-    </>
+    </LanguageProvider>
   );
 }
