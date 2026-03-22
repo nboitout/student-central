@@ -1,57 +1,78 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./workspace.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
+import {
+  listCourses,
+  createCourse,
+  updateCourse,
+  deleteCourse,
+  uploadPdf,
+  attachPdf,
+  type Course,
+} from "@/lib/api";
 
-/* ── Types ─────────────────────────────────────────────── */
-interface Course {
-  id: string;
-  title: string;
-  author: string;
-  source: string;
-  status: "Not Started" | "In Progress" | "Completed";
-  exercisesTotal: number;
-  exercisesDone: number;
-}
-
-/* ── Demo data (course content stays in English) ─────── */
-const DEMO: Course[] = [
-  { id: "1", title: "International Software Management", author: "Nicolas Boitout", source: "2025 – IMBS – 1 – Software Development Life Cycle.pdf", status: "Not Started", exercisesTotal: 20, exercisesDone: 0 },
-  { id: "2", title: "AGILE Project Management: Principles, Frameworks, and Practices", author: "Unknown", source: "2025 – IMBS – 2 – Agile Project Management.pdf", status: "In Progress", exercisesTotal: 20, exercisesDone: 12 },
-  { id: "3", title: "Digital Transformation and Change Management with AI and Analytics", author: "Marco Iansiti, Satya Nadella, Nicolas Boitout", source: "2025 – IMBS – 3 – Digital Transformation & Change", status: "Not Started", exercisesTotal: 20, exercisesDone: 0 },
-  { id: "4", title: "The Geek Way: Embracing a Radical Mindset for Extraordinary Business", author: "Andrew McAfee, Reid Hoffman", source: "2025 – IMBS – 4 – Culture Principles", status: "Not Started", exercisesTotal: 20, exercisesDone: 0 },
-  { id: "5", title: "Digital Transformation and the Impact of Software on the Modern Economy", author: "Nicolas Boitout", source: "2025 – IMBS – 5 – How to understand our digital economy", status: "Not Started", exercisesTotal: 19, exercisesDone: 0 },
-  { id: "6", title: "Introduction to Cloud Computing and Its Evolution", author: "Microsoft Educational Team", source: "2025 – IMBS – 5 – Introduction to Cloud Computing.pdf", status: "In Progress", exercisesTotal: 20, exercisesDone: 16 },
-];
+/* ── Constants ──────────────────────────────────────────── */
+/* Card accents handled by CSS nth-child ::before — no inline colours needed */
 
 type SortKey = "recent" | "title";
-type Modal = null | "create" | "details";
+type Modal   = null | "create" | "details";
 
 /* ════════════════════════════════════════════════════════
    CREATE COURSE MODAL
 ════════════════════════════════════════════════════════ */
-function CreateModal({ onClose, onCreate, ui }: { onClose: () => void; onCreate: (c: Course) => void; ui: ReturnType<typeof getT>["workspace"] }) {
-  const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
-  const [fileName, setFileName] = useState("");
+function CreateModal({
+  onClose,
+  onCreate,
+  ui,
+}: {
+  onClose: () => void;
+  onCreate: (c: Course) => void;
+  ui: ReturnType<typeof getT>["workspace"];
+}) {
+  const [title, setTitle]               = useState("");
+  const [author, setAuthor]             = useState("");
+  const [fileName, setFileName]         = useState("");
+  const [file, setFile]                 = useState<File | null>(null);
   const [uploadMethod, setUploadMethod] = useState<"local" | "drive">("local");
-  const [driveUrl, setDriveUrl] = useState("");
-  const [dragOver, setDragOver] = useState(false);
+  const [driveUrl, setDriveUrl]         = useState("");
+  const [dragOver, setDragOver]         = useState(false);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (file: File) => setFileName(file.name);
+  const handleFile = (f: File) => { setFile(f); setFileName(f.name); };
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
   };
-  const handleSubmit = () => {
+
+  const handleSubmit = async () => {
     if (!title.trim()) return;
-    onCreate({ id: Date.now().toString(), title: title.trim(), author: author.trim() || "Unknown", source: fileName || driveUrl || ui.noFileAttached, status: "Not Started", exercisesTotal: 20, exercisesDone: 0 });
-    onClose();
+    setLoading(true); setError(null);
+    try {
+      const course = await createCourse({
+        title: title.trim(),
+        author: author.trim() || "Unknown",
+        source: fileName || driveUrl || ui.noFileAttached,
+      });
+      if (file) {
+        const { url } = await uploadPdf(file);
+        const updated = await attachPdf(course.id, url);
+        onCreate(updated);
+      } else {
+        onCreate(course);
+      }
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,6 +86,7 @@ function CreateModal({ onClose, onCreate, ui }: { onClose: () => void; onCreate:
           <button className={styles.modalClose} onClick={onClose}>✕</button>
         </div>
         <div className={styles.modalBody}>
+          {error && <div className={styles.errorBanner}>{error}</div>}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>{ui.fieldTitle}</label>
             <input className={styles.fieldInput} type="text" placeholder={ui.fieldTitlePlaceholder} value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
@@ -96,8 +118,10 @@ function CreateModal({ onClose, onCreate, ui }: { onClose: () => void; onCreate:
           )}
         </div>
         <div className={styles.modalFooter}>
-          <button className={styles.cancelBtn} onClick={onClose}>{ui.cancel}</button>
-          <button className={`${styles.createBtn} ${!title.trim() ? styles.createDisabled : ""}`} onClick={handleSubmit} disabled={!title.trim()}>{ui.createCourse}</button>
+          <button className={styles.cancelBtn} onClick={onClose} disabled={loading}>{ui.cancel}</button>
+          <button className={`${styles.createBtn} ${(!title.trim() || loading) ? styles.createDisabled : ""}`} onClick={handleSubmit} disabled={!title.trim() || loading}>
+            {loading ? "…" : ui.createCourse}
+          </button>
         </div>
       </div>
     </div>
@@ -107,7 +131,15 @@ function CreateModal({ onClose, onCreate, ui }: { onClose: () => void; onCreate:
 /* ════════════════════════════════════════════════════════
    COURSE DETAILS MODAL
 ════════════════════════════════════════════════════════ */
-function CourseDetailsModal({ course, onClose, ui }: { course: Course; onClose: () => void; ui: ReturnType<typeof getT>["workspace"] }) {
+function CourseDetailsModal({
+  course,
+  onClose,
+  ui,
+}: {
+  course: Course;
+  onClose: () => void;
+  ui: ReturnType<typeof getT>["workspace"];
+}) {
   const router = useRouter();
   const statusKey = course.status.replace(" ", "") as "NotStarted" | "InProgress" | "Completed";
   const statusLabel: Record<string, string> = {
@@ -138,12 +170,18 @@ function CourseDetailsModal({ course, onClose, ui }: { course: Course; onClose: 
             <div className={styles.detailsProgressFill} style={{ width: `${progress}%` }} />
           </div>
           <div className={styles.actionCards}>
-            <button className={`${styles.actionCard} ${styles.actionCardPrimary}`} onClick={() => { onClose(); router.push(`/workspace/course?id=${course.id}`); }}>
+            <button
+              className={`${styles.actionCard} ${styles.actionCardPrimary}`}
+              onClick={() => { onClose(); router.push(`/workspace/course?id=${course.id}`); }}
+            >
               <div className={styles.actionCardIcon}>↗</div>
               <div className={styles.actionCardTitle}>{ui.accessCourse}</div>
               <div className={styles.actionCardDesc}>{ui.accessCourseDesc}</div>
             </button>
-            <button className={styles.actionCard} onClick={() => { onClose(); router.push(`/workspace/mcq?id=${course.id}`); }}>
+            <button
+              className={styles.actionCard}
+              onClick={() => { onClose(); router.push(`/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}`); }}
+            >
               <div className={styles.actionCardIcon}>◎</div>
               <div className={styles.actionCardTitle}>{ui.startMCQ}</div>
               <div className={styles.actionCardDesc}>{ui.startMCQDesc}</div>
@@ -158,12 +196,24 @@ function CourseDetailsModal({ course, onClose, ui }: { course: Course; onClose: 
 /* ════════════════════════════════════════════════════════
    COURSE CARD
 ════════════════════════════════════════════════════════ */
-function CourseCard({ course, onDelete, onDetails, index, ui }: { course: Course; onDelete: (id: string) => void; onDetails: (c: Course) => void; index: number; ui: ReturnType<typeof getT>["workspace"] }) {
+function CourseCard({
+  course,
+  index,
+  onDelete,
+  onDetails,
+  ui,
+}: {
+  course: Course;
+  index: number;
+  onDelete: (id: string) => void;
+  onDetails: (c: Course) => void;
+  ui: ReturnType<typeof getT>["workspace"];
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const progress = Math.round((course.exercisesDone / course.exercisesTotal) * 100);
-  const initials = course.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
+  const progress   = Math.round((course.exercisesDone / course.exercisesTotal) * 100);
+  const initials   = course.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
   const sourceCount = course.source.split(",").length;
-  const dateStr = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const dateStr    = new Date(course.createdAt ?? Date.now()).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <div className={styles.card} onClick={() => onDetails(course)}>
@@ -209,27 +259,66 @@ function CourseCard({ course, onDelete, onDetails, index, ui }: { course: Course
    MAIN PAGE
 ════════════════════════════════════════════════════════ */
 export default function WorkspacePage() {
-  const { lang } = useLanguage();
-  const ui = getT(lang).workspace;
+  const { lang }  = useLanguage();
+  const ui        = getT(lang).workspace;
 
-  const [courses, setCourses] = useState<Course[]>(DEMO);
-  const [modal, setModal] = useState<Modal>(null);
+  const [courses, setCourses]         = useState<Course[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [modal, setModal]             = useState<Modal>(null);
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
-  const [search, setSearch] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("recent");
-  const [sortOpen, setSortOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [search, setSearch]           = useState("");
+  const [searchOpen, setSearchOpen]   = useState(false);
+  const [sortKey, setSortKey]         = useState<SortKey>("recent");
+  const [sortOpen, setSortOpen]       = useState(false);
+  const [viewMode, setViewMode]       = useState<"grid" | "list">("grid");
+
+  /* Load from API on mount */
+  useEffect(() => {
+    listCourses()
+      .then(setCourses)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   const SORT_LABELS: Record<SortKey, string> = { recent: ui.sortRecent, title: ui.sortTitle };
 
   const filtered = courses
-    .filter(c => c.title.toLowerCase().includes(search.toLowerCase()) || c.author.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => sortKey === "title" ? a.title.localeCompare(b.title) : 0);
+    .filter(c =>
+      c.title.toLowerCase().includes(search.toLowerCase()) ||
+      c.author.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) =>
+      sortKey === "title"
+        ? a.title.localeCompare(b.title)
+        : new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+    );
 
   const closeModal = () => { setModal(null); setActiveCourse(null); };
-  const openDetails = (c: Course) => { setActiveCourse(c); setModal("details"); };
-  const deleteCourse = (id: string) => setCourses(prev => prev.filter(c => c.id !== id));
+
+  /* Open details — auto-advance status Not Started → In Progress */
+  const openDetails = async (c: Course) => {
+    if (c.status === "Not Started") {
+      try {
+        const updated = await updateCourse(c.id, { status: "In Progress" });
+        setCourses(prev => prev.map(x => x.id === c.id ? updated : x));
+        setActiveCourse(updated);
+      } catch {
+        setActiveCourse(c);
+      }
+    } else {
+      setActiveCourse(c);
+    }
+    setModal("details");
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCourse(id);
+      setCourses(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -301,8 +390,12 @@ export default function WorkspacePage() {
             </div>
           </div>
 
-          {/* Grid or List */}
-          {filtered.length === 0 ? (
+          {/* Content */}
+          {loading ? (
+            <div className={styles.loadingState}>
+              <div className={styles.loadingDot} /><div className={styles.loadingDot} /><div className={styles.loadingDot} />
+            </div>
+          ) : filtered.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>◻</div>
               <div className={styles.emptyTitle}>{search ? ui.emptyTitleSearch : ui.emptyTitle}</div>
@@ -312,7 +405,7 @@ export default function WorkspacePage() {
           ) : viewMode === "grid" ? (
             <div className={styles.grid}>
               {filtered.map((c, i) => (
-                <CourseCard key={c.id} course={c} index={i} onDelete={deleteCourse} onDetails={openDetails} ui={ui} />
+                <CourseCard key={c.id} course={c} index={i} onDelete={handleDelete} onDetails={openDetails} ui={ui} />
               ))}
             </div>
           ) : (
@@ -324,7 +417,7 @@ export default function WorkspacePage() {
                   </div>
                   <div className={styles.listBody}>
                     <div className={styles.listTitle}>{c.title}</div>
-                    <div className={styles.listMeta}>{c.author} · {new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}</div>
+                    <div className={styles.listMeta}>{c.author} · {new Date(c.createdAt ?? Date.now()).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}</div>
                   </div>
                   <div className={styles.listRight}>
                     <div className={`${styles.statusBadge} ${styles[`status${c.status.replace(" ","")}`]}`}>{{ "Not Started": ui.statusNotStarted, "In Progress": ui.statusInProgress, "Completed": ui.statusCompleted }[c.status]}</div>
