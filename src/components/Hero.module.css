@@ -75,82 +75,143 @@
   display: inline-block;
 }
 
-/* ── Assessment Visual: 3-step sequential banner ── */
+/* ── Assessment Visual: step carousel ── */
 .visual {
   display: flex;
   flex-direction: column;
   gap: 0;
 }
 
-/* ── Step wrapper ── */
-.step {
+/* ── Step tabs row ── */
+.stepTabs {
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  gap: 2px;
+  background: var(--surface-container);
+  padding: 2px;
+  margin-bottom: 0;
 }
 
-/* Step header: number + label side by side */
-.stepHead {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 10px;
-}
-
-/* Step number: large gradient display figure */
-.stepNum {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  background: var(--primary-gradient);
-  color: #fff;
-  padding: 3px 9px;
-  flex-shrink: 0;
-}
-
-/* Step label: institutional all-caps metadata */
-.stepLabel {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-}
-
-/* Step card: white elevated sheet */
-.stepCard {
-  background: var(--surface-lowest);
-  box-shadow: var(--shadow-ambient);
-  padding: 20px 24px;
-}
-
-/* ── Connector between steps ── */
-.connector {
+.stepTab {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding-left: 42px;       /* aligns with card left edge */
-  gap: 0;
-  margin: 8px 0;
-  position: relative;
+  gap: 4px;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: left;
+}
+.stepTab:hover { background: var(--surface-high); }
+
+.stepTabActive {
+  background: var(--surface-lowest) !important;
+  box-shadow: inset 0 -3px 0 var(--primary);
 }
 
-.connectorLine {
-  width: 2px;
-  height: 20px;
-  background: var(--outline-variant);
-  margin-left: 6px;
-}
-
-.connectorArrow {
-  font-size: 0.875rem;
-  color: var(--primary);
+.stepTabNum {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
   font-weight: 700;
-  line-height: 1;
+  letter-spacing: 0.1em;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+}
+.stepTabActive .stepTabNum {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 1;
 }
 
+.stepTabLabel {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--on-surface-variant);
+  line-height: 1.2;
+}
+.stepTabActive .stepTabLabel { color: var(--on-surface); }
+
+/* ── Panel: fixed height so layout doesn't jump ── */
+.panel {
+  background: var(--surface-lowest);
+  box-shadow: var(--shadow-ambient);
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+}
+
+.panelInner {
+  padding: 24px 28px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Carousel nav ── */
+.carouselNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface-low);
+}
+
+.navBtn {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  transition: color 0.15s, background 0.15s;
+  letter-spacing: 0.01em;
+}
+.navBtn:hover:not(:disabled) {
+  color: var(--primary);
+  background: var(--tertiary-fixed);
+}
+.navBtn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  background: var(--surface-highest);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, transform 0.15s;
+}
+.dot:hover { background: var(--on-surface-variant); }
+.dotActive {
+  background: var(--primary);
+  transform: scale(1.4);
+}
+
+/* ── Panel content styles ── */
 .assessTopic {
   font-family: var(--font-display);
   font-size: 0.6875rem;
@@ -158,7 +219,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--primary);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .assessQ {
@@ -168,7 +229,7 @@
   color: var(--on-surface);
   line-height: 1.4;
   letter-spacing: -0.01em;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .mcqOpt {
@@ -183,7 +244,6 @@
   color: var(--on-surface-variant);
   line-height: 1.45;
 }
-
 .mcqOpt.selected {
   background: var(--tertiary-fixed);
   color: var(--on-tertiary-fixed);
@@ -200,7 +260,6 @@
   align-items: center;
   justify-content: center;
 }
-
 .radioFill {
   width: 6px;
   height: 6px;
@@ -218,16 +277,16 @@
   color: var(--on-surface-variant);
   line-height: 1.5;
   border-left: 3px solid var(--primary);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .responseArea {
   background: var(--surface-low);
-  padding: 12px 14px;
+  padding: 14px 16px;
   font-family: var(--font-body);
   font-size: 0.8125rem;
   color: var(--on-surface);
-  line-height: 1.6;
+  line-height: 1.65;
   border-bottom: 2px solid var(--primary);
 }
 
@@ -238,13 +297,12 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--on-surface-variant);
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 
-/* Insight panel */
-.insightPanel {
+/* Step 3 — dark signal panel */
+.panelDark {
   background: var(--on-surface);
-  padding: 20px 24px;
 }
 
 .insightHdr {
@@ -271,7 +329,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 7px 0;
+  padding: 8px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 .sigRow:last-of-type { border-bottom: none; }
