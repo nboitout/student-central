@@ -280,6 +280,52 @@
   margin-bottom: 10px;
 }
 
+/* ── Chat thread (step 2) ── */
+.chatThread {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chatMsg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  max-width: 88%;
+}
+
+.chatSender {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* AI Tutor: left-aligned, primary left accent */
+.chatAI {
+  background: var(--surface-low);
+  border-left: 3px solid var(--primary);
+  color: var(--on-surface-variant);
+  align-self: flex-start;
+}
+.chatAI .chatSender { color: var(--primary); }
+
+/* Student: right-aligned, tertiary-fixed tint */
+.chatStudent {
+  background: var(--tertiary-fixed);
+  color: var(--on-tertiary-fixed);
+  align-self: flex-end;
+  text-align: right;
+}
+.chatStudent .chatSender { color: var(--on-tertiary-fixed); opacity: 0.6; }
+
 .responseArea {
   background: var(--surface-low);
   padding: 14px 16px;
