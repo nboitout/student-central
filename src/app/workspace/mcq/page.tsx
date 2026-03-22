@@ -233,10 +233,12 @@ function MCQContent() {
   );
 }
 
+const MCQPageClient = dynamic(() => Promise.resolve(MCQContent), { ssr: false });
+
 export default function MCQPage() {
   return (
     <Suspense fallback={<div style={{ background: "var(--surface-low)", minHeight: "100vh" }} />}>
-      <MCQContent />
+      <MCQPageClient />
     </Suspense>
   );
 }
