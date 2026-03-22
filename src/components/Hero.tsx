@@ -110,16 +110,31 @@ export default function Hero() {
             {/* Step 2 — Discuss */}
             {active === 1 && (
               <div className={styles.panelInner}>
-                <div className={styles.followup}>
-                  Why did you choose this option instead of the others?
-                </div>
-                <div className={styles.responseArea}>
-                  <div className={styles.sender}>Student response</div>
-                  I chose it because stablecoins can move directly on blockchain
-                  networks, which may reduce intermediaries and speed up
-                  settlement. I rejected the option about price stability alone
-                  because stability helps adoption, but does not by itself
-                  explain payment efficiency.
+                <div className={styles.chatThread}>
+                  <div className={`${styles.chatMsg} ${styles.chatAI}`}>
+                    <span className={styles.chatSender}>AI Tutor</span>
+                    What made you choose this answer?
+                  </div>
+                  <div className={`${styles.chatMsg} ${styles.chatStudent}`}>
+                    <span className={styles.chatSender}>Student</span>
+                    I think it&apos;s because stablecoins are faster… like they don&apos;t go through banks the same way.
+                  </div>
+                  <div className={`${styles.chatMsg} ${styles.chatAI}`}>
+                    <span className={styles.chatSender}>AI Tutor</span>
+                    What do you mean by &ldquo;not the same way&rdquo;?
+                  </div>
+                  <div className={`${styles.chatMsg} ${styles.chatStudent}`}>
+                    <span className={styles.chatSender}>Student</span>
+                    Like… normally payments go through several banks, right? And that takes time.
+                  </div>
+                  <div className={`${styles.chatMsg} ${styles.chatAI}`}>
+                    <span className={styles.chatSender}>AI Tutor</span>
+                    Exactly. And how is it different with stablecoins?
+                  </div>
+                  <div className={`${styles.chatMsg} ${styles.chatStudent}`}>
+                    <span className={styles.chatSender}>Student</span>
+                    With stablecoins it can go directly on the blockchain, so fewer intermediaries and faster settlement.
+                  </div>
                 </div>
               </div>
             )}
