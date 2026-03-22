@@ -1,85 +1,45 @@
+"use client";
 import styles from "./Faculty.module.css";
+import { useLanguage } from "@/context/LanguageContext";
+import { tx as getT } from "@/i18n/translations";
 
-const TILES = [
-  { label: "Questions answered this week", value: "247", accent: true },
-  { label: "Correct-but-fragile responses",  value: "31",  warn: true },
-  { label: "Strong explanations by topic",   value: "68%", accent: false },
-  { label: "Students needing follow-up",     value: "14",  warn: true },
-];
-
-const ROWS = [
-  {
-    label: "Topics with highest misconception rate",
-    value: "Regression models · Stablecoin settlement",
-  },
-  {
-    label: "Distractors most frequently defended incorrectly",
-    value: "View full report →",
-  },
-];
-
-const INSIGHTS = [
-  {
-    topic: "Topic: Regression vs Classification",
-    title: "Students identify the right model — but can't explain the decision rule",
-    body: "Students often identify the correct model when examples are obvious, but struggle to articulate the decision rule when variables or outcomes become ambiguous. The gap appears in justification, not in selection.",
-  },
-  {
-    topic: "Topic: Stablecoin Settlement",
-    title: "Confusing price stability with payment efficiency",
-    body: "Students recognize speed and programmability language, but frequently confuse price stability with payment efficiency — a recurring misconception that answer selection alone would never surface.",
-  },
+const TILE_STYLES = [
+  { accent: true,  warn: false },
+  { accent: false, warn: true  },
+  { accent: false, warn: false },
+  { accent: false, warn: true  },
 ];
 
 export default function Faculty() {
+  const { lang } = useLanguage();
+  const tx = getT(lang).faculty;
   return (
     <section id="faculty" className={styles.section}>
       <div className={styles.inner}>
-        {/* Left: dashboard */}
         <div className={styles.left}>
-          <div className={styles.eyebrow}>
-            <span className="ribbon">Faculty Visibility</span>
-          </div>
-          <h2 className={`${styles.headline} reveal`}>
-            Move from grades and percentages to interpretable learning signals
-          </h2>
-          <p className={`body-lg ${styles.sub} reveal d1`}>
-            Student Central gives instructors a more usable picture of student
-            understanding. Instead of seeing only item success rates, they can
-            inspect how students justify answers, where distractors remain
-            attractive, and which misconceptions cluster around specific concepts.
-          </p>
-
+          <div className={styles.eyebrow}><span className="ribbon">{tx.ribbon}</span></div>
+          <h2 className={`${styles.headline} reveal`}>{tx.headline}</h2>
+          <p className={`body-lg ${styles.sub} reveal d1`}>{tx.body}</p>
           <div className={styles.dashGrid}>
-            {TILES.map((t) => (
-              <div key={t.label} className={styles.dashTile}>
-                <div className={styles.dashLbl}>{t.label}</div>
-                <div
-                  className={`${styles.dashVal} ${
-                    t.accent ? styles.acc : t.warn ? styles.warn : ""
-                  }`}
-                >
-                  {t.value}
+            {tx.tiles.map((tile, i) => (
+              <div key={tile.label} className={styles.dashTile}>
+                <div className={styles.dashLbl}>{tile.label}</div>
+                <div className={`${styles.dashVal} ${TILE_STYLES[i].accent ? styles.acc : TILE_STYLES[i].warn ? styles.warn : ""}`}>
+                  {tile.value}
                 </div>
               </div>
             ))}
           </div>
-
-          {ROWS.map((r) => (
+          {tx.rows.map((r) => (
             <div key={r.label} className={styles.dashRow}>
               <span className={styles.dashRlbl}>{r.label}</span>
               <span className={styles.dashRval}>{r.value}</span>
             </div>
           ))}
         </div>
-
-        {/* Right: insight examples */}
         <div className={styles.right}>
-          {INSIGHTS.map((ins, i) => (
-            <div
-              key={ins.topic}
-              className={`${styles.insightCard} reveal ${i > 0 ? "d1" : ""}`}
-            >
+          {tx.insights.map((ins, i) => (
+            <div key={ins.topic} className={`${styles.insightCard} reveal ${i > 0 ? "d1" : ""}`}>
               <div className={styles.icTopic}>{ins.topic}</div>
               <div className={styles.icTitle}>{ins.title}</div>
               <p className="body-md">{ins.body}</p>
