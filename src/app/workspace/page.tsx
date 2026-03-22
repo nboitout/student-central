@@ -139,16 +139,14 @@ function CourseDetailsModal({ course, onClose }: { course: Course; onClose: () =
           </div>
 
           <div className={styles.actionCards}>
-            <a
-              href="https://app.stg.tutor.studentcentral.ai/login"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.actionCard}
+            <button
+              className={`${styles.actionCard} ${styles.actionCardPrimary}`}
+              onClick={() => { onClose(); router.push(`/workspace/course?id=${course.id}`); }}
             >
-              <div className={styles.actionCardIcon}>→</div>
+              <div className={styles.actionCardIcon}>↗</div>
               <div className={styles.actionCardTitle}>Access Course</div>
-              <div className={styles.actionCardDesc}>Open the full course materials and AI tutor in Student Central.</div>
-            </a>
+              <div className={styles.actionCardDesc}>Read the full course document with the built-in PDF reader.</div>
+            </button>
 
             <button
               className={`${styles.actionCard} ${styles.actionCardPrimary}`}
