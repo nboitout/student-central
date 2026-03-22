@@ -2,228 +2,116 @@
 
 import { useState } from "react";
 import styles from "./Hero.module.css";
-
-const STEPS = [
-  { num: "01", label: "Answer the question" },
-  { num: "02", label: "Explain your reasoning" },
-  { num: "03", label: "Faculty receives the signal" },
-];
+import { useLanguage } from "@/context/LanguageContext";
+import { tx as getT } from "@/i18n/translations";
 
 export default function Hero() {
+  const { lang } = useLanguage();
+  const tx = getT(lang).hero;
   const [active, setActive] = useState(0);
 
   return (
     <section id="hero" className={styles.hero}>
       <div className={styles.inner}>
-
-        {/* ── Left col ── */}
         <div className={styles.left}>
           <div className={styles.eyebrow}>
-            <span className="ribbon">Assessment beyond the multiple-choice score</span>
+            <span className="ribbon">{tx.ribbon}</span>
           </div>
           <h1 className={styles.h1}>
-            See the thinking behind{" "}
-            <em className={styles.em}>every answer</em>
+            {tx.h1a}{" "}<em className={styles.em}>{tx.h1em}</em>
           </h1>
-          <p className={styles.sub}>
-            Student Central helps educators go beyond MCQs by combining answer
-            selection with short AI-guided discussion. The result: educators
-            gain a deeper view of student reasoning, misconceptions, confidence,
-            and true topic mastery.
-          </p>
+          <p className={styles.sub}>{tx.sub}</p>
           <div className={styles.actions}>
-            <a
-              className="btn-p"
-              href="https://app.stg.tutor.studentcentral.ai/login"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Try it
-            </a>
-            <a className="btn-s" href="/workspace">
-              My Workspace
-            </a>
+            <a className="btn-p" href="https://app.stg.tutor.studentcentral.ai/login" target="_blank" rel="noopener noreferrer">{tx.tryIt}</a>
+            <a className="btn-s" href="/workspace">{tx.myWorkspace}</a>
           </div>
           <div className={styles.trustStrip}>
-            {[
-              "Built for higher education",
-              "Course-aligned assessment flows",
-              "Faculty-controlled prompts and review",
-              "No student data used to train public models",
-            ].map((t) => (
+            {tx.trust.map((t) => (
               <div key={t} className={styles.trustItem}>
-                <span className={styles.trustDot} />
-                {t}
+                <span className={styles.trustDot} />{t}
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── Right col: step carousel ── */}
         <div className={styles.visual}>
-
-          {/* Tab row */}
           <div className={styles.stepTabs}>
-            {STEPS.map((s, i) => (
-              <button
-                key={i}
-                className={`${styles.stepTab} ${active === i ? styles.stepTabActive : ""}`}
-                onClick={() => setActive(i)}
-              >
+            {tx.steps.map((s, i) => (
+              <button key={i} className={`${styles.stepTab} ${active === i ? styles.stepTabActive : ""}`} onClick={() => setActive(i)}>
                 <span className={styles.stepTabNum}>{s.num}</span>
                 <span className={styles.stepTabLabel}>{s.label}</span>
               </button>
             ))}
           </div>
 
-          {/* Panel */}
           <div className={styles.panel}>
-
-            {/* Step 1 — MCQ */}
             {active === 0 && (
               <div className={styles.panelInner}>
-                <div className={styles.assessTopic}>Assessment moment</div>
-                <div className={styles.assessQ}>
-                  Which of the following best explains why stablecoins reduce
-                  friction in cross-border payments?
-                </div>
-                <div className={styles.mcqOpt}>
-                  <span className={styles.radio} />
-                  Because stablecoins are pegged to fiat currencies, eliminating
-                  exchange rate risk entirely.
-                </div>
-                <div className={`${styles.mcqOpt} ${styles.selected}`}>
-                  <span className={styles.radio}>
-                    <span className={styles.radioFill} />
-                  </span>
-                  Because settlement can be faster and more programmable than
-                  traditional correspondent banking flows.
-                </div>
-                <div className={styles.mcqOpt}>
-                  <span className={styles.radio} />
-                  Because central banks are legally required to accept stablecoin
-                  payments.
-                </div>
+                <div className={styles.assessTopic}>{tx.step1.topic}</div>
+                <div className={styles.assessQ}>{tx.step1.q}</div>
+                {tx.step1.opts.map((opt, i) => (
+                  <div key={i} className={`${styles.mcqOpt} ${i === tx.step1.selected ? styles.selected : ""}`}>
+                    <span className={styles.radio}>{i === tx.step1.selected && <span className={styles.radioFill} />}</span>
+                    {opt}
+                  </div>
+                ))}
               </div>
             )}
 
-            {/* Step 2 — Discuss */}
             {active === 1 && (
               <div className={styles.panelInner}>
                 <div className={styles.chatThread}>
-                  <div className={`${styles.chatMsg} ${styles.chatAI}`}>
-                    <span className={styles.chatSender}>AI Tutor</span>
-                    What made you choose this answer?
-                  </div>
-                  <div className={`${styles.chatMsg} ${styles.chatStudent}`}>
-                    <span className={styles.chatSender}>Student</span>
-                    I think it&apos;s because stablecoins are faster… like they don&apos;t go through banks the same way.
-                  </div>
-                  <div className={`${styles.chatMsg} ${styles.chatAI}`}>
-                    <span className={styles.chatSender}>AI Tutor</span>
-                    What do you mean by &ldquo;not the same way&rdquo;?
-                  </div>
-                  <div className={`${styles.chatMsg} ${styles.chatStudent}`}>
-                    <span className={styles.chatSender}>Student</span>
-                    Like… normally payments go through several banks, right? And that takes time.
-                  </div>
-                  <div className={`${styles.chatMsg} ${styles.chatAI}`}>
-                    <span className={styles.chatSender}>AI Tutor</span>
-                    Exactly. And how is it different with stablecoins?
-                  </div>
-                  <div className={`${styles.chatMsg} ${styles.chatStudent}`}>
-                    <span className={styles.chatSender}>Student</span>
-                    With stablecoins it can go directly on the blockchain, so fewer intermediaries and faster settlement.
-                  </div>
+                  <div className={`${styles.chatMsg} ${styles.chatAI}`}><span className={styles.chatSender}>{tx.step2.senderAI}</span>{tx.step2.ai1}</div>
+                  <div className={`${styles.chatMsg} ${styles.chatStudent}`}><span className={styles.chatSender}>{tx.step2.senderStudent}</span>{tx.step2.s1}</div>
+                  <div className={`${styles.chatMsg} ${styles.chatAI}`}><span className={styles.chatSender}>{tx.step2.senderAI}</span>{tx.step2.ai2}</div>
+                  <div className={`${styles.chatMsg} ${styles.chatStudent}`}><span className={styles.chatSender}>{tx.step2.senderStudent}</span>{tx.step2.s2}</div>
+                  <div className={`${styles.chatMsg} ${styles.chatAI}`}><span className={styles.chatSender}>{tx.step2.senderAI}</span>{tx.step2.ai3}</div>
+                  <div className={`${styles.chatMsg} ${styles.chatStudent}`}><span className={styles.chatSender}>{tx.step2.senderStudent}</span>{tx.step2.s3}</div>
                 </div>
               </div>
             )}
 
-            {/* Step 3 — Professor dashboard */}
             {active === 2 && (
               <div className={`${styles.panelInner} ${styles.panelDark}`}>
-
-                {/* Verdict — top, largest, most prominent */}
                 <div className={styles.dashVerdict}>
                   <span className={styles.dashVerdictIcon}>✓</span>
                   <div>
-                    <div className={styles.dashVerdictTitle}>Strong understanding</div>
-                    <div className={styles.dashVerdictSub}>Answer reflects real reasoning, not guesswork</div>
+                    <div className={styles.dashVerdictTitle}>{tx.step3.verdictTitle}</div>
+                    <div className={styles.dashVerdictSub}>{tx.step3.verdictSub}</div>
                   </div>
                 </div>
-
-                {/* What the student understood */}
                 <div className={styles.dashSection}>
-                  <div className={styles.dashSectionLabel}>What the student understood</div>
+                  <div className={styles.dashSectionLabel}>{tx.step3.section1Label}</div>
                   <div className={styles.dashPoints}>
-                    <div className={styles.dashPoint}>
-                      <span className={styles.dashDotGreen} />
-                      Fewer intermediaries make payments faster
-                    </div>
-                    <div className={styles.dashPoint}>
-                      <span className={styles.dashDotGreen} />
-                      Blockchain enables direct settlement
-                    </div>
-                    <div className={styles.dashPoint}>
-                      <span className={styles.dashDotGreen} />
-                      Price stability is not the main mechanism
-                    </div>
+                    {tx.step3.section1Points.map((p) => (
+                      <div key={p} className={styles.dashPoint}><span className={styles.dashDotGreen} />{p}</div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Any confusion */}
                 <div className={styles.dashSection}>
-                  <div className={styles.dashSectionLabel}>Any confusion?</div>
+                  <div className={styles.dashSectionLabel}>{tx.step3.section2Label}</div>
                   <div className={styles.dashPoints}>
-                    <div className={styles.dashPoint}>
-                      <span className={styles.dashDotAmber} />
-                      Initially mixed up speed and price stability
-                    </div>
-                    <div className={styles.dashPoint}>
-                      <span className={styles.dashDotNeutral} />
-                      Clarified after follow-up — no remaining confusion
-                    </div>
+                    <div className={styles.dashPoint}><span className={styles.dashDotAmber} />{tx.step3.section2Points[0]}</div>
+                    <div className={styles.dashPoint}><span className={styles.dashDotNeutral} />{tx.step3.section2Points[1]}</div>
                   </div>
                 </div>
-
-                {/* How reliable */}
                 <div className={styles.dashReliable}>
-                  <div className={styles.dashSectionLabel}>How reliable is this answer?</div>
-                  <div className={styles.dashReliableVerdict}>High — consistent and well-explained reasoning</div>
+                  <div className={styles.dashSectionLabel}>{tx.step3.reliableLabel}</div>
+                  <div className={styles.dashReliableVerdict}>{tx.step3.reliableVerdict}</div>
                 </div>
-
               </div>
             )}
-
           </div>
 
-          {/* Prev / Next nav */}
           <div className={styles.carouselNav}>
-            <button
-              className={styles.navBtn}
-              onClick={() => setActive(i => Math.max(0, i - 1))}
-              disabled={active === 0}
-            >
-              ← Prev
-            </button>
+            <button className={styles.navBtn} onClick={() => setActive(i => Math.max(0, i - 1))} disabled={active === 0}>{tx.prev}</button>
             <div className={styles.dots}>
-              {STEPS.map((_, i) => (
-                <button
-                  key={i}
-                  className={`${styles.dot} ${active === i ? styles.dotActive : ""}`}
-                  onClick={() => setActive(i)}
-                />
+              {tx.steps.map((_, i) => (
+                <button key={i} className={`${styles.dot} ${active === i ? styles.dotActive : ""}`} onClick={() => setActive(i)} />
               ))}
             </div>
-            <button
-              className={styles.navBtn}
-              onClick={() => setActive(i => Math.min(STEPS.length - 1, i + 1))}
-              disabled={active === STEPS.length - 1}
-            >
-              Next →
-            </button>
+            <button className={styles.navBtn} onClick={() => setActive(i => Math.min(tx.steps.length - 1, i + 1))} disabled={active === tx.steps.length - 1}>{tx.next}</button>
           </div>
-
         </div>
       </div>
     </section>
