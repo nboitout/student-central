@@ -419,6 +419,218 @@ export const t = {
       copy:    "© 2025 Student Central",
     },
   },
+
+  /* ═══════════════════════════════════════════════════════
+     ROMÂNĂ — registru academic, orientare profesională
+  ═══════════════════════════════════════════════════════ */
+  ro: {
+    nav: {
+      whyItMatters:      "De ce contează",
+      howItWorks:        "Cum funcționează",
+      whatFacultySee:    "Ce vede profesorul",
+      academicIntegrity: "Integritate academică",
+      forInstitutions:   "Pentru instituții",
+      myWorkspace:       "Spațiul meu",
+      tryIt:             "Încearcă",
+    },
+    hero: {
+      ribbon: "Evaluare dincolo de scorul QCM",
+      h1a:    "Accesați raționamentul din spatele",
+      h1em:   "fiecărui răspuns",
+      sub:    "Student Central îi ajută pe educatori să depășească limitele QCM-urilor, combinând selecția răspunsurilor cu un dialog ghidat de IA. Rezultatul: o înțelegere aprofundată a raționamentului studenților, a concepțiilor greșite, a nivelului de încredere și a gradului real de stăpânire a materiei.",
+      tryIt:       "Încearcă",
+      myWorkspace: "Spațiul meu",
+      trust: [
+        "Conceput pentru învățământul superior",
+        "Fluxuri de evaluare aliniate cursurilor",
+        "Prompturi și recenzii controlate de cadrul didactic",
+        "Datele studenților nu sunt folosite pentru antrenarea modelelor publice",
+      ],
+      steps: [
+        { num: "01", label: "Răspunde la întrebare" },
+        { num: "02", label: "Justifică alegerea" },
+        { num: "03", label: "Profesorul primește semnalul" },
+      ],
+      step1: {
+        topic: "Moment de evaluare",
+        q: "Care dintre afirmațiile de mai jos explică cel mai bine de ce stablecoin-urile reduc fricțiunile în plățile transfrontaliere?",
+        opts: [
+          "Deoarece stablecoin-urile sunt ancorate la valute fiat, eliminând în totalitate riscul valutar.",
+          "Deoarece decontarea poate fi mai rapidă și mai programabilă decât fluxurile bancare corespondente tradiționale.",
+          "Deoarece băncile centrale sunt obligate legal să accepte plăți în stablecoin-uri.",
+        ],
+        selected: 1,
+      },
+      step2: {
+        ai1: "Ce v-a determinat să alegeți acest răspuns?",
+        s1:  "Cred că stablecoin-urile sunt mai rapide... adică nu trec prin bănci în același mod.",
+        ai2: "Ce înțelegeți prin 'nu în același mod'?",
+        s2:  "Adică... în mod normal, plățile trec prin mai multe bănci, nu? Și asta durează.",
+        ai3: "Exact. Și cum diferă în cazul stablecoin-urilor?",
+        s3:  "Cu stablecoin-uri, tranzacția poate merge direct pe blockchain, deci mai puțini intermediari și decontare mai rapidă.",
+        senderAI:      "Tutore IA",
+        senderStudent: "Student",
+      },
+      step3: {
+        verdictTitle: "Înțelegere solidă",
+        verdictSub:   "Răspunsul reflectă un raționament real, nu o intuiție",
+        section1Label: "Ce a înțeles studentul",
+        section1Points: [
+          "Mai puțini intermediari accelerează plățile",
+          "Blockchain-ul permite decontarea directă",
+          "Stabilitatea prețului nu este mecanismul principal",
+        ],
+        section2Label: "Confuzii detectate?",
+        section2Points: [
+          "A confundat inițial viteza cu stabilitatea prețului",
+          "Clarificat după reluare — nicio confuzie reziduală",
+        ],
+        reliableLabel:   "Cât de fiabil este acest răspuns?",
+        reliableVerdict: "Ridicat — raționament coerent și bine argumentat",
+      },
+      prev: "← Anterior",
+      next: "Următor →",
+    },
+    divider: [
+      "Evaluarea raționamentului",
+      "Detectarea concepțiilor greșite",
+      "Inteligență pedagogică pentru cadre didactice",
+      "Semnale de învățare interpretabile",
+      "Analiză a explicațiilor aliniată cursurilor",
+    ],
+    problem: {
+      ribbon:   "De ce QCM-urile tradiționale nu sunt suficiente",
+      headline: "Un răspuns corect nu este întotdeauna dovada unei înțelegeri reale",
+      body:     "QCM-urile sunt eficiente, scalabile și familiare în practica academică. Dar ele surprind doar selecția finală, nu raționamentul care a condus la ea. Un student poate răspunde corect prin conjunctură, recunoașterea unui tipar sau memorare parțială. Un altul poate răspunde greșit demonstrând totuși o înțelegere parțială solidă. Notarea tradițională rareori surprinde această nuanță.",
+      cards: [
+        {
+          num: "01",
+          title: "Corect nu înseamnă întotdeauna înțeles",
+          body: "Un student poate selecta opțiunea corectă din motive greșite.",
+        },
+        {
+          num: "02",
+          title: "Greșit nu înseamnă întotdeauna pierdut",
+          body: "Unele răspunsuri incorecte dezvăluie o stăpânire parțială pe care o putem valorifica.",
+        },
+        {
+          num: "03",
+          title: "Cadrele didactice au nevoie de mai mult decât un scor",
+          body: "Pentru a preda eficient, formatorii trebuie să identifice concepțiile greșite, nu doar rezultatele.",
+        },
+      ],
+    },
+    approach: {
+      ribbon:   "Abordarea noastră",
+      headline: "Student Central transformă QCM-urile în evaluare a raționamentului",
+      kicker:   "De la selecția răspunsului la dovada raționamentului",
+      body:     "După fiecare răspuns selectat, Student Central invită studentul să își explice alegerea, să o compare cu alternativele și să articuleze conceptul subiacent. IA ajută apoi la clasificarea calității raționamentului, pentru ca educatorii să poată distinge o înțelegere reală de un succes fragil.",
+      summaryTitle: "Patru stări posibile ale evaluării",
+      summary: [
+        { from: "Corect + explicație solidă",      to: "Înțelegere probabil robustă" },
+        { from: "Corect + explicație slabă",        to: "Posibilă conjunctură sau cunoaștere fragilă" },
+        { from: "Incorect + explicație parțială",   to: "Concepție greșită ce necesită feedback țintit" },
+        { from: "Incorect + explicație confuză",    to: "Stăpânire redusă, necesită sprijin aprofundat" },
+      ],
+      quads: [
+        { badge: "Robust",           answer: "Corect",    state: "Corect + Explicație solidă",    body: "Înțelegere probabil robustă. Studentul demonstrează stăpânirea conceptului dincolo de opțiunea selectată." },
+        { badge: "Fragil",           answer: "Corect",    state: "Corect + Explicație slabă",     body: "Posibilă conjunctură, recunoaștere de tipare sau cunoaștere fragilă. Succesul ar putea să nu reziste unui context diferit." },
+        { badge: "Parțial",          answer: "Incorect",  state: "Incorect + Explicație parțială", body: "Concepție greșită sau model incomplet. Merită feedback țintit — există o bază pe care se poate construi." },
+        { badge: "Stăpânire redusă", answer: "Incorect",  state: "Incorect + Explicație confuză",  body: "Stăpânire redusă. Necesită sprijin pedagogic aprofundat, nu doar o simplă corecție." },
+      ],
+    },
+    workflow: {
+      ribbon:   "Cum funcționează",
+      headline: "Un flux simplu pentru cadrul didactic, un semnal de învățare mai bogat",
+      steps: [
+        { idx: "Etapa 01", title: "Pornire de la un QCM",              body: "Cadrele didactice importă sau creează întrebări cu variante de răspuns aliniate obiectivelor cursului." },
+        { idx: "Etapa 02", title: "Capturarea 'de ce'-ului",           body: "După fiecare răspuns, studentul este invitat să își justifice alegerea, să compare alternativele sau să explice conceptul cu propriile cuvinte." },
+        { idx: "Etapa 03", title: "Analiza raționamentului",           body: "Student Central evaluează explicația în raport cu așteptările cursului: acuratețe conceptuală, distincție între opțiuni, prezența concepțiilor greșite, profunzimea raționamentului." },
+        { idx: "Etapa 04", title: "Generarea de perspective acționabile", body: "Cadrele didactice văd nu doar cine a răspuns corect sau greșit, ci și unde raționamentul este solid, fragil sau confuz — pe teme, cohorte și evaluări." },
+      ],
+    },
+    faculty: {
+      ribbon:   "Vizibilitate pentru cadrul didactic",
+      headline: "De la note și procente la semnale de învățare interpretabile",
+      body:     "Student Central oferă cadrelor didactice o imagine utilizabilă a înțelegerii studenților. În loc să vadă doar ratele de succes pe item, acestea pot examina cum justifică studenții răspunsurile, care distractori rămân atractivi și ce concepții greșite se grupează în jurul unor concepte specifice.",
+      tiles: [
+        { label: "Întrebări tratate în această săptămână", value: "247" },
+        { label: "Răspunsuri corecte dar fragile",         value: "31"  },
+        { label: "Explicații solide pe teme",              value: "68%" },
+        { label: "Studenți care necesită urmărire",        value: "14"  },
+      ],
+      rows: [
+        { label: "Teme cu cel mai ridicat nivel de concepții greșite", value: "Modele de regresie · Decontare stablecoin" },
+        { label: "Distractori apărați cel mai frecvent în mod eronat", value: "Vezi raportul complet →" },
+      ],
+      insights: [
+        {
+          topic: "Temă: Regresie vs. Clasificare",
+          title: "Studenții identifică modelul corect — dar nu pot explica regula de decizie",
+          body:  "Studenții identifică adesea modelul corect atunci când exemplele sunt evidente, dar au dificultăți în a articula regula de decizie când variabilele sau rezultatele devin ambigue. Decalajul apare în justificare, nu în selecție.",
+        },
+        {
+          topic: "Temă: Decontarea stablecoin-urilor",
+          title: "Confuzie între stabilitatea prețului și eficiența plăților",
+          body:  "Studenții recunosc limbajul vitezei și programabilității, dar confundă frecvent stabilitatea prețului cu eficiența plăților — o concepție greșită recurentă pe care selecția răspunsului singură nu ar fi putut-o scoate la suprafață.",
+        },
+      ],
+    },
+    pedagogy: {
+      ribbon:   "Valoare pedagogică",
+      headline: "Evaluare mai bună, feedback mai bun, decizii pedagogice mai bune",
+      cols: [
+        { title: "Evaluare mai validă",                body: "Măsurați înțelegerea mai credibil decât prin simpla selecție a răspunsului. Captați raționamentul, nu doar rezultatul." },
+        { title: "Feedback formativ mai bun",          body: "Detectați dacă un student are nevoie de reasigurare, corecție sau reconstruire conceptuală — înainte de evaluarea sumativă." },
+        { title: "Îmbunătățire continuă a cursurilor", body: "Identificați itemii înșelători, concepțiile greșite persistente și punctele care necesită consolidare în predare." },
+      ],
+      punchText: "Student Central nu înlocuiește QCM-urile. Le face mai semnificative.",
+      punchSub:  "Evaluare QCM îmbogățită prin dialog",
+    },
+    trust: {
+      ribbon:   "Integritate academică și încredere",
+      headline: "Conceput pentru uz academic riguros, nu pentru IA generalistă",
+      body:     "Platforma răspunde direct cerințelor de guvernanță, implementare, protecție a datelor și așteptărilor probatorii ale factorilor decizionali universitari.",
+      blocks: [
+        { title: "Evaluare ancorată în curriculum",        body: "Prompturile de evaluare și interpretarea lor pot fi aliniate la așteptările cadrelor didactice și la limbajul cursului." },
+        { title: "Control al cadrului didactic",           body: "Educatorii definesc fluxurile de întrebări, modelele de raționament acceptabile și procesul de revizuire." },
+        { title: "Logică de evaluare transparentă",        body: "Platforma evidențiază de ce o explicație pare solidă, parțială sau slabă — nu se limitează la clasificarea finală." },
+        { title: "Implementare respectuoasă a intimității", body: "Datele studenților rămân în perimetrul instituțional corespunzător și nu sunt folosite pentru antrenarea modelelor publice." },
+      ],
+    },
+    institutional: {
+      ribbon:   "Pentru departamente și instituții",
+      headline: "O cale scalabilă de a îmbogăți evaluarea fără a abandona formatele consacrate",
+      body:     "Majoritatea instituțiilor nu vor renunța la QCM-uri de pe o zi pe alta. Student Central oferă o traiectorie pragmatică: păstrați eficiența și comparabilitatea evaluării cu răspuns ales, adăugând în același timp un strat structurat care captează raționamentul, tiparele de eroare conceptuală și profunzimea înțelegerii.",
+      bullets: [
+        "Se integrează în practicile de evaluare existente",
+        "Produce dovezi mai bogate fără a impune corectarea integrală a eseurilor",
+        "Sprijină programele-pilot în cursurile cu efective mari",
+        "Generează perspective agregate pentru îmbunătățirea curriculumului",
+        "Ajută departamentele să exploreze evaluarea augmentată de IA în mod responsabil",
+      ],
+      whoHeadline: "Conceput pentru educatorii care vor mai mult decât un procent de reușită",
+      who: [
+        "Cadre didactice care gestionează cursuri cu efective mari",
+        "Departamente care pilotează evaluarea augmentată de IA",
+        "Programe axate pe calitatea învățării și retenție",
+        "Instituții în căutarea unor dovezi autentice de stăpânire a materiei",
+      ],
+    },
+    cta: {
+      h2a:     "QCM-urile vă spun ce au selectat studenții. Student Central vă dezvăluie",
+      h2em:    "raționamentul din spatele fiecărui răspuns.",
+      sub:     "Integrați analiza raționamentului, detectarea concepțiilor greșite și semnale mai bogate de stăpânire a materiei în fluxul dvs. existent de evaluare.",
+      primary: "Încearcă",
+      ghost:   "Contactează echipa",
+    },
+    footer: {
+      message: "Conceput de",
+      name:    "Nicolas Boitout",
+      rest:    "și o echipă franco-română pasionată de educație",
+      copy:    "© 2025 Student Central",
+    },
+  },
 } as const;
 
 export type Translations = typeof t.en;
