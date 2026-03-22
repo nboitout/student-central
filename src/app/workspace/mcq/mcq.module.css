@@ -404,3 +404,165 @@
   .actions { flex-direction: column-reverse; }
   .submitBtn, .cancelBtn { width: 100%; text-align: center; }
 }
+
+/* ── Error banner ────────────────────────────────────────── */
+.errorBanner {
+  background: rgba(179, 38, 30, 0.06);
+  border-left: 3px solid #b3261e;
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: #b3261e;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* ── Loading screen ──────────────────────────────────────── */
+.loadingWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  gap: 16px;
+  text-align: center;
+}
+
+.loadingLabel {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  letter-spacing: -0.01em;
+}
+
+.loadingDots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.loadingDots span {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: loadPulse 1.2s ease-in-out infinite;
+}
+.loadingDots span:nth-child(2) { animation-delay: 0.2s; }
+.loadingDots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loadPulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40%           { opacity: 1;   transform: scale(1);   }
+}
+
+.loadingHint {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  opacity: 0.6;
+}
+
+/* ── ctaLeft (missing from original) ────────────────────── */
+.ctaLeft {}
+
+/* ── Explanation screen ──────────────────────────────────── */
+.explainPrompt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.explainHint {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.explainArea {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(67, 70, 86, 0.2);
+  padding: 12px 0;
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  line-height: 1.65;
+  transition: border-color 0.2s;
+}
+.explainArea::placeholder { color: var(--on-surface-variant); opacity: 0.4; }
+.explainArea:focus { border-bottom-color: var(--primary); }
+
+/* ── Signal banner (result screen) ──────────────────────── */
+.signalBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 24px;
+  margin-bottom: 4px;
+}
+
+/* Signal state colour variants */
+.signalStrong           { background: rgba(45, 106, 79, 0.08);  border-left: 3px solid #2d6a4f; }
+.signalFragile          { background: rgba(180, 120, 10, 0.08); border-left: 3px solid #b47a0a; }
+.signalPartialmisconception { background: rgba(180, 80, 10, 0.08);  border-left: 3px solid #b3501e; }
+.signalLowmastery       { background: rgba(179, 38, 30, 0.06);  border-left: 3px solid #b3261e; }
+
+.signalLabel {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+}
+
+.signalValue {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: -0.02em;
+}
+
+.signalConfidence {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+}
+
+/* ── Feedback & faculty sections ─────────────────────────── */
+.feedbackText {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--on-surface);
+  line-height: 1.65;
+  padding: 16px 20px;
+  background: var(--surface-low);
+  border-left: 3px solid var(--primary);
+}
+
+.facultySection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.facultyText {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+  line-height: 1.65;
+  padding: 16px 20px;
+  background: var(--tertiary-fixed);
+  border-left: 3px solid var(--on-tertiary-fixed);
+  opacity: 0.85;
+}
