@@ -7,19 +7,33 @@
   align-items: center;
 }
 
-.brand {
-  font-family: var(--font-display);
+.message {
+  font-family: var(--font-body);
   font-size: 0.875rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.5;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 80, 250, 0.5);
+  text-underline-offset: 3px;
+  transition: color 0.2s, text-decoration-color 0.2s;
+}
+.name:hover {
+  color: #ffffff;
+  text-decoration-color: #0050fa;
 }
 
 .copy {
   font-family: var(--font-body);
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.2);
 }
 
 @media (max-width: 600px) {
-  .footer { flex-direction: column; gap: 10px; padding: 24px; }
+  .footer { flex-direction: column; gap: 10px; padding: 24px; text-align: center; }
 }
