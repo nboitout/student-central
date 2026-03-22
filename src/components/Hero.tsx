@@ -143,67 +143,55 @@ export default function Hero() {
             {active === 2 && (
               <div className={`${styles.panelInner} ${styles.panelDark}`}>
 
-                {/* Header row */}
-                <div className={styles.dashHeader}>
-                  <div className={styles.dashEyebrow}>Faculty view · Q4 — Stablecoins &amp; cross-border payments</div>
-                  <div className={styles.dashAnswerRow}>
-                    <span className={styles.dashCorrectPill}>✓ Correct</span>
-                    <span className={styles.dashAnswerText}>Settlement speed &amp; programmability</span>
+                {/* Verdict — top, largest, most prominent */}
+                <div className={styles.dashVerdict}>
+                  <span className={styles.dashVerdictIcon}>✓</span>
+                  <div>
+                    <div className={styles.dashVerdictTitle}>Strong understanding</div>
+                    <div className={styles.dashVerdictSub}>Answer reflects real reasoning, not guesswork</div>
                   </div>
                 </div>
 
-                {/* Three analysis blocks */}
-                <div className={styles.dashBlocks}>
-
-                  {/* Reasoning analysis */}
-                  <div className={styles.dashBlock}>
-                    <div className={styles.dashBlockLabel}>Reasoning analysis</div>
-                    <div className={styles.dashBlockBody}>
-                      <div className={styles.dashPoint}>
-                        <span className={styles.dashDotGreen} />
-                        Identified settlement speed as the core mechanism
-                      </div>
-                      <div className={styles.dashPoint}>
-                        <span className={styles.dashDotGreen} />
-                        Distinguished programmability from price stability
-                      </div>
-                      <div className={styles.dashPoint}>
-                        <span className={styles.dashDotGreen} />
-                        Rejected the central-bank distractor with reasoning
-                      </div>
+                {/* What the student understood */}
+                <div className={styles.dashSection}>
+                  <div className={styles.dashSectionLabel}>What the student understood</div>
+                  <div className={styles.dashPoints}>
+                    <div className={styles.dashPoint}>
+                      <span className={styles.dashDotGreen} />
+                      Fewer intermediaries make payments faster
+                    </div>
+                    <div className={styles.dashPoint}>
+                      <span className={styles.dashDotGreen} />
+                      Blockchain enables direct settlement
+                    </div>
+                    <div className={styles.dashPoint}>
+                      <span className={styles.dashDotGreen} />
+                      Price stability is not the main mechanism
                     </div>
                   </div>
-
-                  {/* Misconception check */}
-                  <div className={styles.dashBlock}>
-                    <div className={styles.dashBlockLabel}>Misconception check</div>
-                    <div className={styles.dashBlockBody}>
-                      <div className={styles.dashPoint}>
-                        <span className={styles.dashDotAmber} />
-                        Initially conflated speed with price stability
-                      </div>
-                      <div className={styles.dashPoint}>
-                        <span className={styles.dashDotGreen} />
-                        Self-corrected when prompted — no residual confusion
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Knowledge robustness */}
-                  <div className={styles.dashBlock}>
-                    <div className={styles.dashBlockLabel}>Knowledge robustness</div>
-                    <div className={styles.dashRobustRow}>
-                      <div className={styles.dashRobustBar}>
-                        <div className={styles.dashRobustFill} style={{ width: "82%" }} />
-                      </div>
-                      <span className={styles.dashRobustScore}>82 / 100</span>
-                    </div>
-                    <div className={styles.dashRobustNote}>
-                      Strong reasoning — answer reflects genuine understanding, not recall
-                    </div>
-                  </div>
-
                 </div>
+
+                {/* Any confusion */}
+                <div className={styles.dashSection}>
+                  <div className={styles.dashSectionLabel}>Any confusion?</div>
+                  <div className={styles.dashPoints}>
+                    <div className={styles.dashPoint}>
+                      <span className={styles.dashDotAmber} />
+                      Initially mixed up speed and price stability
+                    </div>
+                    <div className={styles.dashPoint}>
+                      <span className={styles.dashDotNeutral} />
+                      Clarified after follow-up — no remaining confusion
+                    </div>
+                  </div>
+                </div>
+
+                {/* How reliable */}
+                <div className={styles.dashReliable}>
+                  <div className={styles.dashSectionLabel}>How reliable is this answer?</div>
+                  <div className={styles.dashReliableVerdict}>High — consistent and well-explained reasoning</div>
+                </div>
+
               </div>
             )}
 
