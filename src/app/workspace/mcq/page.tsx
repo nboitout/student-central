@@ -5,96 +5,83 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-
-/* ── MCQ bank (questions & answers stay in English — course language) ── */
-interface MCQQuestion {
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-}
-
-const MCQ_BANK: Record<string, { title: string; mcq: MCQQuestion }> = {
-  "1": {
-    title: "International Software Management",
-    mcq: {
-      question: "Which software development lifecycle model is best suited for projects with well-defined, stable requirements?",
-      options: ["Agile / Scrum", "Waterfall", "DevOps continuous delivery", "Spiral model"],
-      correctIndex: 1,
-      explanation: "The Waterfall model follows a sequential, phase-by-phase approach and works best when requirements are clear and unlikely to change — making it ideal for well-defined projects.",
-    },
-  },
-  "2": {
-    title: "AGILE Project Management",
-    mcq: {
-      question: "In Agile, what is the primary purpose of a Sprint Retrospective?",
-      options: [
-        "To demonstrate completed work to stakeholders",
-        "To plan the backlog for the next sprint",
-        "To inspect the team process and identify improvements",
-        "To review individual developer performance",
-      ],
-      correctIndex: 2,
-      explanation: "The Sprint Retrospective is a dedicated ceremony for the team to reflect on how they worked — identifying what went well, what didn't, and agreeing on actionable improvements for the next sprint.",
-    },
-  },
-  "3": {
-    title: "Digital Transformation",
-    mcq: {
-      question: "Which concept best describes the use of AI to continuously monitor and adapt business processes based on real-time data?",
-      options: [
-        "Business Process Reengineering",
-        "ERP consolidation",
-        "Intelligent process automation",
-        "Digital twin simulation",
-      ],
-      correctIndex: 2,
-      explanation: "Intelligent process automation (IPA) combines AI and automation to monitor, analyse, and adapt business processes dynamically — going well beyond rule-based automation.",
-    },
-  },
-  default: {
-    title: "Course",
-    mcq: {
-      question: "Which of the following best describes a key characteristic of digital transformation in organisations?",
-      options: [
-        "Replacing all legacy IT systems with cloud infrastructure",
-        "Integrating digital technology into all areas of the business",
-        "Automating the entire workforce with AI",
-        "Moving all operations fully online",
-      ],
-      correctIndex: 1,
-      explanation: "Digital transformation is fundamentally about integrating digital technology across all business areas — changing how the organisation operates and delivers value, not simply adopting new tools.",
-    },
-  },
-};
+import { generateMCQ, evaluateReasoning, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
 
 const LETTERS = ["A", "B", "C", "D"];
-type Screen = "question" | "result";
+type Screen = "loading" | "question" | "explanation" | "result";
 
 function MCQContent() {
-  const params   = useSearchParams();
-  const router   = useRouter();
-  const { lang } = useLanguage();
-  const ui       = getT(lang).mcq;
-  const id       = params.get("id") ?? "default";
-  const courseId = MCQ_BANK[id] ? id : "default";
-  const { title, mcq } = MCQ_BANK[courseId];
+  const params      = useSearchParams();
+  const router      = useRouter();
+  const { lang }    = useLanguage();
+  const ui          = getT(lang).mcq;
+  const courseId    = params.get("id") ?? "";
+  const courseTitle = decodeURIComponent(params.get("title") ?? "Course");
+  const pdfUrl      = decodeURIComponent(params.get("pdf") ?? "");
 
-  const [selected,  setSelected]  = useState<number | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-  const [screen,    setScreen]    = useState<Screen>("question");
+  const [screen,       setScreen]       = useState<Screen>("loading");
+  const [mcq,          setMcq]          = useState<MCQQuestion | null>(null);
+  const [loadError,    setLoadError]    = useState<string | null>(null);
+  const [selected,     setSelected]     = useState<number | null>(null);
+  const [submitted,    setSubmitted]    = useState(false);
+  const [explanation,  setExplanation]  = useState("");
+  const [signal,       setSignal]       = useState<ReasoningSignal | null>(null);
+  const [evaluating,   setEvaluating]   = useState(false);
+  const [evalError,    setEvalError]    = useState<string | null>(null);
 
-  const isCorrect = selected === mcq.correctIndex;
+  /* Load MCQ from API */
+  const loadMCQ = () => {
+    setScreen("loading");
+    setMcq(null);
+    setLoadError(null);
+    generateMCQ({ courseId, pdfUrl: pdfUrl || undefined, courseTitle })
+      .then(q => { setMcq(q); setScreen("question"); })
+      .catch(err => { setLoadError(err.message); setScreen("question"); });
+  };
 
+  useEffect(() => { loadMCQ(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* After submit, brief delay before moving to explanation screen */
   useEffect(() => {
     if (submitted) {
-      const t = setTimeout(() => setScreen("result"), 400);
+      const t = setTimeout(() => setScreen("explanation"), 400);
       return () => clearTimeout(t);
     }
   }, [submitted]);
 
   const handleSubmit = () => { if (selected === null) return; setSubmitted(true); };
-  const handleRetry  = () => { setSelected(null); setSubmitted(false); setScreen("question"); };
+
+  const handleEvaluate = async () => {
+    if (!mcq || selected === null || explanation.trim().length < 10) return;
+    setEvaluating(true); setEvalError(null);
+    try {
+      const result = await evaluateReasoning({
+        courseId,
+        question: mcq.question,
+        options: mcq.options.map(o => o.text),
+        correctIndex: mcq.correctIndex,
+        selectedIndex: selected,
+        studentExplanation: explanation,
+      });
+      setSignal(result);
+      setScreen("result");
+    } catch (err) {
+      setEvalError(err instanceof Error ? err.message : "Evaluation failed.");
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
+  const handleRetry = () => {
+    setSelected(null);
+    setSubmitted(false);
+    setExplanation("");
+    setSignal(null);
+    setEvalError(null);
+    loadMCQ();
+  };
+
+  const isCorrect = mcq !== null && selected === mcq.correctIndex;
 
   return (
     <div className={styles.page}>
@@ -107,7 +94,7 @@ function MCQContent() {
         </button>
         <div className={styles.headerCenter}>
           <div className={styles.headerEyebrow}>{ui.eyebrow}</div>
-          <div className={styles.headerTitle}>{title}</div>
+          <div className={styles.headerTitle}>{courseTitle}</div>
         </div>
         <div className={styles.headerRight} />
       </header>
@@ -115,11 +102,21 @@ function MCQContent() {
       <main className={styles.main}>
         <div className={styles.card}>
 
-          {screen === "question" && (
+          {/* ── Loading ── */}
+          {screen === "loading" && (
+            <div className={styles.loadingWrap}>
+              <div className={styles.loadingLabel}>{ui.generating ?? "Generating your question…"}</div>
+              <div className={styles.loadingDots}><span /><span /><span /></div>
+              <div className={styles.loadingHint}>{ui.generatingHint ?? "Reading course content with GPT-5.2-chat"}</div>
+            </div>
+          )}
+
+          {/* ── Question ── */}
+          {screen === "question" && mcq && (
             <>
+              {loadError && <div className={styles.errorBanner}>{loadError}</div>}
               <div className={styles.questionWrap}>
                 <div className={styles.questionLabel}>{ui.questionLabel}</div>
-                {/* Question text stays in English — course language */}
                 <h1 className={styles.question}>{mcq.question}</h1>
               </div>
               <div className={styles.options}>
@@ -128,9 +125,14 @@ function MCQContent() {
                   const isCorrectOpt = submitted && i === mcq.correctIndex;
                   const isWrongOpt   = submitted && isSelected && i !== mcq.correctIndex;
                   return (
-                    <button key={i} className={[styles.option, isSelected && !submitted ? styles.optSelected : "", isCorrectOpt ? styles.optCorrect : "", isWrongOpt ? styles.optWrong : ""].join(" ")} onClick={() => { if (!submitted) setSelected(i); }} disabled={submitted}>
+                    <button
+                      key={i}
+                      className={[styles.option, isSelected && !submitted ? styles.optSelected : "", isCorrectOpt ? styles.optCorrect : "", isWrongOpt ? styles.optWrong : ""].join(" ")}
+                      onClick={() => { if (!submitted) setSelected(i); }}
+                      disabled={submitted}
+                    >
                       <span className={styles.optLetter}>{LETTERS[i]}</span>
-                      <span className={styles.optText}>{opt}</span>
+                      <span className={styles.optText}>{opt.text}</span>
                       {isCorrectOpt && <span className={styles.optMark}>✓</span>}
                       {isWrongOpt   && <span className={styles.optMark}>✗</span>}
                     </button>
@@ -144,7 +146,8 @@ function MCQContent() {
             </>
           )}
 
-          {screen === "result" && (
+          {/* ── Explanation / reasoning ── */}
+          {screen === "explanation" && mcq && (
             <>
               <div className={`${styles.resultBanner} ${isCorrect ? styles.bannerCorrect : styles.bannerWrong}`}>
                 <div className={styles.resultIconWrap}>
@@ -153,23 +156,59 @@ function MCQContent() {
                 <div>
                   <div className={styles.resultTitle}>{isCorrect ? ui.correctTitle : ui.incorrectTitle}</div>
                   <div className={styles.resultSub}>
-                    {isCorrect ? ui.correctSub : `${ui.incorrectPrefix} "${mcq.options[mcq.correctIndex]}"`}
+                    {isCorrect ? ui.correctSub : `${ui.incorrectPrefix} "${mcq.options[mcq.correctIndex].text}"`}
                   </div>
                 </div>
               </div>
 
-              <div className={styles.recapSection}>
-                <div className={styles.sectionLabel}>{ui.yourAnswer}</div>
-                <div className={`${styles.recapAnswer} ${isCorrect ? styles.recapCorrect : styles.recapWrong}`}>
-                  <span className={styles.optLetter}>{LETTERS[selected!]}</span>
-                  <span>{mcq.options[selected!]}</span>
-                </div>
+              <div className={styles.explainPrompt}>
+                <div className={styles.sectionLabel}>{ui.explainLabel ?? "Explain your reasoning"}</div>
+                <p className={styles.explainHint}>{ui.explainHint ?? "Why did you choose that answer? What is the underlying concept?"}</p>
+                <textarea
+                  className={styles.explainArea}
+                  placeholder={ui.explainPlaceholder ?? "Type your explanation here…"}
+                  value={explanation}
+                  onChange={e => setExplanation(e.target.value)}
+                  rows={5}
+                />
+                {evalError && <div className={styles.errorBanner}>{evalError}</div>}
               </div>
 
-              {/* Explanation stays in English — course language */}
+              <div className={styles.actions}>
+                <button className={styles.cancelBtn} onClick={() => router.back()}>{ui.backBtn}</button>
+                <button
+                  className={`${styles.submitBtn} ${(explanation.trim().length < 10 || evaluating) ? styles.submitDisabled : ""}`}
+                  onClick={handleEvaluate}
+                  disabled={explanation.trim().length < 10 || evaluating}
+                >
+                  {evaluating ? "…" : (ui.evaluateBtn ?? "Evaluate my reasoning")}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── Result ── */}
+          {screen === "result" && mcq && signal && (
+            <>
+              <div className={`${styles.signalBanner} ${styles[`signal${signal.signal.replace(/ /g, "")}`]}`}>
+                <div className={styles.signalLabel}>{ui.reasoningSignal ?? "Reasoning signal"}</div>
+                <div className={styles.signalValue}>{signal.signal}</div>
+                <div className={styles.signalConfidence}>{ui.confidence ?? "Confidence"}: {signal.confidence}</div>
+              </div>
+
+              <div className={styles.recapSection}>
+                <div className={styles.sectionLabel}>{ui.feedbackForYou ?? "Feedback for you"}</div>
+                <p className={styles.feedbackText}>{signal.studentFeedback}</p>
+              </div>
+
               <div className={styles.explanationSection}>
                 <div className={styles.sectionLabel}>{ui.whyMatters}</div>
                 <p className={styles.explanationText}>{mcq.explanation}</p>
+              </div>
+
+              <div className={styles.facultySection}>
+                <div className={styles.sectionLabel}>{ui.facultyInsight ?? "Faculty insight"}</div>
+                <p className={styles.facultyText}>{signal.facultyInsight}</p>
               </div>
 
               <div className={styles.ctaStrip}>
