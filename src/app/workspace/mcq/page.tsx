@@ -3,8 +3,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
+import { useLanguage } from "@/context/LanguageContext";
+import { tx as getT } from "@/i18n/translations";
 
-/* ── MCQ bank ───────────────────────────────────────────── */
+/* ── MCQ bank (questions & answers stay in English — course language) ── */
 interface MCQQuestion {
   question: string;
   options: string[];
@@ -67,12 +69,13 @@ const MCQ_BANK: Record<string, { title: string; mcq: MCQQuestion }> = {
 };
 
 const LETTERS = ["A", "B", "C", "D"];
-
 type Screen = "question" | "result";
 
 function MCQContent() {
   const params   = useSearchParams();
   const router   = useRouter();
+  const { lang } = useLanguage();
+  const ui       = getT(lang).mcq;
   const id       = params.get("id") ?? "default";
   const courseId = MCQ_BANK[id] ? id : "default";
   const { title, mcq } = MCQ_BANK[courseId];
@@ -83,7 +86,6 @@ function MCQContent() {
 
   const isCorrect = selected === mcq.correctIndex;
 
-  /* Animate to result after brief delay */
   useEffect(() => {
     if (submitted) {
       const t = setTimeout(() => setScreen("result"), 400);
@@ -91,64 +93,42 @@ function MCQContent() {
     }
   }, [submitted]);
 
-  const handleSubmit = () => {
-    if (selected === null) return;
-    setSubmitted(true);
-  };
-
-  const handleRetry = () => {
-    setSelected(null);
-    setSubmitted(false);
-    setScreen("question");
-  };
+  const handleSubmit = () => { if (selected === null) return; setSubmitted(true); };
+  const handleRetry  = () => { setSelected(null); setSubmitted(false); setScreen("question"); };
 
   return (
     <div className={styles.page}>
-      {/* Header */}
       <header className={styles.header}>
         <button className={styles.backBtn} onClick={() => router.back()}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
-          Back to workspace
+          {ui.backToWorkspace}
         </button>
         <div className={styles.headerCenter}>
-          <div className={styles.headerEyebrow}>Multiple Choice Question</div>
+          <div className={styles.headerEyebrow}>{ui.eyebrow}</div>
           <div className={styles.headerTitle}>{title}</div>
         </div>
         <div className={styles.headerRight} />
       </header>
 
-      {/* Content */}
       <main className={styles.main}>
         <div className={styles.card}>
 
-          {/* ── Question screen ── */}
           {screen === "question" && (
             <>
               <div className={styles.questionWrap}>
-                <div className={styles.questionLabel}>Question</div>
+                <div className={styles.questionLabel}>{ui.questionLabel}</div>
+                {/* Question text stays in English — course language */}
                 <h1 className={styles.question}>{mcq.question}</h1>
               </div>
-
               <div className={styles.options}>
                 {mcq.options.map((opt, i) => {
                   const isSelected   = selected === i;
                   const isCorrectOpt = submitted && i === mcq.correctIndex;
                   const isWrongOpt   = submitted && isSelected && i !== mcq.correctIndex;
-
                   return (
-                    <button
-                      key={i}
-                      className={[
-                        styles.option,
-                        isSelected && !submitted ? styles.optSelected : "",
-                        isCorrectOpt ? styles.optCorrect : "",
-                        isWrongOpt   ? styles.optWrong   : "",
-                      ].join(" ")}
-                      onClick={() => { if (!submitted) setSelected(i); }}
-                      disabled={submitted}
-                    >
+                    <button key={i} className={[styles.option, isSelected && !submitted ? styles.optSelected : "", isCorrectOpt ? styles.optCorrect : "", isWrongOpt ? styles.optWrong : ""].join(" ")} onClick={() => { if (!submitted) setSelected(i); }} disabled={submitted}>
                       <span className={styles.optLetter}>{LETTERS[i]}</span>
                       <span className={styles.optText}>{opt}</span>
                       {isCorrectOpt && <span className={styles.optMark}>✓</span>}
@@ -157,73 +137,52 @@ function MCQContent() {
                   );
                 })}
               </div>
-
               <div className={styles.actions}>
-                <button className={styles.cancelBtn} onClick={() => router.back()}>Cancel</button>
-                <button
-                  className={`${styles.submitBtn} ${selected === null ? styles.submitDisabled : ""}`}
-                  onClick={handleSubmit}
-                  disabled={selected === null || submitted}
-                >
-                  Submit answer
-                </button>
+                <button className={styles.cancelBtn} onClick={() => router.back()}>{ui.cancel}</button>
+                <button className={`${styles.submitBtn} ${selected === null ? styles.submitDisabled : ""}`} onClick={handleSubmit} disabled={selected === null || submitted}>{ui.submitAnswer}</button>
               </div>
             </>
           )}
 
-          {/* ── Result screen ── */}
           {screen === "result" && (
             <>
-              {/* Banner */}
               <div className={`${styles.resultBanner} ${isCorrect ? styles.bannerCorrect : styles.bannerWrong}`}>
                 <div className={styles.resultIconWrap}>
                   <span className={styles.resultIcon}>{isCorrect ? "✓" : "✗"}</span>
                 </div>
                 <div>
-                  <div className={styles.resultTitle}>{isCorrect ? "Correct answer" : "Incorrect answer"}</div>
+                  <div className={styles.resultTitle}>{isCorrect ? ui.correctTitle : ui.incorrectTitle}</div>
                   <div className={styles.resultSub}>
-                    {isCorrect
-                      ? "You selected the right answer."
-                      : `The correct answer was: "${mcq.options[mcq.correctIndex]}"`}
+                    {isCorrect ? ui.correctSub : `${ui.incorrectPrefix} "${mcq.options[mcq.correctIndex]}"`}
                   </div>
                 </div>
               </div>
 
-              {/* Your answer */}
               <div className={styles.recapSection}>
-                <div className={styles.sectionLabel}>Your answer</div>
+                <div className={styles.sectionLabel}>{ui.yourAnswer}</div>
                 <div className={`${styles.recapAnswer} ${isCorrect ? styles.recapCorrect : styles.recapWrong}`}>
                   <span className={styles.optLetter}>{LETTERS[selected!]}</span>
                   <span>{mcq.options[selected!]}</span>
                 </div>
               </div>
 
-              {/* Explanation */}
+              {/* Explanation stays in English — course language */}
               <div className={styles.explanationSection}>
-                <div className={styles.sectionLabel}>Why this matters</div>
+                <div className={styles.sectionLabel}>{ui.whyMatters}</div>
                 <p className={styles.explanationText}>{mcq.explanation}</p>
               </div>
 
-              {/* CTA strip */}
               <div className={styles.ctaStrip}>
                 <div className={styles.ctaLeft}>
-                  <div className={styles.ctaHeadline}>Want to go deeper?</div>
-                  <div className={styles.ctaSub}>Explore this topic with AI-guided discussion in Student Central.</div>
+                  <div className={styles.ctaHeadline}>{ui.wantDeeper}</div>
+                  <div className={styles.ctaSub}>{ui.exploreSub}</div>
                 </div>
-                <a
-                  href="https://app.stg.tutor.studentcentral.ai/login"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.ctaBtn}
-                >
-                  Open Student Central →
-                </a>
+                <a href="https://app.stg.tutor.studentcentral.ai/login" target="_blank" rel="noopener noreferrer" className={styles.ctaBtn}>{ui.openTutor}</a>
               </div>
 
-              {/* Actions */}
               <div className={styles.actions}>
-                <button className={styles.cancelBtn} onClick={() => router.back()}>Back to workspace</button>
-                <button className={styles.submitBtn} onClick={handleRetry}>Try again</button>
+                <button className={styles.cancelBtn} onClick={() => router.back()}>{ui.backBtn}</button>
+                <button className={styles.submitBtn} onClick={handleRetry}>{ui.tryAgain}</button>
               </div>
             </>
           )}
