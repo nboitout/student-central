@@ -324,35 +324,46 @@
 }
 
 /* ── Course card ──────────────────────────────────────────── */
+/* Strong shadow separates card from surface-low page background */
 .card {
   background: var(--surface-lowest);
   border-radius: 0;
   display: flex;
   flex-direction: column;
+  /* Dual shadow: diffused depth + 1px outline ring */
+  box-shadow: 0 2px 8px rgba(26, 28, 46, 0.08),
+              0 0 0 1px rgba(26, 28, 46, 0.06);
   transition: box-shadow 0.25s, transform 0.2s;
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  min-height: 200px;
 }
 .card:hover {
-  box-shadow: var(--shadow-float);
+  box-shadow: 0 8px 28px rgba(26, 28, 46, 0.13),
+              0 0 0 1px rgba(26, 28, 46, 0.08);
   transform: translateY(-2px);
 }
 
-/* Card bands: blue-tinted pastel palette */
-.card:nth-child(1)  .cardBand { background: var(--tertiary-fixed); }
-.card:nth-child(2)  .cardBand { background: #e8f0fe; }
-.card:nth-child(3)  .cardBand { background: #d2e3fc; }
-.card:nth-child(4)  .cardBand { background: #e3f2fd; }
-.card:nth-child(5)  .cardBand { background: #f0e9ff; }
-.card:nth-child(6)  .cardBand { background: #e8f5e9; }
-.card:nth-child(7)  .cardBand { background: var(--tertiary-fixed); }
-.card:nth-child(8)  .cardBand { background: #e8f0fe; }
-.card:nth-child(9)  .cardBand { background: #d2e3fc; }
+/* 4px top accent strip — cycles through brand palette */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  z-index: 1;
+}
+.card:nth-child(1)::before { background: var(--primary-gradient); }
+.card:nth-child(2)::before { background: linear-gradient(90deg, #0f6e56 0%, #1d9e75 100%); }
+.card:nth-child(3)::before { background: linear-gradient(90deg, #534ab7 0%, #7f77dd 100%); }
+.card:nth-child(4)::before { background: linear-gradient(90deg, #993556 0%, #d4537e 100%); }
+.card:nth-child(5)::before { background: linear-gradient(90deg, #854f0b 0%, #ba7517 100%); }
+.card:nth-child(6)::before { background: var(--primary-gradient); }
+.card:nth-child(7)::before { background: linear-gradient(90deg, #0f6e56 0%, #1d9e75 100%); }
+.card:nth-child(8)::before { background: linear-gradient(90deg, #534ab7 0%, #7f77dd 100%); }
+.card:nth-child(9)::before { background: linear-gradient(90deg, #993556 0%, #d4537e 100%); }
 
+/* ── Card top: ghost initials + menu ─────────────────────── */
 .cardBand {
-  height: 100px;
   padding: 20px 20px 0;
   display: flex;
   align-items: flex-start;
@@ -360,12 +371,14 @@
   flex-shrink: 0;
 }
 
+/* Ghost initials: large display, 10% opacity — decorative only */
 .cardInitials {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 2.25rem;
   font-weight: 700;
-  color: rgba(0, 51, 86, 0.2);
-  letter-spacing: -0.02em;
+  color: rgba(0, 60, 194, 0.1);
+  letter-spacing: -0.04em;
+  line-height: 1;
   user-select: none;
 }
 
@@ -416,21 +429,22 @@
 .menuItemDanger { color: #b3261e !important; }
 .menuItemDanger:hover { background: #fde8e8 !important; }
 
+/* ── Card body: title + meta ─────────────────────────────── */
 .cardBody {
-  padding: 18px 20px 20px;
+  padding: 14px 22px 12px;
   display: flex;
   flex-direction: column;
   flex: 1;
+  gap: 6px;
 }
 
 .cardTitle {
   font-family: var(--font-display);
-  font-size: 1.0625rem;
-  font-weight: 600;
+  font-size: 0.9375rem;
+  font-weight: 700;
   color: var(--on-surface);
   line-height: 1.3;
-  letter-spacing: -0.01em;
-  margin-bottom: 12px;
+  letter-spacing: -0.02em;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -438,15 +452,14 @@
 }
 
 .cardMeta {
-  margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .cardMetaLine {
   font-family: var(--font-body);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   color: var(--on-surface-variant);
   white-space: nowrap;
   overflow: hidden;
@@ -455,43 +468,19 @@
 
 .cardAuthor { color: var(--on-surface-variant); font-weight: 500; }
 
+/* ── Progress row ────────────────────────────────────────── */
 .cardStatus {
-  padding: 0 20px 16px;
+  padding: 0 22px 12px;
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
-.statusBadge {
-  font-family: var(--font-display);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.statusNotStarted { color: var(--on-surface-variant); opacity: 0.5; }
-.statusInProgress  { color: var(--primary); }
-.statusCompleted   { color: #2d6a4f; }
-
-/* Data Ribbon: tertiary-fixed, 0px radius */
-.exerciseBadge {
-  display: inline-flex;
-  align-items: center;
-  background: var(--tertiary-fixed);
-  color: var(--on-tertiary-fixed);
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 3px 10px;
-  letter-spacing: 0.02em;
-  border-radius: 0;
-}
-
+/* Progress track + pct inline */
 .progressTrack {
-  height: 2px;
+  flex: 1;
+  height: 3px;
   background: var(--surface-container);
-  margin: 0 20px 14px;
 }
 
 .progressFill {
@@ -500,30 +489,79 @@
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Card footer — background shift instead of border */
+/* Percentage label next to track */
+.progressPct {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.01em;
+  min-width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.progressPctZero { color: var(--on-surface-variant); opacity: 0.4; }
+
+/* ── Card footer: status + exercises + details link ─────── */
 .cardFooter {
   background: var(--surface-low);
+  padding: 10px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
+.cardFooterLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Status badge: compact, pill-less label */
+.statusBadge {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+}
+.statusNotStarted { background: var(--surface-container); color: var(--on-surface-variant); }
+.statusInProgress  { background: rgba(0, 60, 194, 0.08); color: var(--primary); }
+.statusCompleted   { background: rgba(45, 106, 79, 0.10); color: #2d6a4f; }
+
+/* Data Ribbon: tertiary-fixed, 0px radius */
+.exerciseBadge {
+  display: inline-flex;
+  align-items: center;
+  background: var(--tertiary-fixed);
+  color: var(--on-tertiary-fixed);
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  letter-spacing: 0.08em;
+  border-radius: 0;
+  text-transform: uppercase;
+}
+
+/* "Details →" tertiary link */
 .courseDetailsBtn {
-  display: block;
-  width: 100%;
-  padding: 14px 20px;
-  background: transparent;
+  background: none;
+  border: none;
   color: var(--on-surface-variant);
   font-family: var(--font-display);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  text-align: center;
-  letter-spacing: 0.02em;
-  transition: background 0.2s, color 0.2s;
-  border: none;
   cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.01em;
+  transition: color 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.courseDetailsBtn:hover {
-  background: var(--tertiary-fixed);
-  color: var(--primary);
-}
+.courseDetailsBtn:hover { color: var(--primary); }
 
 /* ── List view ────────────────────────────────────────────── */
 .listView {
