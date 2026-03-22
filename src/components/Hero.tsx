@@ -139,30 +139,71 @@ export default function Hero() {
               </div>
             )}
 
-            {/* Step 3 — Signal */}
+            {/* Step 3 — Professor dashboard */}
             {active === 2 && (
               <div className={`${styles.panelInner} ${styles.panelDark}`}>
-                <div className={styles.insightHdr}>Assessment signal</div>
-                {[
-                  { label: "Answer correctness",          badge: "Correct", cls: styles.bgGreen },
-                  { label: "Explanation quality",         badge: "Strong",  cls: styles.bgBlue  },
-                  { label: "Misconception risk",          badge: "Low",     cls: styles.bgGray  },
-                  { label: "Confidence of understanding", badge: "High",    cls: styles.bgGreen },
-                ].map(({ label, badge, cls }) => (
-                  <div key={label} className={styles.sigRow}>
-                    <span className={styles.sigLabel}>{label}</span>
-                    <span className={`${styles.sigBadge} ${cls}`}>{badge}</span>
+
+                {/* Header row */}
+                <div className={styles.dashHeader}>
+                  <div className={styles.dashEyebrow}>Faculty view · Q4 — Stablecoins &amp; cross-border payments</div>
+                  <div className={styles.dashAnswerRow}>
+                    <span className={styles.dashCorrectPill}>✓ Correct</span>
+                    <span className={styles.dashAnswerText}>Settlement speed &amp; programmability</span>
                   </div>
-                ))}
-                <div className={styles.insightDiv} />
-                <div className={styles.insightSub}>Why this matters</div>
-                {[
-                  "Distinguished mechanism from consequence",
-                  "Rejected distractor with valid reasoning",
-                  "Demonstrated transfer beyond memorized wording",
-                ].map((b) => (
-                  <div key={b} className={styles.insightBul}>{b}</div>
-                ))}
+                </div>
+
+                {/* Three analysis blocks */}
+                <div className={styles.dashBlocks}>
+
+                  {/* Reasoning analysis */}
+                  <div className={styles.dashBlock}>
+                    <div className={styles.dashBlockLabel}>Reasoning analysis</div>
+                    <div className={styles.dashBlockBody}>
+                      <div className={styles.dashPoint}>
+                        <span className={styles.dashDotGreen} />
+                        Identified settlement speed as the core mechanism
+                      </div>
+                      <div className={styles.dashPoint}>
+                        <span className={styles.dashDotGreen} />
+                        Distinguished programmability from price stability
+                      </div>
+                      <div className={styles.dashPoint}>
+                        <span className={styles.dashDotGreen} />
+                        Rejected the central-bank distractor with reasoning
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Misconception check */}
+                  <div className={styles.dashBlock}>
+                    <div className={styles.dashBlockLabel}>Misconception check</div>
+                    <div className={styles.dashBlockBody}>
+                      <div className={styles.dashPoint}>
+                        <span className={styles.dashDotAmber} />
+                        Initially conflated speed with price stability
+                      </div>
+                      <div className={styles.dashPoint}>
+                        <span className={styles.dashDotGreen} />
+                        Self-corrected when prompted — no residual confusion
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Knowledge robustness */}
+                  <div className={styles.dashBlock}>
+                    <div className={styles.dashBlockLabel}>Knowledge robustness</div>
+                    <div className={styles.dashRobustRow}>
+                      <div className={styles.dashRobustBar}>
+                        <div className={styles.dashRobustFill} style={{ width: "82%" }} />
+                      </div>
+                      <span className={styles.dashRobustScore}>82 / 100</span>
+                    </div>
+                    <div className={styles.dashRobustNote}>
+                      Strong reasoning — answer reflects genuine understanding, not recall
+                    </div>
+                  </div>
+
+                </div>
               </div>
             )}
 
