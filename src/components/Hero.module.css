@@ -433,6 +433,142 @@
   margin-top: 1px;
 }
 
+/* ── Professor dashboard (step 3) ── */
+.dashHeader {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashEyebrow {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  margin-bottom: 8px;
+}
+
+.dashAnswerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashCorrectPill {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(26, 76, 59, 0.85);
+  color: #6ee7b7;
+  padding: 3px 8px;
+  flex-shrink: 0;
+}
+
+.dashAnswerText {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: -0.01em;
+}
+
+/* Three analysis blocks */
+.dashBlocks {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dashBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashBlockLabel {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.dashBlockBody {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dashPoint {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.45;
+}
+
+/* Status dots */
+.dashDotGreen {
+  width: 7px;
+  height: 7px;
+  background: #34d399;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.dashDotAmber {
+  width: 7px;
+  height: 7px;
+  background: #fbbf24;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+/* Robustness bar */
+.dashRobustRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashRobustBar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dashRobustFill {
+  height: 100%;
+  background: linear-gradient(90deg, #003cc2 0%, #0050fa 100%);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashRobustScore {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #6ea8ff;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.dashRobustNote {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+  line-height: 1.5;
+}
+
 @media (max-width: 960px) {
   .inner {
     grid-template-columns: 1fr;
