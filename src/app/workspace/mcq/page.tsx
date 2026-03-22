@@ -7,6 +7,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
 import { generateMCQ, evaluateReasoning, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
 
+import dynamic from "next/dynamic";
+
 const LETTERS = ["A", "B", "C", "D"];
 type Screen = "loading" | "question" | "explanation" | "result";
 
