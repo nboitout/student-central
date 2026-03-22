@@ -235,7 +235,7 @@ function MCQContent() {
 
 export default function MCQPage() {
   return (
-    <Suspense fallback={<div style={{ background: "#0e1120", minHeight: "100vh" }} />}>
+    <Suspense fallback={<div style={{ background: "var(--surface-low)", minHeight: "100vh" }} />}>
       <MCQContent />
     </Suspense>
   );
