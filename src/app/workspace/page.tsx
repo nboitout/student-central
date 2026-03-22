@@ -139,14 +139,16 @@ function CourseDetailsModal({ course, onClose }: { course: Course; onClose: () =
           </div>
 
           <div className={styles.actionCards}>
-            <button
-              className={`${styles.actionCard} ${styles.actionCardPrimary}`}
-              onClick={() => { onClose(); router.push(`/workspace/course?id=${course.id}`); }}
+            <a
+              href="https://app.stg.tutor.studentcentral.ai/login"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.actionCard}
             >
-              <div className={styles.actionCardIcon}>↗</div>
+              <div className={styles.actionCardIcon}>→</div>
               <div className={styles.actionCardTitle}>Access Course</div>
-              <div className={styles.actionCardDesc}>Read the full course document with the built-in PDF reader.</div>
-            </button>
+              <div className={styles.actionCardDesc}>Open the full course materials and AI tutor in Student Central.</div>
+            </a>
 
             <button
               className={`${styles.actionCard} ${styles.actionCardPrimary}`}
@@ -166,22 +168,19 @@ function CourseDetailsModal({ course, onClose }: { course: Course; onClose: () =
 /* ════════════════════════════════════════════════════════
    COURSE CARD
 ════════════════════════════════════════════════════════ */
-const CARD_ACCENTS = [
-  "#3d2b1f","#1f3328","#1f2a3d","#2d1f3d",
-  "#3d2d1f","#1f3535","#2a1f3d","#3d1f2a","#1f3d2a",
-];
+/* Card accents now handled by CSS nth-child ::before pseudo-element */
 
 function CourseCard({ course, onDelete, onDetails, index }: { course: Course; onDelete: (id: string) => void; onDetails: (c: Course) => void; index: number }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const progress = Math.round((course.exercisesDone / course.exercisesTotal) * 100);
-  const accentBg = CARD_ACCENTS[index % CARD_ACCENTS.length];
   const initials = course.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
   const sourceCount = course.source.split(",").length;
   const dateStr = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <div className={styles.card} onClick={() => onDetails(course)}>
-      <div className={styles.cardBand} style={{ background: accentBg }}>
+      {/* Top row: ghost initials + menu */}
+      <div className={styles.cardBand}>
         <div className={styles.cardInitials}>{initials}</div>
         <div className={styles.cardMenu} onClick={(e) => e.stopPropagation()}>
           <button className={styles.menuTrigger} onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
@@ -193,6 +192,8 @@ function CourseCard({ course, onDelete, onDetails, index }: { course: Course; on
           )}
         </div>
       </div>
+
+      {/* Title + meta */}
       <div className={styles.cardBody}>
         <h3 className={styles.cardTitle}>{course.title}</h3>
         <div className={styles.cardMeta}>
@@ -200,17 +201,28 @@ function CourseCard({ course, onDelete, onDetails, index }: { course: Course; on
           <div className={styles.cardMetaLine}>{dateStr} · {sourceCount} source{sourceCount !== 1 ? "s" : ""}</div>
         </div>
       </div>
+
+      {/* Progress row: track + percentage always visible */}
       <div className={styles.cardStatus}>
-        <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>{course.status}</div>
-        <div className={styles.exerciseBadge}>Exercises: {course.exercisesDone}/{course.exercisesTotal}</div>
-      </div>
-      {course.exercisesDone > 0 && (
         <div className={styles.progressTrack}>
           <div className={styles.progressFill} style={{ width: `${progress}%` }} />
         </div>
-      )}
+        <div className={`${styles.progressPct} ${progress === 0 ? styles.progressPctZero : ""}`}>
+          {progress}%
+        </div>
+      </div>
+
+      {/* Footer: status + exercises + details link */}
       <div className={styles.cardFooter} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>Course Details</button>
+        <div className={styles.cardFooterLeft}>
+          <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>
+            {course.status}
+          </div>
+          <div className={styles.exerciseBadge}>{course.exercisesDone} / {course.exercisesTotal}</div>
+        </div>
+        <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>
+          Details →
+        </button>
       </div>
     </div>
   );
@@ -395,7 +407,7 @@ export default function WorkspacePage() {
             <div className={styles.listView}>
               {filtered.map((c, i) => (
                 <div key={c.id} className={styles.listRow} onClick={() => openDetails(c)}>
-                  <div className={styles.listAccent} style={{ background: CARD_ACCENTS[i % CARD_ACCENTS.length] }}>
+                  <div className={styles.listAccent} style={{ background: ["#dceeff","#e8f0fe","#d2e3fc","#f0e9ff","#e8f5e9"][i % 5] }}>
                     <span className={styles.listInitials}>{c.title.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()}</span>
                   </div>
                   <div className={styles.listBody}>
