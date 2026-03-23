@@ -16,7 +16,6 @@ interface Course {
   author: string;
   source: string;
   pdfUrl?: string | null;
-  allowDownload?: boolean;
   status: string;
   exercisesTotal: number;
   exercisesDone: number;
@@ -287,7 +286,7 @@ function CourseReaderContent() {
             >
               <iframe
                 ref={iframeRef}
-                src={`${sasUrl}#toolbar=${course.allowDownload !== false ? "1" : "0"}&navpanes=0&view=FitH`}
+                src={`${sasUrl}#toolbar=1&navpanes=0&view=FitH`}
                 className={styles.iframe}
                 title={course.title}
                 onLoad={() => setPdfStatus("ready")}
