@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import styles from "./workspace.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
@@ -269,8 +268,7 @@ function CourseCard({
 export default function WorkspacePage() {
   const { lang }  = useLanguage();
   const ui        = getT(lang).workspace;
-  const { data: session } = useSession();
-  const userId = session?.user?.email ?? "nicolas";
+  const userId = "nicolas";
 
   const [courses, setCourses]         = useState<Course[]>([]);
   const [loading, setLoading]         = useState(true);
