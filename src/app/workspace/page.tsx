@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import styles from "./workspace.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
@@ -12,6 +13,7 @@ import {
   deleteCourse,
   uploadPdf,
   attachPdf,
+  triggerMCQGeneration,
   type Course,
 } from "@/lib/api";
 
@@ -28,10 +30,12 @@ function CreateModal({
   onClose,
   onCreate,
   ui,
+  userId,
 }: {
   onClose: () => void;
   onCreate: (c: Course) => void;
   ui: ReturnType<typeof getT>["workspace"];
+  userId: string;
 }) {
   const [title, setTitle]               = useState("");
   const [author, setAuthor]             = useState("");
@@ -62,7 +66,11 @@ function CreateModal({
       });
       if (file) {
         const { url } = await uploadPdf(file);
-        const updated = await attachPdf(course.id, url);
+        const updated = await attachPdf(course.id, url, userId);
+        /* Fire-and-forget: kick off MCQ generation in the background */
+        triggerMCQGeneration({ courseId: course.id, pdfUrl: url }).catch(() => {
+          /* Non-fatal — MCQ will be generated on first open if this fails */
+        });
         onCreate(updated);
       } else {
         onCreate(course);
@@ -261,6 +269,8 @@ function CourseCard({
 export default function WorkspacePage() {
   const { lang }  = useLanguage();
   const ui        = getT(lang).workspace;
+  const { data: session } = useSession();
+  const userId = session?.user?.email ?? "nicolas";
 
   const [courses, setCourses]         = useState<Course[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -430,7 +440,7 @@ export default function WorkspacePage() {
         </div>
       </main>
 
-      {modal === "create"  && <CreateModal onClose={closeModal} onCreate={(c) => setCourses(prev => [c, ...prev])} ui={ui} />}
+      {modal === "create"  && <CreateModal onClose={closeModal} onCreate={(c) => setCourses(prev => [c, ...prev])} ui={ui} userId={userId} />}
       {modal === "details" && activeCourse && <CourseDetailsModal course={activeCourse} onClose={closeModal} ui={ui} />}
     </div>
   );
