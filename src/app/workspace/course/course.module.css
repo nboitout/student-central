@@ -1,52 +1,44 @@
 /* ════════════════════════════════════════════════════════
-   COURSE READER — aligned to DESIGN.md editorial system
-   Rules: 0px radius · no 1px dividers · surface-shift depth
-   Full-viewport: header + sidebar + pdf pane
+   COURSE READER — DESIGN.md editorial system
+   No 1px dividers · surface-shift depth · 0px radius
 ════════════════════════════════════════════════════════ */
 
-/* ── Page shell: full-height flex column ─────────────────── */
 .page {
-  height: 100vh;
+  min-height: 100vh;
+  background: var(--surface-low);
   display: flex;
   flex-direction: column;
-  background: var(--surface-low);
-  color: var(--on-surface);
   font-family: var(--font-body);
-  overflow: hidden;                      /* children scroll, not the page */
+  color: var(--on-surface);
 }
 
 /* ── Header ──────────────────────────────────────────────── */
 .header {
-  height: 64px;
-  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px 0 32px;
+  gap: 16px;
+  padding: 0 24px;
+  height: 64px;
   background: rgba(249, 249, 252, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--shadow-ambient);
-  z-index: 50;
-  gap: 24px;
+  box-shadow: var(--shadow-ambient);  /* shadow instead of 1px border */
 }
 
-.headerLeft {
-  flex-shrink: 0;
-  min-width: 120px;
-}
-
-/* Tertiary link: underline offset style */
 .backBtn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  color: var(--on-surface-variant);
+  gap: 8px;
   font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
+  color: var(--on-surface-variant);
+  background: none;
+  border: none;
   cursor: pointer;
   padding: 0;
   text-decoration: underline;
@@ -55,18 +47,16 @@
   text-decoration-thickness: 2px;
   transition: color 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .backBtn:hover { color: var(--primary); }
 
 .headerCenter {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  text-align: center;
   min-width: 0;
 }
 
-/* Eyebrow: Data Ribbon style */
 .headerEyebrow {
   font-family: var(--font-display);
   font-size: 0.5625rem;
@@ -80,11 +70,9 @@
 
 .headerTitle {
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--on-surface);
-  letter-spacing: -0.01em;
-  max-width: 480px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -92,444 +80,169 @@
 }
 
 .headerRight {
-  flex-shrink: 0;
-  min-width: 120px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
+  flex-shrink: 0;
 }
 
-/* Icon button: secondary surface */
-.iconBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: var(--surface-highest);
+/* Primary button: gradient, 0px radius */
+.mcqBtn {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary-gradient);
   border: none;
-  color: var(--on-surface-variant);
+  padding: 9px 18px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  text-decoration: none;
-  flex-shrink: 0;
+  white-space: nowrap;
+  transition: opacity 0.15s;
 }
-.iconBtn:hover { background: var(--surface-high); color: var(--on-surface); }
-.iconBtnActive {
-  background: var(--tertiary-fixed);
-  color: var(--primary);
-}
+.mcqBtn:hover { opacity: 0.88; }
 
-/* ── Body: sidebar + viewer side by side ─────────────────── */
-.body {
+/* ── Main ────────────────────────────────────────────────── */
+.main {
   flex: 1;
   display: flex;
-  overflow: hidden;
-  min-height: 0;
+  flex-direction: column;
 }
 
-/* ── Sidebar ─────────────────────────────────────────────── */
-.sidebar {
-  width: 280px;
-  flex-shrink: 0;
-  background: var(--surface-lowest);    /* white sheet */
+/* ── Meta bar — background shift instead of bottom border ── */
+.metaBar {
+  display: flex;
+  gap: 32px;
+  padding: 16px 24px;
+  background: var(--surface-lowest);   /* white sheet */
   box-shadow: var(--shadow-ambient);
+  flex-wrap: wrap;
+}
+
+.metaItem {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.2s;
-  z-index: 10;
-}
-.sidebarClosed {
-  width: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-.sidebarOpen {
-  width: 280px;
-  opacity: 1;
+  gap: 3px;
 }
 
-/* Sidebar section: generous padding */
-.sidebarSection {
-  padding: 24px 24px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Background-shift divider (No-Line rule) */
-.sidebarDivider {
-  height: 8px;
-  background: var(--surface-low);       /* #f3f3f6 — recess strip */
-  flex-shrink: 0;
-}
-
-/* Status chip: Data Ribbon — tertiary-fixed, 0px radius */
-.statusChip {
-  display: inline-flex;
-  align-self: flex-start;
+/* Label-sm institutional style */
+.metaKey {
   font-family: var(--font-display);
   font-size: 0.5625rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 4px 10px;
-  background: var(--tertiary-fixed);
-  color: var(--on-tertiary-fixed);
-}
-/* Semantic overrides */
-.statusInProgress  { background: rgba(0, 60, 194, 0.08); color: var(--primary); }
-.statusCompleted   { background: rgba(45, 106, 79, 0.10); color: #2d6a4f; }
-.statusNotStarted  { background: var(--surface-container); color: var(--on-surface-variant); }
-
-.sidebarTitle {
-  font-family: var(--font-display);
-  font-size: 1.0625rem;
-  font-weight: 700;
-  color: var(--on-surface);
-  line-height: 1.3;
-  letter-spacing: -0.02em;
-}
-
-.sidebarAuthor {
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  color: var(--on-surface-variant);
-  line-height: 1.5;
-}
-
-/* Section label: institutional metadata style */
-.sidebarLabel {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   color: var(--on-surface-variant);
   opacity: 0.5;
 }
 
-/* Progress */
-.progressHeader {
+.metaVal {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--on-surface);
+}
+
+/* Semantic status colours */
+.statusNotStarted { color: var(--on-surface-variant); opacity: 0.6; }
+.statusInProgress { color: var(--primary); }
+.statusCompleted  { color: #2d6a4f; }
+
+/* ── PDF viewer ──────────────────────────────────────────── */
+.pdfWrap {
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  background: var(--surface-container);  /* desk colour behind the document */
+  min-height: calc(100vh - 64px - 57px);
 }
 
-.progressPct {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--primary);
-  letter-spacing: -0.03em;
-}
-
-.progressTrack {
-  height: 3px;
-  background: var(--surface-container);
-}
-
-.progressFill {
+.pdfFrame {
+  flex: 1;
+  width: 100%;
   height: 100%;
-  background: var(--primary-gradient);
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.progressStats {
-  display: flex;
-  gap: 16px;
-}
-
-.progressStat {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: var(--on-surface-variant);
-}
-.progressStat strong {
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: var(--on-surface);
-}
-
-/* Source file pill */
-.sourceFile {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: var(--on-surface-variant);
-  line-height: 1.5;
-  background: var(--surface-low);
-  padding: 10px 12px;
-}
-
-/* Action buttons */
-.mcqBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--primary-gradient);
-  color: #ffffff;
+  min-height: calc(100vh - 124px);
   border: none;
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  padding: 11px 16px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-  letter-spacing: 0.01em;
-  width: 100%;
+  display: block;
+}
+
+/* ── Loading states ──────────────────────────────────────── */
+.loadingWrap,
+.pdfLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  flex: 1;
+  gap: 16px;
+  padding: 64px 24px;
 }
-.mcqBtn:hover { opacity: 0.88; }
 
-.tutorBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--surface-highest);
-  color: var(--on-surface-variant);
-  border: none;
+.loadingLabel {
   font-family: var(--font-display);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  padding: 11px 16px;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  text-decoration: none;
-  width: 100%;
-}
-.tutorBtn:hover {
-  background: var(--surface-high);
   color: var(--on-surface);
+  letter-spacing: -0.01em;
 }
 
-/* Zoom controls */
-.zoomRow {
+.loadingDots {
   display: flex;
+  gap: 6px;
   align-items: center;
-  gap: 2px;
-  background: var(--surface-container);
-  padding: 2px;
+}
+.loadingDots span {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: loadPulse 1.2s ease-in-out infinite;
+}
+.loadingDots span:nth-child(2) { animation-delay: 0.2s; }
+.loadingDots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loadPulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40%           { opacity: 1;   transform: scale(1);   }
 }
 
-.zoomBtn {
-  width: 36px;
-  height: 36px;
-  background: none;
-  border: none;
-  color: var(--on-surface-variant);
+/* ── Error / empty / not-found states ───────────────────── */
+.errorWrap,
+.pdfError,
+.pdfEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 12px;
+  padding: 64px 24px;
+  text-align: center;
+  background: var(--surface-low);
+}
+
+.errorTitle,
+.pdfErrorTitle,
+.pdfEmptyTitle {
   font-family: var(--font-display);
   font-size: 1.125rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s, color 0.15s;
-}
-.zoomBtn:hover { background: var(--surface-lowest); color: var(--on-surface); }
-
-.zoomValue {
-  flex: 1;
-  height: 36px;
-  background: var(--surface-lowest);
-  border: none;
-  color: var(--on-surface);
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
   font-weight: 700;
-  cursor: pointer;
-  transition: color 0.15s;
-  text-align: center;
-  letter-spacing: -0.01em;
-}
-.zoomValue:hover { color: var(--primary); }
-
-/* ── PDF Viewer pane ─────────────────────────────────────── */
-.viewerWrap {
-  flex: 1;
-  position: relative;
-  overflow: auto;
-  background: var(--surface-container);  /* the "desk" under the document */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-}
-
-/* Zoom wrapper: transform origin at top-center */
-.iframeWrap {
-  width: 100%;
-  height: 100%;
-  transform-origin: top center;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* iframe: fills the entire viewer area */
-.iframe {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: var(--surface-low);
-}
-
-/* ── Loading / error overlay ─────────────────────────────── */
-.pdfOverlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-low);
-  z-index: 5;
-  gap: 16px;
-}
-
-.pdfError {
-  background: var(--surface-lowest);
-}
-
-/* Spinner: gradient ring */
-.spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid var(--surface-container);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.errorIcon {
-  width: 48px;
-  height: 48px;
-  background: rgba(179, 38, 30, 0.08);
-  border-left: 3px solid #b3261e;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #b3261e;
-}
-
-.overlayText {
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 600;
   color: var(--on-surface);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
-.overlayHint {
+.errorBody,
+.pdfErrorBody,
+.pdfEmptyBody {
   font-family: var(--font-body);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--on-surface-variant);
   max-width: 360px;
-  text-align: center;
   line-height: 1.6;
 }
 
-.openExternal {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--primary);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 2px;
-  cursor: pointer;
-}
-
-/* ── Empty state (no blob URL configured) ────────────────── */
-.emptyState {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 48px 24px;
-  text-align: center;
-  background: var(--surface-low);
-}
-
-.emptyIcon {
+.pdfErrorIcon,
+.pdfEmptyIcon {
+  font-size: 2.5rem;
   color: var(--on-surface-variant);
-  opacity: 0.25;
-}
-
-.emptyTitle {
-  font-family: var(--font-display);
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--on-surface);
-  letter-spacing: -0.02em;
-}
-
-.emptyBody {
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  color: var(--on-surface-variant);
-  line-height: 1.65;
-  max-width: 400px;
-}
-
-/* env var code style */
-.envCode {
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
-  font-size: 0.8125rem;
-  background: var(--surface-container);
-  color: var(--primary);
-  padding: 2px 6px;
-}
-
-.emptyFile {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-  background: var(--surface-container);
-  padding: 8px 14px;
-}
-
-/* ── Suspense fallback ───────────────────────────────────── */
-.suspenseFallback {
-  height: 100vh;
-  background: var(--surface-low);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .sidebarOpen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    z-index: 20;
-    box-shadow: var(--shadow-float);
-  }
-
-  .headerTitle {
-    max-width: 200px;
-  }
-
-  .headerCenter {
-    align-items: flex-start;
-  }
+  opacity: 0.2;
 }
