@@ -42,7 +42,6 @@ function CreateModal({
   const [dragOver, setDragOver]         = useState(false);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState<string | null>(null);
-  const [allowDownload, setAllowDownload] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (f: File) => { setFile(f); setFileName(f.name); };
@@ -60,7 +59,6 @@ function CreateModal({
         title: title.trim(),
         author: author.trim() || "Unknown",
         source: fileName || driveUrl || ui.noFileAttached,
-        allowDownload,
       });
       if (file) {
         const { url } = await uploadPdf(file);
@@ -118,17 +116,6 @@ function CreateModal({
               <p className={styles.fieldHint}>{ui.driveHint}</p>
             </div>
           )}
-
-          {/* Download toggle */}
-          <div className={styles.toggleRow} onClick={() => setAllowDownload(v => !v)}>
-            <div className={styles.toggleInfo}>
-              <div className={styles.toggleLabel}>{ui.allowDownload}</div>
-              <div className={styles.toggleHint}>{ui.allowDownloadHint}</div>
-            </div>
-            <div className={`${styles.toggle} ${allowDownload ? styles.toggleOn : ""}`}>
-              <div className={styles.toggleThumb} />
-            </div>
-          </div>
         </div>
         <div className={styles.modalFooter}>
           <button className={styles.cancelBtn} onClick={onClose} disabled={loading}>{ui.cancel}</button>
