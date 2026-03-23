@@ -10,6 +10,7 @@ export interface Course {
   author: string;
   source: string;
   pdfUrl?: string | null;
+  allowDownload?: boolean;
   status: "Not Started" | "In Progress" | "Completed";
   exercisesTotal: number;
   exercisesDone: number;
@@ -64,6 +65,7 @@ export async function createCourse(payload: {
   source: string;
   userId?: string;
   exercisesTotal?: number;
+  allowDownload?: boolean;
 }): Promise<Course> {
   return request<Course>("/api/courses", {
     method: "POST",
