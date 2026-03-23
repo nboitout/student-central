@@ -566,3 +566,12 @@
   border-left: 3px solid var(--on-tertiary-fixed);
   opacity: 0.85;
 }
+
+/* ── Retry hint (waiting/polling screen) ────────────────── */
+.retryHint {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--primary);
+  opacity: 0.7;
+  letter-spacing: 0.02em;
+}
