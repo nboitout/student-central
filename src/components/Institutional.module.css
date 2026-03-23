@@ -1,15 +1,16 @@
 .section {
-  background: var(--surface-low);
+  background: var(--surface);
   padding: 112px 0 96px;
 }
 
 .inner {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 48px 72px;
+  /* Intentional asymmetry: left column wider, more negative space right */
+  padding: 0 80px 72px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  grid-template-columns: 55fr 45fr;
+  gap: 96px;
   align-items: start;
 }
 
@@ -17,37 +18,39 @@
 
 .headline {
   font-family: var(--font-display);
-  font-size: clamp(1.7rem, 3vw, 2.75rem);
+  font-size: clamp(1.75rem, 2.8vw, 2.75rem);
   font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   color: var(--on-surface);
 }
 
-.body {
-  max-width: 520px;
-  margin-top: 20px;
-}
+.body { max-width: 520px; margin-top: 20px; }
 
-/* Bullets */
+/* Bullets: clean white cards, no dividers */
 .bullets {
-  padding-top: 44px;
+  padding-top: 40px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .bullet {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  padding: 15px 18px;
-  background: var(--surface-lowest);
-  box-shadow: var(--shadow-ambient);
+  padding: 14px 20px;
+  background: var(--surface-low);
   font-family: var(--font-body);
   font-size: 0.875rem;
   color: var(--on-surface-variant);
-  line-height: 1.5;
+  line-height: 1.55;
+  border-left: 2px solid transparent;
+  transition: border-color 0.2s, background 0.2s;
+}
+.bullet:hover {
+  border-color: var(--primary);
+  background: var(--surface-container);
 }
 .bullet::before {
   content: '';
@@ -55,35 +58,37 @@
   width: 4px;
   height: 4px;
   background: var(--primary);
+  border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 7px;
+  margin-top: 8px;
 }
 
-/* Who band */
+/* Who grid — right column */
 .whoBand {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 48px;
+  padding: 0 80px;
 }
 
 .whoHl {
   font-family: var(--font-display);
-  font-size: clamp(1.3rem, 2.5vw, 2rem);
+  font-size: clamp(1.25rem, 2vw, 1.875rem);
   font-weight: 700;
   color: var(--on-surface);
   letter-spacing: -0.02em;
   margin-bottom: 24px;
+  font-style: italic;
 }
 
 .whoGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 2px;
-  background: var(--surface-container);
+  background: var(--surface-high);
 }
 
 .whoCard {
-  background: var(--surface-low);
+  background: var(--surface-lowest);
   padding: 28px 24px;
   font-family: var(--font-display);
   font-size: 0.9375rem;
@@ -91,15 +96,19 @@
   color: var(--on-surface);
   letter-spacing: -0.01em;
   line-height: 1.35;
-  transition: background 0.2s;
+  border-bottom: 2px solid transparent;
+  transition: background 0.2s, border-color 0.2s;
 }
-.whoCard:hover { background: var(--surface-lowest); }
+.whoCard:hover {
+  background: var(--surface);
+  border-color: var(--secondary-dark);
+}
 
-@media (max-width: 960px) {
-  .inner    { grid-template-columns: 1fr; gap: 0; padding: 0 24px 48px; }
-  .bullets  { padding-top: 28px; }
-  .whoBand  { padding: 0 24px; }
-  .whoGrid  { grid-template-columns: 1fr 1fr; }
+@media (max-width: 1100px) {
+  .inner { grid-template-columns: 1fr; gap: 0; padding: 0 24px 48px; }
+  .bullets { padding-top: 28px; }
+  .whoBand { padding: 0 24px; }
+  .whoGrid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 600px) {
   .whoGrid { grid-template-columns: 1fr; }
