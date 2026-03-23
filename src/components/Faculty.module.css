@@ -1,15 +1,15 @@
 .section {
-  background: var(--surface);
-  padding: 112px 0 96px;
+  background: var(--surface-low);
+  padding: 112px 0;
 }
 
 .inner {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 48px;
+  padding: 0 80px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  grid-template-columns: 5fr 4fr;
+  gap: 96px;
   align-items: start;
 }
 
@@ -19,63 +19,62 @@
 
 .headline {
   font-family: var(--font-display);
-  font-size: clamp(1.7rem, 3vw, 2.75rem);
+  font-size: clamp(1.625rem, 2.5vw, 2.5rem);
   font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
   color: var(--on-surface);
+  margin-bottom: 16px;
 }
 
-.sub {
-  max-width: 520px;
-  margin-top: 18px;
-  margin-bottom: 40px;
-}
+.sub { margin-bottom: 36px; max-width: 480px; }
 
 /* Dashboard tiles */
 .dashGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 2px;
-  background: var(--surface-container);
+  background: var(--surface-high);
   margin-bottom: 2px;
 }
 
 .dashTile {
-  background: var(--surface);
-  padding: 22px 20px;
-  transition: background 0.2s;
+  background: var(--surface-lowest);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.dashTile:hover { background: var(--surface-low); }
 
 .dashLbl {
-  font-family: var(--font-display);
-  font-size: 0.625rem;
+  font-family: var(--font-label);
+  font-size: 0.5625rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--on-surface-variant);
-  margin-bottom: 7px;
+  opacity: 0.5;
 }
 
 .dashVal {
   font-family: var(--font-display);
-  font-size: 1.625rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--on-surface);
   letter-spacing: -0.03em;
   line-height: 1;
 }
-.acc  { color: var(--primary) !important; }
-.warn { color: #8b3a00 !important; }
+.acc  { color: var(--primary); }
+.warn { color: #b45309; }
 
 .dashRow {
-  background: var(--surface-low);
-  padding: 16px 20px;
+  background: var(--surface-lowest);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 2px;
+  justify-content: space-between;
+  padding: 12px 24px;
+  gap: 16px;
+  margin-top: 2px;
 }
 
 .dashRlbl {
@@ -85,48 +84,46 @@
 }
 
 .dashRval {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-family: var(--font-label);
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--primary);
-  letter-spacing: -0.01em;
 }
 
-/* Insight cards */
-.right {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-top: 44px;
-}
+/* Insight cards — "Scholarly Quote" component */
+.right { display: flex; flex-direction: column; gap: 2px; }
 
 .insightCard {
   background: var(--surface-lowest);
+  padding: 32px 36px;
+  border-left: 4px solid var(--primary);
   box-shadow: var(--shadow-ambient);
-  padding: 28px;
+  transition: border-color 0.2s;
 }
+.insightCard:hover { border-color: var(--secondary-dark); }
 
 .icTopic {
-  font-family: var(--font-display);
-  font-size: 0.625rem;
+  font-family: var(--font-label);
+  font-size: 0.5rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--primary);
-  margin-bottom: 8px;
+  opacity: 0.7;
+  margin-bottom: 10px;
 }
 
 .icTitle {
   font-family: var(--font-display);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 600;
+  font-style: italic;
   color: var(--on-surface);
+  line-height: 1.4;
   letter-spacing: -0.01em;
-  margin-bottom: 10px;
-  line-height: 1.3;
+  margin-bottom: 12px;
 }
 
-@media (max-width: 960px) {
-  .inner { grid-template-columns: 1fr; gap: 48px; padding: 0 24px; }
-  .right { padding-top: 0; }
+@media (max-width: 1100px) {
+  .inner { grid-template-columns: 1fr; gap: 56px; padding: 0 24px; }
 }
