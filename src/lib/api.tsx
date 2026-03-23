@@ -146,3 +146,14 @@ export async function evaluateReasoning(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+/* ── MCQ Generation trigger ─────────────────────────────── */
+export async function triggerMCQGeneration(payload: {
+  courseId: string;
+  pdfUrl: string;
+}): Promise<{ status: string; message: string }> {
+  return request<{ status: string; message: string }>(
+    `/api/upload/trigger-mcq-generation?course_id=${payload.courseId}&pdf_url=${encodeURIComponent(payload.pdfUrl)}`,
+    { method: "POST" }
+  );
+}
