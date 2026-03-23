@@ -1,39 +1,42 @@
 .footer {
-  background: var(--on-surface);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 28px 48px;
+  background: var(--deep-navy);
+  padding: 40px 80px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
 .message {
   font-family: var(--font-body);
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.45);
-  line-height: 1.5;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.38);
+  line-height: 1.6;
 }
 
 .name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
   text-decoration: underline;
-  text-decoration-color: rgba(0, 80, 250, 0.5);
   text-underline-offset: 3px;
+  text-decoration-color: rgba(98, 255, 149, 0.40);
   transition: color 0.2s, text-decoration-color 0.2s;
 }
 .name:hover {
-  color: #ffffff;
-  text-decoration-color: #0050fa;
+  color: var(--secondary);
+  text-decoration-color: var(--secondary);
 }
 
 .copy {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.2);
+  font-family: var(--font-label);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.22);
 }
 
-@media (max-width: 600px) {
-  .footer { flex-direction: column; gap: 10px; padding: 24px; text-align: center; }
+@media (max-width: 768px) {
+  .footer { padding: 32px 24px; flex-direction: column; align-items: flex-start; }
 }
