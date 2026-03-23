@@ -1,37 +1,37 @@
+/* Royal blue band — crisp, authoritative */
 .bar {
-  background: var(--surface-container);
-  padding: 16px 48px;
+  background: var(--deep-navy);
+  padding: 0 56px;
   display: flex;
   align-items: center;
   gap: 0;
   overflow: hidden;
+  height: 52px;
   flex-wrap: nowrap;
 }
 
 .wrapper {
   display: flex;
   align-items: center;
-  gap: 28px;
+  flex-shrink: 0;
 }
 
 .item {
-  font-family: var(--font-display);
+  font-family: var(--font-label);
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--on-surface-variant);
+  color: rgba(255, 255, 255, 0.50);
   white-space: nowrap;
 }
 
 .sep {
-  width: 18px;
-  height: 1px;
-  background: var(--outline-variant);
-  flex-shrink: 0;
   display: inline-block;
-}
-
-@media (max-width: 768px) {
-  .bar { padding: 16px 24px; overflow-x: auto; }
+  width: 3px;
+  height: 3px;
+  background: rgba(98, 255, 149, 0.40);
+  border-radius: 50%;
+  margin: 0 20px;
+  flex-shrink: 0;
 }
