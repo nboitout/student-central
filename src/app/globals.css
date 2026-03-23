@@ -1,24 +1,40 @@
-/* ─── DESIGN TOKENS ─────────────────────────────────────────── */
+/* ─── DESIGN TOKENS — Academic Avant-Garde ───────────────── */
 :root {
-  --primary:             #003cc2;
-  --primary-container:   #0050fa;
-  --primary-gradient:    linear-gradient(135deg, #003cc2 0%, #0050fa 100%);
-  --tertiary-fixed:      #dceeff;
-  --on-tertiary-fixed:   #003356;
+  /* Core palette */
+  --deep-navy:           #000829;
+  --navy-container:      #101f49;
+  --primary:             #0048d8;        /* Royal Blue — action color */
+  --primary-container:   #d1e0ff;
+  --primary-gradient:    linear-gradient(135deg, #0048d8 0%, #0062ff 100%);
+  --secondary:           #62ff95;        /* Academic Mint — success/progress */
+  --secondary-dark:      #00c664;
+
+  /* Surface hierarchy — faint lavender tint for scholarly feel */
   --surface-lowest:      #ffffff;
-  --surface:             #f9f9fc;
-  --surface-low:         #f3f3f6;
-  --surface-container:   #eeeef0;
-  --surface-high:        #e8e8ec;
-  --surface-highest:     #e2e2e6;
-  --on-surface:          #1a1c2e;
-  --on-surface-variant:  #434656;
+  --surface:             #faf8ff;
+  --surface-low:         #f2f3ff;
+  --surface-container:   #e8eaff;
+  --surface-high:        #dfe1f8;
+  --surface-highest:     #d5d7ef;
+
+  /* Tertiary / ribbon — royal blue tint */
+  --tertiary-fixed:      rgba(0, 72, 216, 0.07);
+  --on-tertiary-fixed:   #0048d8;
+
+  /* Typography */
+  --on-surface:          #0d1a38;        /* Deep navy — never pure black */
+  --on-surface-variant:  #3d4a6b;
   --on-primary:          #ffffff;
-  --outline-variant:     rgba(67, 70, 86, 0.15);
-  --shadow-ambient:      0px 12px 32px rgba(26, 28, 30, 0.06);
-  --shadow-float:        0px 24px 56px rgba(26, 28, 30, 0.10);
-  --font-display:        'Space Grotesk', system-ui, sans-serif;
-  --font-body:           'Inter', system-ui, sans-serif;
+  --outline-variant:     rgba(13, 26, 56, 0.12);
+
+  /* Shadows — tinted with deep navy at low opacity */
+  --shadow-ambient:      0px 8px 32px rgba(13, 26, 56, 0.06);
+  --shadow-float:        0px 20px 56px rgba(13, 26, 56, 0.10);
+
+  /* Fonts */
+  --font-display:        'Noto Serif', Georgia, serif;   /* Headlines */
+  --font-body:           'Inter', system-ui, sans-serif; /* Body copy */
+  --font-label:          'Space Grotesk', system-ui, sans-serif; /* Labels, nav, buttons */
 }
 
 /* ─── RESET ─────────────────────────────────────────────────── */
@@ -28,9 +44,7 @@
   padding: 0;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-body);
@@ -40,44 +54,43 @@ body {
   overflow-x: hidden;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
+a { text-decoration: none; color: inherit; }
 
-/* ─── SHARED UTILITY CLASSES ─────────────────────────────────── */
+/* ─── RIBBON — label chips ───────────────────────────────────── */
 .ribbon {
   background: var(--tertiary-fixed);
   color: var(--on-tertiary-fixed);
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-family: var(--font-label);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 5px 10px;
   display: inline-block;
+  border-left: 2px solid var(--primary);
 }
 
+/* ─── BODY UTILITIES ─────────────────────────────────────────── */
 .body-md {
   font-family: var(--font-body);
   font-size: 0.875rem;
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--on-surface-variant);
 }
 
 .body-lg {
   font-family: var(--font-body);
   font-size: 1rem;
-  line-height: 1.75;
+  line-height: 1.8;
   color: var(--on-surface-variant);
 }
 
 /* ─── SCROLL REVEAL ─────────────────────────────────────────── */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(20px);
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .reveal.visible { opacity: 1; transform: none; }
 .d1 { transition-delay: 0.1s; }
@@ -89,30 +102,39 @@ a {
 .btn-p {
   background: var(--primary-gradient);
   color: var(--on-primary);
-  font-family: var(--font-display);
+  font-family: var(--font-label);
   font-size: 0.875rem;
   font-weight: 600;
-  padding: 14px 28px;
+  padding: 13px 28px;
   display: inline-block;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.2s;
+  transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
   border: none;
-  border-radius: 0;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 16px rgba(0, 72, 216, 0.30);
 }
-.btn-p:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-p:hover {
+  opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 72, 216, 0.40);
+}
 
 .btn-s {
-  background: var(--surface-highest);
+  background: transparent;
   color: var(--on-surface);
-  font-family: var(--font-display);
+  font-family: var(--font-label);
   font-size: 0.875rem;
   font-weight: 600;
-  padding: 14px 28px;
+  padding: 13px 28px;
   display: inline-block;
   cursor: pointer;
-  transition: background 0.2s;
-  border: none;
-  border-radius: 0;
+  transition: background 0.2s, color 0.2s;
+  border: 1.5px solid var(--outline-variant);
+  border-radius: 0.375rem;
+  letter-spacing: 0.01em;
 }
-.btn-s:hover { background: var(--surface-high); }
+.btn-s:hover {
+  background: var(--surface-low);
+  border-color: rgba(13, 26, 56, 0.22);
+}
