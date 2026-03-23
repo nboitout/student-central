@@ -5,12 +5,16 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import { generateMCQ, evaluateReasoning, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
+import { evaluateReasoning, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
 import dynamic from "next/dynamic";
 
 const LETTERS = ["A", "B", "C", "D"];
-type Screen = "loading" | "question" | "explanation" | "result";
+type Screen = "loading" | "waiting" | "question" | "explanation" | "result";
 
 function MCQContent() {
   const params      = useSearchParams();
@@ -36,9 +40,34 @@ function MCQContent() {
     setScreen("loading");
     setMcq(null);
     setLoadError(null);
-    generateMCQ({ courseId, pdfUrl: pdfUrl || undefined, courseTitle })
-      .then(q => { setMcq(q); setScreen("question"); })
-      .catch(err => { setLoadError(err.message); setScreen("question"); });
+
+    fetch(`${API_URL}/api/mcq/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle }),
+    })
+      .then(async (res) => {
+        /* 202 — generation kicked off but not ready yet, poll again */
+        if (res.status === 202) {
+          setScreen("waiting");
+          setTimeout(() => loadMCQ(), 10000);
+          return;
+        }
+        /* Any other non-OK response */
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: `Error ${res.status}` }));
+          setLoadError(err.detail ?? `Error ${res.status}`);
+          setScreen("question");
+          return;
+        }
+        const q: MCQQuestion = await res.json();
+        setMcq(q);
+        setScreen("question");
+      })
+      .catch(err => {
+        setLoadError(err.message);
+        setScreen("question");
+      });
   };
 
   useEffect(() => { loadMCQ(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -109,7 +138,17 @@ function MCQContent() {
             <div className={styles.loadingWrap}>
               <div className={styles.loadingLabel}>{ui.generating ?? "Generating your question…"}</div>
               <div className={styles.loadingDots}><span /><span /><span /></div>
-              <div className={styles.loadingHint}>{ui.generatingHint ?? "Reading course content with GPT-5.2-chat"}</div>
+              <div className={styles.loadingHint}>{ui.generatingHint ?? "Reading course content with AI"}</div>
+            </div>
+          )}
+
+          {/* ── Waiting / polling ── */}
+          {screen === "waiting" && (
+            <div className={styles.loadingWrap}>
+              <div className={styles.loadingLabel}>{ui.preparingQuestions ?? "Preparing your questions…"}</div>
+              <div className={styles.loadingDots}><span /><span /><span /></div>
+              <div className={styles.loadingHint}>{ui.preparingHint ?? "Your document is being analysed. This takes about 60 seconds the first time."}</div>
+              <div className={styles.retryHint}>{ui.retryHint ?? "Checking again automatically…"}</div>
             </div>
           )}
 
