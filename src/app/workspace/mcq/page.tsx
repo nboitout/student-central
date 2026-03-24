@@ -564,11 +564,6 @@ function MCQContent() {
               <p className={styles.explanationText}>{mcq.explanation}</p>
             </div>
 
-            <div className={styles.facultySection}>
-              <div className={styles.sectionLabel}>{ui.facultyInsight ?? "Faculty insight"}</div>
-              <p className={styles.facultyText}>{signal.facultyInsight}</p>
-            </div>
-
             <div className={styles.answeredActions}>
               <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToWorkspace}</button>
               <button className={styles.submitBtn} onClick={nextQuestion}>{ui.nextQuestion ?? "Next question →"}</button>
