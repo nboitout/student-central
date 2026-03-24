@@ -39,10 +39,7 @@ function CourseReaderContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [pdfStatus,   setPdfStatus]   = useState<"loading" | "ready" | "error">("loading");
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [zoom, setZoom] = useState(100);
-  const zoomIn    = useCallback(() => setZoom(z => Math.min(z + 10, 200)), []);
-  const zoomOut   = useCallback(() => setZoom(z => Math.max(z - 10, 50)), []);
-  const zoomReset = useCallback(() => setZoom(100), []);
+
 
   /* Fetch course + SAS URL from API */
   useEffect(() => {
@@ -183,6 +180,7 @@ function CourseReaderContent() {
               <span className={styles.sidebarLabel}>{ui.progressLabel}</span>
               <span className={styles.progressPct}>{pct}%</span>
             </div>
+            <div className={styles.progressHint}>{ui.progressHint ?? "Questions attempted out of total"}</div>
             <div className={styles.progressTrack}>
               <div className={styles.progressFill} style={{ width: `${pct}%` }} />
             </div>
@@ -201,7 +199,11 @@ function CourseReaderContent() {
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <polyline points="14 2 14 8 20 8"/>
               </svg>
-              <span>{course.source}</span>
+              <span>{
+                /^[0-9a-f-]{36}/.test(course.source)
+                  ? course.title + (course.source.endsWith('.pdf') ? '.pdf' : '')
+                  : course.source
+              }</span>
             </div>
           </div>
 
@@ -229,15 +231,6 @@ function CourseReaderContent() {
             </a>
           </div>
 
-          <div className={styles.sidebarDivider} />
-          <div className={styles.sidebarSection}>
-            <div className={styles.sidebarLabel}>{ui.zoomLabel}</div>
-            <div className={styles.zoomRow}>
-              <button className={styles.zoomBtn} onClick={zoomOut}>−</button>
-              <button className={styles.zoomValue} onClick={zoomReset}>{zoom}%</button>
-              <button className={styles.zoomBtn} onClick={zoomIn}>+</button>
-            </div>
-          </div>
         </aside>
 
         {/* PDF Viewer */}
@@ -255,7 +248,7 @@ function CourseReaderContent() {
               </div>
               <div className={styles.emptyTitle}>{ui.noPdfAttached}</div>
               <div className={styles.emptyBody}>{ui.noPdfBody}</div>
-              <div className={styles.emptyFile}>{course.source}</div>
+              <div className={styles.emptyFile}>{/^[0-9a-f-]{36}/.test(course.source) ? course.title + ".pdf" : course.source}</div>
             </div>
           )}
 
@@ -282,7 +275,6 @@ function CourseReaderContent() {
           {sasUrl && (
             <div
               className={styles.iframeWrap}
-              style={{ transform: `scale(${zoom / 100})`, transformOrigin: "top center" }}
             >
               <iframe
                 ref={iframeRef}
