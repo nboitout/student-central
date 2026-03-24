@@ -575,3 +575,63 @@
   opacity: 0.7;
   letter-spacing: 0.02em;
 }
+
+/* ── Slide drawer ────────────────────────────────────────── */
+.slideDrawer {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 4px;
+}
+
+.slideToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 16px;
+  background: var(--tertiary-fixed);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--on-tertiary-fixed);
+  letter-spacing: 0.01em;
+  transition: background 0.15s;
+  text-align: left;
+}
+.slideToggle:hover { background: var(--surface-container); }
+.slideToggle svg { flex-shrink: 0; }
+
+.slidePanel {
+  background: var(--surface-low);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: slideDown 0.22s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.slidePageBadge {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+}
+
+.slideImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  box-shadow: var(--shadow-ambient);
+  background: var(--surface-highest);
+}
