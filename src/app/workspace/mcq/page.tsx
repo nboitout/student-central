@@ -7,8 +7,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
 import { evaluateReasoning, getSlideSasUrl, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
 
-const DEMO_SLIDE_URL = "https://placehold.co/1280x720/e8eaff/0048d8?text=Slide+preview";
-
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
@@ -137,9 +135,7 @@ function MCQContent() {
         if (q.mcqId && q.slideImageUrl) {
           getSlideSasUrl(q.courseId, q.mcqId)
             .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
-            .catch(() => setSlideSasUrl(DEMO_SLIDE_URL));
-        } else {
-          setSlideSasUrl(DEMO_SLIDE_URL);
+            .catch(() => { /* non-fatal — slide pane stays empty */ });
         }
       })
       .catch(err => { setLoadError(err.message); setScreen("question"); });
@@ -239,9 +235,7 @@ function MCQContent() {
         if (q.mcqId && q.slideImageUrl) {
           getSlideSasUrl(q.courseId, q.mcqId)
             .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
-            .catch(() => setSlideSasUrl(DEMO_SLIDE_URL));
-        } else {
-          setSlideSasUrl(DEMO_SLIDE_URL);
+            .catch(() => { /* non-fatal — slide pane stays empty */ });
         }
       })
       .catch(() => { setScreen("question"); });
