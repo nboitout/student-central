@@ -68,8 +68,7 @@ export default function Nav() {
             </div>
           )}
         </div>
-        <a className={styles.ghost} href="/workspace">{tx.myWorkspace}</a>
-        <a className={styles.demo} href="https://app.stg.tutor.studentcentral.ai/login" target="_blank" rel="noopener noreferrer">{tx.tryIt}</a>
+        <a className={styles.demo} href="/workspace">{tx.tryIt}</a>
       </div>
     </nav>
   );
