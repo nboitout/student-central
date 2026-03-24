@@ -7,7 +7,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
 import { evaluateReasoning, getSlideSasUrl, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
 
-/* ── DEV: placeholder slide until backend ships mcqId + slideImageUrl ── */
 const DEMO_SLIDE_URL = "https://placehold.co/1280x720/e8eaff/0048d8?text=Slide+preview";
 
 const API_URL =
@@ -15,7 +14,22 @@ const API_URL =
   "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
 const LETTERS = ["A", "B", "C", "D"];
-type Screen = "loading" | "waiting" | "question" | "explanation" | "result";
+
+type Screen = "loading" | "waiting" | "question" | "answered" | "chat" | "result";
+
+interface ChatMessage { role: "ai" | "student"; text: string; }
+
+/* Contextual AI follow-up probe */
+function aiProbe(correct: boolean, questionText: string): string {
+  if (correct) {
+    return `Good — you picked the right answer. In your own words, why is that correct? What's the underlying concept?`;
+  }
+  return `You selected an incorrect option. What led you to that choice? Try to explain your reasoning.`;
+}
+
+function aiFollowUp(): string {
+  return `Thanks. Can you say more about how you'd distinguish between the correct answer and the distractors?`;
+}
 
 function MCQContent() {
   const params      = useSearchParams();
@@ -26,20 +40,27 @@ function MCQContent() {
   const courseTitle = decodeURIComponent(params.get("title") ?? "Course");
   const pdfUrl      = decodeURIComponent(params.get("pdf") ?? "");
 
-  const [screen,       setScreen]       = useState<Screen>("loading");
-  const [mcq,          setMcq]          = useState<MCQQuestion | null>(null);
-  const [loadError,    setLoadError]    = useState<string | null>(null);
-  const [selected,     setSelected]     = useState<number | null>(null);
-  const [submitted,    setSubmitted]    = useState(false);
-  const [explanation,  setExplanation]  = useState("");
-  const [signal,       setSignal]       = useState<ReasoningSignal | null>(null);
-  const [evaluating,   setEvaluating]   = useState(false);
-  const [evalError,    setEvalError]    = useState<string | null>(null);
-  const [slideSasUrl,  setSlideSasUrl]  = useState<string | null>(null);
-  const [slideLoaded,  setSlideLoaded]  = useState(false);
+  /* ── Core MCQ state ── */
+  const [screen,      setScreen]     = useState<Screen>("loading");
+  const [questions,   setQuestions]  = useState<MCQQuestion[]>([]);
+  const [qIndex,      setQIndex]     = useState(0);
+  const [answers,     setAnswers]    = useState<(number | null)[]>([]);
+  const [loadError,   setLoadError]  = useState<string | null>(null);
+
+  /* ── Chat state ── */
+  const [chatMsgs,    setChatMsgs]   = useState<ChatMessage[]>([]);
+  const [chatInput,   setChatInput]  = useState("");
+  const [chatTurns,   setChatTurns]  = useState(0);
+  const [evaluating,  setEvaluating] = useState(false);
+  const [evalError,   setEvalError]  = useState<string | null>(null);
+  const [signal,      setSignal]     = useState<ReasoningSignal | null>(null);
+
+  /* ── Slide state ── */
+  const [slideSasUrl, setSlideSasUrl] = useState<string | null>(null);
+  const [slideLoaded, setSlideLoaded] = useState(false);
 
   /* ── Resizable split ── */
-  const [slideWidth,   setSlideWidth]   = useState(55);
+  const [slideWidth,  setSlideWidth] = useState(55);
   const bodyRef    = useRef<HTMLDivElement>(null);
   const dragging   = useRef(false);
   const dividerRef = useRef<HTMLDivElement>(null);
@@ -57,7 +78,7 @@ function MCQContent() {
       if (!dragging.current || !bodyRef.current) return;
       const { left, width } = bodyRef.current.getBoundingClientRect();
       const pct = ((e.clientX - left) / width) * 100;
-      setSlideWidth(Math.min(Math.max(pct, 25), 70));
+      setSlideWidth(Math.min(Math.max(pct, 25), 72));
     };
     const onUp = () => {
       if (!dragging.current) return;
@@ -68,15 +89,17 @@ function MCQContent() {
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
-    return () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
+    return () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
   }, []);
 
-  const loadMCQ = () => {
+  /* ── Helpers ── */
+  const mcq     = questions[qIndex] ?? null;
+  const selected = answers[qIndex] ?? null;
+  const isCorrect = mcq !== null && selected === mcq.correctIndex;
+
+  /* ── Load MCQ ── */
+  const loadMCQ = useCallback(() => {
     setScreen("loading");
-    setMcq(null);
     setLoadError(null);
     setSlideSasUrl(null);
     setSlideLoaded(false);
@@ -87,11 +110,7 @@ function MCQContent() {
       body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle }),
     })
       .then(async (res) => {
-        if (res.status === 202) {
-          setScreen("waiting");
-          setTimeout(() => loadMCQ(), 10000);
-          return;
-        }
+        if (res.status === 202) { setScreen("waiting"); setTimeout(() => loadMCQ(), 10000); return; }
         if (!res.ok) {
           const err = await res.json().catch(() => ({ detail: `Error ${res.status}` }));
           setLoadError(err.detail ?? `Error ${res.status}`);
@@ -99,34 +118,72 @@ function MCQContent() {
           return;
         }
         const q: MCQQuestion = await res.json();
-        setMcq(q);
+        setQuestions(prev => {
+          const next = [...prev];
+          next[qIndex] = q;
+          return next;
+        });
+        setAnswers(prev => {
+          const next = [...prev];
+          if (next[qIndex] === undefined) next[qIndex] = null;
+          return next;
+        });
         setScreen("question");
-        /* Fetch SAS URL for slide image */
         if (q.mcqId && q.slideImageUrl) {
           getSlideSasUrl(q.courseId, q.mcqId)
             .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
             .catch(() => setSlideSasUrl(DEMO_SLIDE_URL));
         } else {
-          /* DEV fallback — remove once backend ships mcqId + slideImageUrl */
           setSlideSasUrl(DEMO_SLIDE_URL);
         }
       })
       .catch(err => { setLoadError(err.message); setScreen("question"); });
-  };
+  }, [courseId, pdfUrl, courseTitle, qIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { loadMCQ(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (submitted) {
-      const t = setTimeout(() => setScreen("explanation"), 400);
-      return () => clearTimeout(t);
-    }
-  }, [submitted]);
+  /* ── Submit answer → go to answered screen ── */
+  const handleSubmit = () => {
+    if (selected === null) return;
+    setScreen("answered");
+  };
 
-  const handleSubmit = () => { if (selected === null) return; setSubmitted(true); };
+  /* ── Pick option ── */
+  const pick = (i: number) => {
+    setAnswers(prev => { const next = [...prev]; next[qIndex] = i; return next; });
+  };
 
+  /* ── Go to chat ── */
+  const startChat = () => {
+    setChatMsgs([{ role: "ai", text: aiProbe(isCorrect, mcq?.question ?? "") }]);
+    setChatInput("");
+    setChatTurns(0);
+    setSignal(null);
+    setEvalError(null);
+    setScreen("chat");
+  };
+
+  /* ── Send chat message ── */
+  const sendChat = () => {
+    if (!chatInput.trim()) return;
+    const msg = chatInput.trim();
+    setChatInput("");
+    const newTurns = chatTurns + 1;
+    setChatTurns(newTurns);
+    setChatMsgs(prev => [
+      ...prev,
+      { role: "student", text: msg },
+      ...(newTurns === 1 ? [{ role: "ai" as const, text: aiFollowUp() }] : []),
+    ]);
+  };
+
+  /* ── Evaluate reasoning ── */
   const handleEvaluate = async () => {
-    if (!mcq || selected === null || explanation.trim().length < 10) return;
+    if (!mcq) return;
+    const explanation = chatMsgs
+      .filter(m => m.role === "student")
+      .map(m => m.text)
+      .join(" | ");
     setEvaluating(true); setEvalError(null);
     try {
       const result = await evaluateReasoning({
@@ -134,8 +191,8 @@ function MCQContent() {
         question: mcq.question,
         options: mcq.options.map(o => o.text),
         correctIndex: mcq.correctIndex,
-        selectedIndex: selected,
-        studentExplanation: explanation,
+        selectedIndex: selected ?? 0,
+        studentExplanation: explanation || "(no explanation provided)",
       });
       setSignal(result);
       setScreen("result");
@@ -146,242 +203,332 @@ function MCQContent() {
     }
   };
 
-  const handleRetry = () => {
-    setSelected(null);
-    setSubmitted(false);
-    setExplanation("");
+  /* ── Next question ── */
+  const nextQuestion = () => {
+    const nextIdx = qIndex + 1;
+    setQIndex(nextIdx);
+    setScreen("loading");
+    setLoadError(null);
+    setSlideSasUrl(null);
+    setSlideLoaded(false);
+    setChatMsgs([]);
+    setChatTurns(0);
     setSignal(null);
-    setEvalError(null);
-    loadMCQ();
+
+    fetch(`${API_URL}/api/mcq/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle }),
+    })
+      .then(async (res) => {
+        if (!res.ok) { setLoadError(`Error ${res.status}`); setScreen("question"); return; }
+        const q: MCQQuestion = await res.json();
+        setQuestions(prev => { const next = [...prev]; next[nextIdx] = q; return next; });
+        setAnswers(prev => { const next = [...prev]; next[nextIdx] = null; return next; });
+        setScreen("question");
+        if (q.mcqId && q.slideImageUrl) {
+          getSlideSasUrl(q.courseId, q.mcqId)
+            .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
+            .catch(() => setSlideSasUrl(DEMO_SLIDE_URL));
+        } else {
+          setSlideSasUrl(DEMO_SLIDE_URL);
+        }
+      })
+      .catch(() => { setScreen("question"); });
   };
 
-  const isCorrect = mcq !== null && selected === mcq.correctIndex;
+  /* ── Previous question ── */
+  const prevQuestion = () => {
+    if (qIndex === 0) return;
+    const prevIdx = qIndex - 1;
+    setQIndex(prevIdx);
+    setSlideSasUrl(null);
+    setSlideLoaded(false);
+    setChatMsgs([]);
+    setChatTurns(0);
+    setSignal(null);
+    const prevScreen = answers[prevIdx] !== null ? "answered" : "question";
+    setScreen(prevScreen);
+  };
 
-  /* ── Loading / waiting: full page, no columns ── */
+  /* ── Header (shared) ── */
+  const Header = () => (
+    <header className={styles.header}>
+      <div className={styles.headerLeft}>
+        {qIndex > 0
+          ? <button className={styles.backBtn} onClick={prevQuestion}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              {ui.prevQuestion ?? "Previous question"}
+            </button>
+          : <button className={styles.backBtn} onClick={() => router.back()}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              {ui.backToCourse ?? "Back to course"}
+            </button>
+        }
+      </div>
+      <div className={styles.headerCenter}>
+        <span className={styles.headerEyebrow}>{ui.eyebrow}</span>
+        <span className={styles.headerTitle}>{courseTitle}</span>
+      </div>
+      <div className={styles.headerRight}>
+        <span className={styles.qCounter}>Q{qIndex + 1}</span>
+      </div>
+    </header>
+  );
+
+  /* ── Full-page loading/waiting ── */
   if (screen === "loading" || screen === "waiting") {
     return (
       <div className={styles.page}>
-        <header className={styles.header}>
-          <button className={styles.backBtn} onClick={() => router.back()}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-            </svg>
-            {ui.backToWorkspace}
-          </button>
-          <div className={styles.headerCenter}>
-            <span className={styles.headerEyebrow}>{ui.eyebrow}</span>
-            <span className={styles.headerTitle}>{courseTitle}</span>
-          </div>
-          <div className={styles.headerRight} />
-        </header>
+        <Header />
         <div className={styles.loadingPage}>
           <div className={styles.loadingWrap}>
             <div className={styles.loadingLabel}>
-              {screen === "waiting"
-                ? (ui.preparingQuestions ?? "Preparing your questions…")
-                : (ui.generating ?? "Generating your question…")}
+              {screen === "waiting" ? (ui.preparingQuestions ?? "Preparing…") : (ui.generating ?? "Generating…")}
             </div>
             <div className={styles.loadingDots}><span /><span /><span /></div>
             <div className={styles.loadingHint}>
-              {screen === "waiting"
-                ? (ui.preparingHint ?? "Your document is being analysed. This takes about 60 seconds the first time.")
-                : (ui.generatingHint ?? "Reading course content with AI")}
+              {screen === "waiting" ? (ui.preparingHint ?? "Analysing document…") : (ui.generatingHint ?? "Reading with AI")}
             </div>
-            {screen === "waiting" && (
-              <div className={styles.retryHint}>{ui.retryHint ?? "Checking again automatically…"}</div>
-            )}
+            {screen === "waiting" && <div className={styles.retryHint}>{ui.retryHint ?? "Checking again…"}</div>}
           </div>
         </div>
       </div>
     );
   }
 
-  /* ── Question / Explanation / Result: two-column layout ── */
+  /* ── Slide pane (shared for question / answered / chat / result screens) ── */
+  const SlidePaneContent = () => (
+    <div className={styles.slidePane} style={{ width: `${slideWidth}%` }}>
+      {mcq?.pageNumber !== undefined && (
+        <div className={styles.slidePageBadge}>{ui.slidePage ?? "Page"} {mcq.pageNumber + 1}</div>
+      )}
+      {slideSasUrl && !slideLoaded && (
+        <div className={styles.slideLoadingWrap}><div className={styles.loadingDots}><span /><span /><span /></div></div>
+      )}
+      {slideSasUrl && (
+        <img
+          src={slideSasUrl}
+          alt={`Slide ${(mcq?.pageNumber ?? 0) + 1}`}
+          className={styles.slideImg}
+          style={{ display: slideLoaded ? "block" : "none" }}
+          onLoad={() => setSlideLoaded(true)}
+        />
+      )}
+      {!slideSasUrl && (
+        <div className={styles.slideLoadingWrap}><div className={styles.loadingDots}><span /><span /><span /></div></div>
+      )}
+    </div>
+  );
+
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => router.back()}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-          </svg>
-          {ui.backToWorkspace}
-        </button>
-        <div className={styles.headerCenter}>
-          <span className={styles.headerEyebrow}>{ui.eyebrow}</span>
-          <span className={styles.headerTitle}>{courseTitle}</span>
-        </div>
-        <div className={styles.headerRight} />
-      </header>
+      <Header />
 
       <div className={styles.body} ref={bodyRef}>
+        <SlidePaneContent />
 
-        {/* ── LEFT: slide pane ── */}
-        <div className={styles.slidePane} style={{ width: `${slideWidth}%` }}>
-          {mcq?.pageNumber !== undefined && (
-            <div className={styles.slidePageBadge}>
-              {ui.slidePage ?? "Page"} {mcq.pageNumber + 1}
-            </div>
-          )}
-          {!slideSasUrl && (
-            <div className={styles.slideLoadingWrap}>
-              <div className={styles.loadingDots}><span /><span /><span /></div>
-            </div>
-          )}
-          {slideSasUrl && !slideLoaded && (
-            <div className={styles.slideLoadingWrap}>
-              <div className={styles.loadingDots}><span /><span /><span /></div>
-            </div>
-          )}
-          {slideSasUrl && (
-            <img
-              src={slideSasUrl}
-              alt={`Slide page ${(mcq?.pageNumber ?? 0) + 1}`}
-              className={styles.slideImg}
-              style={{ display: slideLoaded ? "block" : "none" }}
-              onLoad={() => setSlideLoaded(true)}
-            />
-          )}
+        {/* ── Drag divider ── */}
+        <div ref={dividerRef} className={styles.divider} onMouseDown={onMouseDown} title="Drag to resize">
+          <div className={styles.dividerHandle}>
+            <span /><span /><span /><span /><span /><span />
+          </div>
         </div>
 
-        {/* ── DIVIDER ── */}
-        <div
-          ref={dividerRef}
-          className={styles.divider}
-          onMouseDown={onMouseDown}
-          title="Drag to resize"
-        />
-
-        {/* ── RIGHT: question pane ── */}
-        <div className={styles.questionPane}>
-
-          {/* ── Question screen ── */}
-          {screen === "question" && mcq && (
-            <>
-              {loadError && <div className={styles.errorBanner}>{loadError}</div>}
-              <div className={styles.questionWrap}>
-                <div className={styles.questionLabel}>{ui.questionLabel}</div>
-                <h1 className={styles.question}>{mcq.question}</h1>
-              </div>
-              <div className={styles.options}>
-                {mcq.options.map((opt, i) => {
-                  const isSelected   = selected === i;
-                  const isCorrectOpt = submitted && i === mcq.correctIndex;
-                  const isWrongOpt   = submitted && isSelected && i !== mcq.correctIndex;
-                  return (
+        {/* ── QUESTION screen ── */}
+        {screen === "question" && (
+          <div className={styles.questionPane}>
+            {loadError && <div className={styles.errorBanner}>{loadError}</div>}
+            {mcq && (
+              <>
+                <div className={styles.questionWrap}>
+                  <div className={styles.questionLabel}>{ui.questionLabel}</div>
+                  <h1 className={styles.question}>{mcq.question}</h1>
+                </div>
+                <div className={styles.options}>
+                  {mcq.options.map((opt, i) => (
                     <button
                       key={i}
-                      className={[
-                        styles.option,
-                        isSelected && !submitted ? styles.optSelected : "",
-                        isCorrectOpt ? styles.optCorrect : "",
-                        isWrongOpt   ? styles.optWrong   : "",
-                      ].join(" ")}
-                      onClick={() => { if (!submitted) setSelected(i); }}
-                      disabled={submitted}
+                      className={[styles.option, selected === i ? styles.optSelected : ""].join(" ")}
+                      onClick={() => pick(i)}
                     >
                       <span className={styles.optLetter}>{LETTERS[i]}</span>
                       <span className={styles.optText}>{opt.text}</span>
-                      {isCorrectOpt && <span className={styles.optMark}>✓</span>}
-                      {isWrongOpt   && <span className={styles.optMark}>✗</span>}
                     </button>
-                  );
-                })}
-              </div>
-              <div className={styles.actions}>
-                <button className={styles.cancelBtn} onClick={() => router.back()}>{ui.cancel}</button>
-                <button
-                  className={`${styles.submitBtn} ${selected === null ? styles.submitDisabled : ""}`}
-                  onClick={handleSubmit}
-                  disabled={selected === null || submitted}
-                >
-                  {ui.submitAnswer}
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* ── Explanation screen ── */}
-          {screen === "explanation" && mcq && (
-            <>
-              <div className={`${styles.resultBanner} ${isCorrect ? styles.bannerCorrect : styles.bannerWrong}`}>
-                <div className={styles.resultIconWrap}>
-                  <span className={styles.resultIcon}>{isCorrect ? "✓" : "✗"}</span>
+                  ))}
                 </div>
-                <div>
-                  <div className={styles.resultTitle}>{isCorrect ? ui.correctTitle : ui.incorrectTitle}</div>
-                  <div className={styles.resultSub}>
-                    {isCorrect ? ui.correctSub : `${ui.incorrectPrefix} "${mcq.options[mcq.correctIndex].text}"`}
+                <div className={styles.actions}>
+                  <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToWorkspace}</button>
+                  <button
+                    className={`${styles.submitBtn} ${selected === null ? styles.submitDisabled : ""}`}
+                    onClick={handleSubmit}
+                    disabled={selected === null}
+                  >
+                    {ui.submitAnswer}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── ANSWERED screen — full recap ── */}
+        {screen === "answered" && mcq && (
+          <div className={styles.questionPane}>
+            <div className={`${styles.resultBanner} ${isCorrect ? styles.bannerCorrect : styles.bannerWrong}`}>
+              <div className={styles.resultIconWrap}>
+                <span className={styles.resultIcon}>{isCorrect ? "✓" : "✗"}</span>
+              </div>
+              <div>
+                <div className={styles.resultTitle}>{isCorrect ? ui.correctTitle : ui.incorrectTitle}</div>
+                <div className={styles.resultSub}>
+                  {isCorrect ? ui.correctSub : `${ui.incorrectPrefix} "${mcq.options[mcq.correctIndex].text}"`}
+                </div>
+              </div>
+            </div>
+
+            {/* Full question recap */}
+            <div className={styles.recapQuestion}>{mcq.question}</div>
+
+            {/* All options with full highlighting */}
+            <div className={styles.options}>
+              {mcq.options.map((opt, i) => {
+                const isCorrectOpt = i === mcq.correctIndex;
+                const isSelectedOpt = i === selected;
+                const isWrong = isSelectedOpt && !isCorrectOpt;
+                return (
+                  <div
+                    key={i}
+                    className={[
+                      styles.optionStatic,
+                      isCorrectOpt ? styles.optCorrect : "",
+                      isWrong ? styles.optWrong : "",
+                      isSelectedOpt && isCorrectOpt ? styles.optCorrect : "",
+                    ].join(" ")}
+                  >
+                    <span className={styles.optLetter}>{LETTERS[i]}</span>
+                    <span className={styles.optText}>{opt.text}</span>
+                    {isCorrectOpt && <span className={styles.optMark}>✓</span>}
+                    {isWrong      && <span className={styles.optMark}>✗</span>}
                   </div>
+                );
+              })}
+            </div>
+
+            {/* Explanation */}
+            <div className={styles.explanationSection}>
+              <div className={styles.sectionLabel}>{ui.whyMatters}</div>
+              <p className={styles.explanationText}>{mcq.explanation}</p>
+            </div>
+
+            <div className={styles.answeredActions}>
+              <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToWorkspace}</button>
+              <div className={styles.answeredActionsRight}>
+                <button className={styles.skipBtn} onClick={nextQuestion}>{ui.skipToNext ?? "Next question →"}</button>
+                <button className={styles.submitBtn} onClick={startChat}>{ui.discussWithAI ?? "Discuss with AI →"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── CHAT screen ── */}
+        {screen === "chat" && mcq && (
+          <div className={styles.questionPane}>
+            {/* Compact recap header */}
+            <div className={styles.chatRecap}>
+              <div className={`${styles.chatRecapBadge} ${isCorrect ? styles.badgeCorrect : styles.badgeWrong}`}>
+                {isCorrect ? "✓ Correct" : "✗ Incorrect"}
+              </div>
+              <div className={styles.chatRecapQ}>{mcq.question}</div>
+              <div className={styles.chatRecapAnswer}>
+                <span className={styles.chatRecapLabel}>{ui.yourAnswer ?? "Your answer"}:</span>
+                {" "}{LETTERS[selected ?? 0]}. {mcq.options[selected ?? 0]?.text}
+              </div>
+              {!isCorrect && (
+                <div className={styles.chatRecapCorrect}>
+                  <span className={styles.chatRecapLabel}>{ui.correctAnswer ?? "Correct answer"}:</span>
+                  {" "}{LETTERS[mcq.correctIndex]}. {mcq.options[mcq.correctIndex].text}
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div className={styles.explainPrompt}>
-                <div className={styles.sectionLabel}>{ui.explainLabel ?? "Explain your reasoning"}</div>
-                <p className={styles.explainHint}>{ui.explainHint ?? "Why did you choose that answer? What is the underlying concept?"}</p>
-                <textarea
-                  className={styles.explainArea}
-                  placeholder={ui.explainPlaceholder ?? "Type your explanation here…"}
-                  value={explanation}
-                  onChange={e => setExplanation(e.target.value)}
-                  rows={5}
-                />
-                {evalError && <div className={styles.errorBanner}>{evalError}</div>}
-              </div>
+            {/* Chat thread */}
+            <div className={styles.chatThread}>
+              {chatMsgs.map((msg, i) => (
+                <div key={i} className={msg.role === "ai" ? styles.chatAI : styles.chatStudent}>
+                  <span className={styles.chatSender}>{msg.role === "ai" ? "AI Tutor" : (ui.you ?? "You")}</span>
+                  {msg.text}
+                </div>
+              ))}
+            </div>
 
-              <div className={styles.actions}>
-                <button className={styles.cancelBtn} onClick={() => router.back()}>{ui.backBtn}</button>
+            {/* Input */}
+            <div className={styles.chatInputWrap}>
+              <textarea
+                className={styles.chatInput}
+                placeholder={ui.explainPlaceholder ?? "Type your response…"}
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                rows={3}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && chatInput.trim()) { e.preventDefault(); sendChat(); } }}
+              />
+              {evalError && <div className={styles.errorBanner}>{evalError}</div>}
+            </div>
+
+            <div className={styles.answeredActions}>
+              <button className={styles.ghostBtn} onClick={nextQuestion}>{ui.skipEvaluation ?? "Skip"}</button>
+              <div className={styles.answeredActionsRight}>
+                {chatTurns >= 1 && (
+                  <button
+                    className={`${styles.skipBtn} ${evaluating ? styles.submitDisabled : ""}`}
+                    onClick={handleEvaluate}
+                    disabled={evaluating}
+                  >
+                    {evaluating ? "…" : (ui.evaluateBtn ?? "Get evaluation →")}
+                  </button>
+                )}
                 <button
-                  className={`${styles.submitBtn} ${(explanation.trim().length < 10 || evaluating) ? styles.submitDisabled : ""}`}
-                  onClick={handleEvaluate}
-                  disabled={explanation.trim().length < 10 || evaluating}
+                  className={`${styles.submitBtn} ${!chatInput.trim() ? styles.submitDisabled : ""}`}
+                  onClick={sendChat}
+                  disabled={!chatInput.trim()}
                 >
-                  {evaluating ? "…" : (ui.evaluateBtn ?? "Evaluate my reasoning")}
+                  {ui.send ?? "Send →"}
                 </button>
               </div>
-            </>
-          )}
+            </div>
+          </div>
+        )}
 
-          {/* ── Result screen ── */}
-          {screen === "result" && mcq && signal && (
-            <>
-              <div className={`${styles.signalBanner} ${styles[`signal${signal.signal.replace(/ /g, "")}`]}`}>
-                <div className={styles.signalLabel}>{ui.reasoningSignal ?? "Reasoning signal"}</div>
-                <div className={styles.signalValue}>{signal.signal}</div>
-                <div className={styles.signalConfidence}>{ui.confidence ?? "Confidence"}: {signal.confidence}</div>
-              </div>
+        {/* ── RESULT screen ── */}
+        {screen === "result" && mcq && signal && (
+          <div className={styles.questionPane}>
+            <div className={`${styles.signalBanner} ${styles[`signal${signal.signal.replace(/ /g, "")}`]}`}>
+              <div className={styles.signalLabel}>{ui.reasoningSignal ?? "Reasoning signal"}</div>
+              <div className={styles.signalValue}>{signal.signal}</div>
+              <div className={styles.signalConfidence}>{ui.confidence ?? "Confidence"}: {signal.confidence}</div>
+            </div>
 
-              <div className={styles.recapSection}>
-                <div className={styles.sectionLabel}>{ui.feedbackForYou ?? "Feedback for you"}</div>
-                <p className={styles.feedbackText}>{signal.studentFeedback}</p>
-              </div>
+            <div className={styles.recapSection}>
+              <div className={styles.sectionLabel}>{ui.feedbackForYou ?? "Feedback for you"}</div>
+              <p className={styles.feedbackText}>{signal.studentFeedback}</p>
+            </div>
 
-              <div className={styles.explanationSection}>
-                <div className={styles.sectionLabel}>{ui.whyMatters}</div>
-                <p className={styles.explanationText}>{mcq.explanation}</p>
-              </div>
+            <div className={styles.explanationSection}>
+              <div className={styles.sectionLabel}>{ui.whyMatters}</div>
+              <p className={styles.explanationText}>{mcq.explanation}</p>
+            </div>
 
-              <div className={styles.facultySection}>
-                <div className={styles.sectionLabel}>{ui.facultyInsight ?? "Faculty insight"}</div>
-                <p className={styles.facultyText}>{signal.facultyInsight}</p>
-              </div>
+            <div className={styles.facultySection}>
+              <div className={styles.sectionLabel}>{ui.facultyInsight ?? "Faculty insight"}</div>
+              <p className={styles.facultyText}>{signal.facultyInsight}</p>
+            </div>
 
-              <div className={styles.ctaStrip}>
-                <div className={styles.ctaLeft}>
-                  <div className={styles.ctaHeadline}>{ui.wantDeeper}</div>
-                  <div className={styles.ctaSub}>{ui.exploreSub}</div>
-                </div>
-                <a href="https://app.stg.tutor.studentcentral.ai/login" target="_blank" rel="noopener noreferrer" className={styles.ctaBtn}>
-                  {ui.openTutor}
-                </a>
-              </div>
-
-              <div className={styles.actions}>
-                <button className={styles.cancelBtn} onClick={() => router.back()}>{ui.backBtn}</button>
-                <button className={styles.submitBtn} onClick={handleRetry}>{ui.tryAgain}</button>
-              </div>
-            </>
-          )}
-        </div>
+            <div className={styles.answeredActions}>
+              <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToWorkspace}</button>
+              <button className={styles.submitBtn} onClick={nextQuestion}>{ui.nextQuestion ?? "Next question →"}</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
