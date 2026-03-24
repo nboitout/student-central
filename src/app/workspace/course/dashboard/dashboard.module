@@ -1,0 +1,396 @@
+/* ════════════════════════════════════════════════════════
+   COURSE DASHBOARD PAGE
+════════════════════════════════════════════════════════ */
+
+.page {
+  min-height: 100vh;
+  background: var(--surface-low);
+  padding: 28px 40px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.header {
+  background: var(--surface-lowest);
+  border: 0.5px solid var(--outline-variant);
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.headerLeft {}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.courseName {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.courseMeta {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+}
+
+.headerRight {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.btnBack {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-color: var(--outline-variant);
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+.btnBack:hover { color: var(--on-surface); }
+
+.btnMcq {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary-gradient);
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btnMcq:hover { opacity: 0.88; }
+
+/* ── KPI strip ───────────────────────────────────────────── */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.kpi {
+  background: var(--surface-lowest);
+  border: 0.5px solid var(--outline-variant);
+  padding: 16px 18px;
+}
+
+.kpiVal {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--on-surface);
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.valBlue   { color: var(--primary); }
+.valGreen  { color: #2d6a4f; }
+.valAmber  { color: #b47a0a; }
+.valMuted  { font-size: 1.125rem; color: var(--on-surface-variant); }
+
+.kpiLbl {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+}
+
+/* ── Two-column ──────────────────────────────────────────── */
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ── Shared card ─────────────────────────────────────────── */
+.card, .fullCard {
+  background: var(--surface-lowest);
+  border: 0.5px solid var(--outline-variant);
+  padding: 18px 20px;
+}
+
+.cardLabel {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  margin-bottom: 14px;
+}
+
+/* ── Reasoning signals ───────────────────────────────────── */
+.signalList { display: flex; flex-direction: column; gap: 10px; }
+
+.sigRow { display: flex; align-items: center; gap: 10px; }
+
+.sigDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sigName {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.sigTrack {
+  flex: 1;
+  height: 5px;
+  background: var(--surface-container);
+  overflow: hidden;
+}
+
+.sigFill { height: 100%; transition: width 0.4s ease; }
+
+.sigN {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ── Time per question ───────────────────────────────────── */
+.timeList { display: flex; flex-direction: column; gap: 6px; }
+
+.tItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  background: var(--surface-low);
+}
+
+.tNum {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  width: 22px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.tBarWrap {
+  flex: 1;
+  height: 4px;
+  background: var(--surface-container);
+  overflow: hidden;
+}
+
+.tBar {
+  height: 100%;
+  background: var(--primary);
+  opacity: 0.45;
+  transition: width 0.4s ease;
+}
+
+.tDuration {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  min-width: 68px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tBadge {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Sessions by day ─────────────────────────────────────── */
+.sessionList { display: flex; flex-direction: column; }
+
+.sessionDay {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 14px 0;
+  border-bottom: 0.5px solid var(--outline-variant);
+}
+.sessionDay:last-child { border-bottom: none; padding-bottom: 0; }
+.sessionDay:first-child { padding-top: 0; }
+
+.sDate {
+  width: 110px;
+  flex-shrink: 0;
+  padding-right: 16px;
+}
+
+.sDateMain {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  margin-bottom: 2px;
+}
+
+.sDateSub {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  opacity: 0.6;
+}
+
+.sQuestions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sQ {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--surface-low);
+}
+
+.sBadge {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sQText {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sQTime {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  opacity: 0.55;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Activity heatmap ────────────────────────────────────── */
+.calDayLabels {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.calLabel {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  opacity: 0.4;
+  text-align: center;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calEmpty { height: 18px; }
+
+.calDay {
+  height: 18px;
+  border-radius: 2px;
+  transition: opacity 0.2s;
+  cursor: default;
+}
+.calDay:hover { opacity: 0.75; }
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+.legendLabel {
+  font-family: var(--font-body);
+  font-size: 0.625rem;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+}
+
+.legendBoxes { display: flex; gap: 3px; }
+
+.lb {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .page { padding: 20px 16px 40px; }
+  .kpiRow { grid-template-columns: repeat(3, 1fr); }
+  .twoCol { grid-template-columns: 1fr; }
+}
