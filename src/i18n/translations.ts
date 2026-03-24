@@ -198,7 +198,7 @@ export const t = {
       h2em:    "the thinking behind every answer.",
       sub:     "Bring reasoning, misconception detection, and richer mastery signals into your existing assessment workflow.",
       primary: "Try it",
-      ghost:   "My Workspace",
+      ghost:   "Legacy app →",
     },
     footer: {
       message: "Built by",
@@ -537,7 +537,7 @@ export const t = {
       h2em:    "le raisonnement derrière chaque réponse.",
       sub:     "Intégrez l'analyse du raisonnement, la détection des représentations erronées et des signaux de maîtrise plus riches dans votre workflow d'évaluation existant.",
       primary: "Essayer",
-      ghost:   "Mon espace",
+      ghost:   "Application legacy →",
     },
     footer: {
       message: "Conçu par",
@@ -876,7 +876,7 @@ export const t = {
       h2em:    "raționamentul din spatele fiecărui răspuns.",
       sub:     "Integrați analiza raționamentului, detectarea concepțiilor greșite și semnale mai bogate de stăpânire a materiei în fluxul dvs. existent de evaluare.",
       primary: "Încearcă",
-      ghost:   "Spațiul meu",
+      ghost:   "Aplicație legacy →",
     },
     footer: {
       message: "Conceput de",
@@ -1203,7 +1203,7 @@ export const t = {
       h2em:    "das Denken hinter jeder Antwort.",
       sub:     "Integrieren Sie Denkprozessanalyse, Fehlvorstellungserkennung und reichhaltigere Beherrschungssignale in Ihren bestehenden Prüfungsworkflow.",
       primary: "Ausprobieren",
-      ghost:   "Mein Bereich",
+      ghost:   "Legacy-App →",
     },
     footer: {
       message: "Entwickelt von",
