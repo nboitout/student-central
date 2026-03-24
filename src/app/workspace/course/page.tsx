@@ -175,20 +175,36 @@ function CourseReaderContent() {
           </div>
 
           <div className={styles.sidebarDivider} />
-          <div className={styles.sidebarSection}>
-            <div className={styles.progressHeader}>
-              <span className={styles.sidebarLabel}>{ui.progressLabel}</span>
-              <span className={styles.progressPct}>{pct}%</span>
+          {/* ── Mini dashboard widget ── */}
+          <div className={styles.miniDash}>
+            <div className={styles.miniMetrics}>
+              <div className={styles.miniMetric}>
+                <div className={styles.miniVal}>{course.exercisesDone}</div>
+                <div className={styles.miniLbl}>{ui.doneLabel}</div>
+              </div>
+              <div className={styles.miniMetric}>
+                <div className={`${styles.miniVal} ${styles.miniValBlue}`}>{pct}%</div>
+                <div className={styles.miniLbl}>{ui.progressLabel}</div>
+              </div>
             </div>
-            <div className={styles.progressHint}>{ui.progressHint ?? "Questions attempted out of total"}</div>
-            <div className={styles.progressTrack}>
-              <div className={styles.progressFill} style={{ width: `${pct}%` }} />
+            <div className={styles.miniBarWrap}>
+              <div className={styles.miniBarRow}>
+                <span className={styles.miniBarLabel}>{ui.progressLabel}</span>
+                <span className={styles.miniBarPct}>{pct}%</span>
+              </div>
+              <div className={styles.miniTrack}>
+                <div className={styles.miniFill} style={{ width: `${pct}%` }} />
+              </div>
             </div>
-            <div className={styles.progressStats}>
-              <span className={styles.progressStat}><strong>{course.exercisesDone}</strong> {ui.doneLabel}</span>
-              <span className={styles.progressStat}><strong>{course.exercisesTotal - course.exercisesDone}</strong> {ui.remainingLabel}</span>
-              <span className={styles.progressStat}><strong>{course.exercisesTotal}</strong> {ui.totalLabel}</span>
-            </div>
+            <button
+              className={styles.dashLink}
+              onClick={() => router.push(`/workspace/course/dashboard?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}`)}
+            >
+              <span>{ui.viewDashboard ?? "View full dashboard"}</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
           </div>
 
           <div className={styles.sidebarDivider} />
