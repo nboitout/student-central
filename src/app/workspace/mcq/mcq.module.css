@@ -418,7 +418,8 @@
   color: var(--on-surface-variant);
   line-height: 1.7;
   padding: 16px 18px;
-  background: var(--tertiary-fixed);
+  background: var(--surface-lowest);
+  box-shadow: 0 0 0 1px rgba(26, 28, 46, 0.07);
   border-left: 3px solid var(--primary);
 }
 
@@ -426,11 +427,12 @@
 
 .feedbackText {
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--on-surface);
-  line-height: 1.65;
-  padding: 14px 18px;
-  background: var(--surface-low);
+  line-height: 1.7;
+  padding: 16px 20px;
+  background: var(--surface-lowest);
+  box-shadow: 0 0 0 1px rgba(26, 28, 46, 0.07);
   border-left: 3px solid var(--primary);
 }
 
