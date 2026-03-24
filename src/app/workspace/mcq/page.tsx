@@ -62,6 +62,35 @@ function MCQContent() {
   const [slideSasUrl, setSlideSasUrl] = useState<string | null>(null);
   const [slideLoaded, setSlideLoaded] = useState(false);
 
+  /* ── Timers ── */
+  const [qStartTime,   setQStartTime]  = useState<number>(Date.now());
+  const [qElapsed,     setQElapsed]    = useState(0);   /* seconds for current question */
+  const [totalElapsed, setTotalElapsed] = useState(0);  /* seconds total session */
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /* Start/reset question timer when screen becomes "question" */
+  useEffect(() => {
+    if (screen === "question") {
+      setQStartTime(Date.now());
+      setQElapsed(0);
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        const now = Date.now();
+        setQElapsed(Math.floor((now - qStartTime) / 1000));
+        setTotalElapsed(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [screen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fmtTimer = (sec: number) => {
+    const m = Math.floor(sec / 60).toString().padStart(2, "0");
+    const s = (sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
   /* ── Resizable split ── */
   const [slideWidth,  setSlideWidth] = useState(55);
   const bodyRef    = useRef<HTMLDivElement>(null);
@@ -275,6 +304,16 @@ function MCQContent() {
         <span className={styles.headerTitle}>{courseTitle}</span>
       </div>
       <div className={styles.headerRight}>
+        <div className={styles.timerWrap}>
+          <span className={styles.timerQ} title="Time on this question">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {fmtTimer(qElapsed)}
+          </span>
+          <span className={styles.timerSep}>·</span>
+          <span className={styles.timerTotal}>{fmtTimer(totalElapsed)}</span>
+        </div>
         <span className={styles.qCounter}>Q{qIndex + 1}</span>
       </div>
     </header>
