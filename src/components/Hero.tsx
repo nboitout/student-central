@@ -22,8 +22,7 @@ export default function Hero() {
           </h1>
           <p className={styles.sub}>{tx.sub}</p>
           <div className={styles.actions}>
-            <a className="btn-p" href="https://app.stg.tutor.studentcentral.ai/login" target="_blank" rel="noopener noreferrer">{tx.tryIt}</a>
-            <a className="btn-s" href="/workspace">{tx.myWorkspace}</a>
+            <a className="btn-p" href="/workspace">{tx.tryIt}</a>
           </div>
           <div className={styles.trustStrip}>
             {tx.trust.map((t) => (
