@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
@@ -37,6 +37,42 @@ function MCQContent() {
   const [evalError,    setEvalError]    = useState<string | null>(null);
   const [slideSasUrl,  setSlideSasUrl]  = useState<string | null>(null);
   const [slideLoaded,  setSlideLoaded]  = useState(false);
+
+  /* ── Resizable split ── */
+  const [slideWidth,   setSlideWidth]   = useState(55);
+  const bodyRef    = useRef<HTMLDivElement>(null);
+  const dragging   = useRef(false);
+  const dividerRef = useRef<HTMLDivElement>(null);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    dividerRef.current?.classList.add(styles.dragging);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging.current || !bodyRef.current) return;
+      const { left, width } = bodyRef.current.getBoundingClientRect();
+      const pct = ((e.clientX - left) / width) * 100;
+      setSlideWidth(Math.min(Math.max(pct, 25), 70));
+    };
+    const onUp = () => {
+      if (!dragging.current) return;
+      dragging.current = false;
+      dividerRef.current?.classList.remove(styles.dragging);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, []);
 
   const loadMCQ = () => {
     setScreen("loading");
@@ -177,10 +213,10 @@ function MCQContent() {
         <div className={styles.headerRight} />
       </header>
 
-      <div className={styles.body}>
+      <div className={styles.body} ref={bodyRef}>
 
         {/* ── LEFT: slide pane ── */}
-        <div className={styles.slidePane}>
+        <div className={styles.slidePane} style={{ width: `${slideWidth}%` }}>
           {mcq?.pageNumber !== undefined && (
             <div className={styles.slidePageBadge}>
               {ui.slidePage ?? "Page"} {mcq.pageNumber + 1}
@@ -206,6 +242,14 @@ function MCQContent() {
             />
           )}
         </div>
+
+        {/* ── DIVIDER ── */}
+        <div
+          ref={dividerRef}
+          className={styles.divider}
+          onMouseDown={onMouseDown}
+          title="Drag to resize"
+        />
 
         {/* ── RIGHT: question pane ── */}
         <div className={styles.questionPane}>
