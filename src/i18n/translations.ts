@@ -287,6 +287,9 @@ export const t = {
       exploreSub:       "Explore this topic with AI-guided discussion in Student Central.",
       openTutor:        "Open Student Central →",
       backBtn:          "Back to workspace",
+      slideView:       "View related slide",
+      slideHide:       "Hide related slide",
+      slidePage:       "Page",
       tryAgain:         "Try again",
     },
     course: {
@@ -612,6 +615,9 @@ export const t = {
       exploreSub:       "Explorez ce thème avec le tuteur IA de Student Central.",
       openTutor:        "Ouvrir Student Central →",
       backBtn:          "Retour à l'espace",
+      slideView:       "Voir la diapositive associée",
+      slideHide:       "Masquer la diapositive",
+      slidePage:       "Page",
       tryAgain:         "Réessayer",
     },
     course: {
@@ -937,6 +943,9 @@ export const t = {
       exploreSub:       "Explorați această temă cu tutorele IA al Student Central.",
       openTutor:        "Deschideți Student Central →",
       backBtn:          "Înapoi la spațiu",
+      slideView:       "Vedeți diapozitivul asociat",
+      slideHide:       "Ascundeți diapozitivul",
+      slidePage:       "Pagina",
       tryAgain:         "Încercați din nou",
     },
     course: {
@@ -1250,6 +1259,9 @@ export const t = {
       exploreSub:        "Erkunden Sie dieses Thema mit dem KI-Tutor von Student Central.",
       openTutor:         "Student Central öffnen →",
       backBtn:           "Zurück zum Bereich",
+      slideView:         "Zugehörige Folie anzeigen",
+      slideHide:         "Folie ausblenden",
+      slidePage:         "Seite",
       tryAgain:          "Erneut versuchen",
     },
     course: {
