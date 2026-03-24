@@ -15,7 +15,7 @@ export default function CTA() {
         <p className={styles.sub}>{tx.sub}</p>
         <div className={styles.actions}>
           <a className={styles.primary} href="https://app.stg.tutor.studentcentral.ai/login" target="_blank" rel="noopener noreferrer">{tx.primary}</a>
-          <a className={styles.ghost} href="mailto:team@studentcentral.ai">{tx.ghost}</a>
+          <a className={styles.ghost} href="/workspace">{tx.ghost}</a>
         </div>
       </div>
     </section>
