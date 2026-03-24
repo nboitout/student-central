@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-export type Lang = "en" | "fr" | "de" | "es" | "it" | "nl" | "pt" | "pl" | "sv" | "da" | "fi" | "ro";
+export type Lang = "en" | "fr" | "de" | "es" | "el" | "it" | "nl" | "pt" | "pl" | "sv" | "da" | "fi" | "ro";
 
-const VALID_LANGS: Lang[] = ["en","fr","de","es","it","nl","pt","pl","sv","da","fi","ro"];
+const VALID_LANGS: Lang[] = ["en","fr","de","es","el","it","nl","pt","pl","sv","da","fi","ro"];
 const STORAGE_KEY = "sc_lang";
 
 interface LangCtx {
