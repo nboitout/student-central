@@ -19,6 +19,8 @@ type Screen = "loading" | "waiting" | "question" | "answered" | "chat" | "result
 
 interface ChatMessage { role: "ai" | "student"; text: string; }
 
+const MAX_TURNS = 5;
+
 /* Contextual AI follow-up probe */
 function aiProbe(correct: boolean, questionText: string): string {
   if (correct) {
@@ -27,9 +29,12 @@ function aiProbe(correct: boolean, questionText: string): string {
   return `You selected an incorrect option. What led you to that choice? Try to explain your reasoning.`;
 }
 
-function aiFollowUp(): string {
-  return `Thanks. Can you say more about how you'd distinguish between the correct answer and the distractors?`;
-}
+const AI_FOLLOWUPS = [
+  `Thanks. Can you say more about how you'd distinguish between the correct answer and the distractors?`,
+  `Interesting. What prior knowledge or assumption guided your thinking here?`,
+  `Good. Can you connect this concept to something you've seen in the course material?`,
+  `Almost there — one last question: if you had to explain this to a classmate in one sentence, what would you say?`,
+];
 
 function MCQContent() {
   const params      = useSearchParams();
@@ -165,15 +170,20 @@ function MCQContent() {
 
   /* ── Send chat message ── */
   const sendChat = () => {
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || chatTurns >= MAX_TURNS) return;
     const msg = chatInput.trim();
     setChatInput("");
     const newTurns = chatTurns + 1;
     setChatTurns(newTurns);
+
+    const aiReply = newTurns < MAX_TURNS
+      ? AI_FOLLOWUPS[Math.min(newTurns - 1, AI_FOLLOWUPS.length - 1)]
+      : null; /* no AI reply on final turn — conversation ends */
+
     setChatMsgs(prev => [
       ...prev,
       { role: "student", text: msg },
-      ...(newTurns === 1 ? [{ role: "ai" as const, text: aiFollowUp() }] : []),
+      ...(aiReply ? [{ role: "ai" as const, text: aiReply }] : []),
     ]);
   };
 
@@ -434,22 +444,38 @@ function MCQContent() {
         {/* ── CHAT screen ── */}
         {screen === "chat" && mcq && (
           <div className={styles.questionPane}>
-            {/* Compact recap header */}
-            <div className={styles.chatRecap}>
-              <div className={`${styles.chatRecapBadge} ${isCorrect ? styles.badgeCorrect : styles.badgeWrong}`}>
+
+            {/* Full question + all options — always visible */}
+            <div className={styles.chatQuestionBlock}>
+              <div className={`${styles.chatResultBadge} ${isCorrect ? styles.badgeCorrect : styles.badgeWrong}`}>
                 {isCorrect ? "✓ Correct" : "✗ Incorrect"}
               </div>
-              <div className={styles.chatRecapQ}>{mcq.question}</div>
-              <div className={styles.chatRecapAnswer}>
-                <span className={styles.chatRecapLabel}>{ui.yourAnswer ?? "Your answer"}:</span>
-                {" "}{LETTERS[selected ?? 0]}. {mcq.options[selected ?? 0]?.text}
+              <div className={styles.chatQuestionText}>{mcq.question}</div>
+              <div className={styles.chatOptions}>
+                {mcq.options.map((opt, i) => {
+                  const isCorrectOpt = i === mcq.correctIndex;
+                  const isSelectedOpt = i === selected;
+                  const isWrong = isSelectedOpt && !isCorrectOpt;
+                  return (
+                    <div
+                      key={i}
+                      className={[
+                        styles.chatOption,
+                        isCorrectOpt ? styles.optCorrect : "",
+                        isWrong ? styles.optWrong : "",
+                        isSelectedOpt && !isCorrectOpt ? "" : "",
+                        !isCorrectOpt && !isWrong ? styles.chatOptDimmed : "",
+                      ].join(" ")}
+                    >
+                      <span className={styles.optLetter}>{LETTERS[i]}</span>
+                      <span className={styles.optText}>{opt.text}</span>
+                      {isCorrectOpt  && <span className={styles.optMark}>✓</span>}
+                      {isWrong       && <span className={styles.optMark}>✗</span>}
+                      {isSelectedOpt && isCorrectOpt && <span className={styles.optMark}>✓</span>}
+                    </div>
+                  );
+                })}
               </div>
-              {!isCorrect && (
-                <div className={styles.chatRecapCorrect}>
-                  <span className={styles.chatRecapLabel}>{ui.correctAnswer ?? "Correct answer"}:</span>
-                  {" "}{LETTERS[mcq.correctIndex]}. {mcq.options[mcq.correctIndex].text}
-                </div>
-              )}
             </div>
 
             {/* Chat thread */}
@@ -460,20 +486,31 @@ function MCQContent() {
                   {msg.text}
                 </div>
               ))}
+              {/* End-of-conversation warning */}
+              {chatTurns >= MAX_TURNS && (
+                <div className={styles.chatEndWarning}>
+                  {ui.chatEnded ?? "You've reached the end of the discussion. Get your evaluation below."}
+                </div>
+              )}
             </div>
 
-            {/* Input */}
-            <div className={styles.chatInputWrap}>
-              <textarea
-                className={styles.chatInput}
-                placeholder={ui.explainPlaceholder ?? "Type your response…"}
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                rows={3}
-                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && chatInput.trim()) { e.preventDefault(); sendChat(); } }}
-              />
-              {evalError && <div className={styles.errorBanner}>{evalError}</div>}
-            </div>
+            {/* Input — disabled when max turns reached */}
+            {chatTurns < MAX_TURNS && (
+              <div className={styles.chatInputWrap}>
+                <div className={styles.chatTurnCounter}>
+                  {chatTurns}/{MAX_TURNS} {ui.turns ?? "exchanges"}
+                </div>
+                <textarea
+                  className={styles.chatInput}
+                  placeholder={ui.explainPlaceholder ?? "Type your response…"}
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  rows={3}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && chatInput.trim()) { e.preventDefault(); sendChat(); } }}
+                />
+                {evalError && <div className={styles.errorBanner}>{evalError}</div>}
+              </div>
+            )}
 
             <div className={styles.answeredActions}>
               <button className={styles.ghostBtn} onClick={nextQuestion}>{ui.skipEvaluation ?? "Skip"}</button>
@@ -487,13 +524,15 @@ function MCQContent() {
                     {evaluating ? "…" : (ui.evaluateBtn ?? "Get evaluation →")}
                   </button>
                 )}
-                <button
-                  className={`${styles.submitBtn} ${!chatInput.trim() ? styles.submitDisabled : ""}`}
-                  onClick={sendChat}
-                  disabled={!chatInput.trim()}
-                >
-                  {ui.send ?? "Send →"}
-                </button>
+                {chatTurns < MAX_TURNS && (
+                  <button
+                    className={`${styles.submitBtn} ${!chatInput.trim() ? styles.submitDisabled : ""}`}
+                    onClick={sendChat}
+                    disabled={!chatInput.trim()}
+                  >
+                    {ui.send ?? "Send →"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
