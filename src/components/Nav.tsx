@@ -10,6 +10,7 @@ const LANGUAGES: { code: Lang; label: string; flag: string }[] = [
   { code: "fr", label: "Français",   flag: "🇫🇷" },
   { code: "de", label: "Deutsch",    flag: "🇩🇪" },
   { code: "es", label: "Español",    flag: "🇪🇸" },
+  { code: "el", label: "Ελληνικά",  flag: "🇬🇷" },
   { code: "it", label: "Italiano",   flag: "🇮🇹" },
   { code: "nl", label: "Nederlands", flag: "🇳🇱" },
   { code: "pt", label: "Português",  flag: "🇵🇹" },
@@ -68,7 +69,8 @@ export default function Nav() {
             </div>
           )}
         </div>
-        <a className={styles.demo} href="/workspace">{tx.tryIt}</a>
+        <a className={styles.ghost} href="/workspace">{tx.myWorkspace}</a>
+        <a className={styles.demo} href="https://app.stg.tutor.studentcentral.ai/login" target="_blank" rel="noopener noreferrer">{tx.tryIt}</a>
       </div>
     </nav>
   );
