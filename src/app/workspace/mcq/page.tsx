@@ -272,7 +272,7 @@ function MCQContent() {
             </button>
           : <button className={styles.backBtn} onClick={() => router.back()}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-              {ui.backToCourse ?? "Back to course"}
+              {ui.backBtn ?? "Back to workspace"}
             </button>
         }
       </div>
@@ -368,7 +368,7 @@ function MCQContent() {
                   ))}
                 </div>
                 <div className={styles.actions}>
-                  <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToWorkspace}</button>
+                  <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToCourse ?? "Back to course"}</button>
                   <button
                     className={`${styles.submitBtn} ${selected === null ? styles.submitDisabled : ""}`}
                     onClick={handleSubmit}
@@ -432,7 +432,7 @@ function MCQContent() {
             </div>
 
             <div className={styles.answeredActions}>
-              <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToWorkspace}</button>
+              <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToCourse ?? "Back to course"}</button>
               <div className={styles.answeredActionsRight}>
                 <button className={styles.skipBtn} onClick={nextQuestion}>{ui.skipToNext ?? "Next question →"}</button>
                 <button className={styles.submitBtn} onClick={startChat}>{ui.discussWithAI ?? "Discuss with AI →"}</button>
@@ -564,8 +564,13 @@ function MCQContent() {
               <p className={styles.explanationText}>{mcq.explanation}</p>
             </div>
 
+            <div className={styles.facultySection}>
+              <div className={styles.sectionLabel}>{ui.facultyInsight ?? "Faculty insight"}</div>
+              <p className={styles.facultyText}>{signal.facultyInsight}</p>
+            </div>
+
             <div className={styles.answeredActions}>
-              <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToWorkspace}</button>
+              <button className={styles.ghostBtn} onClick={() => router.back()}>{ui.backToCourse ?? "Back to course"}</button>
               <button className={styles.submitBtn} onClick={nextQuestion}>{ui.nextQuestion ?? "Next question →"}</button>
             </div>
           </div>
