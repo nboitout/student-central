@@ -494,3 +494,105 @@
     align-items: flex-start;
   }
 }
+
+/* ── Mini dashboard widget ───────────────────────────────── */
+.miniDash {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.miniMetrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--outline-variant);
+}
+
+.miniMetric {
+  background: var(--surface-low);
+  padding: 12px 14px;
+}
+
+.miniVal {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--on-surface);
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.miniValBlue { color: var(--primary); }
+
+.miniLbl {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.45;
+}
+
+.miniBarWrap {
+  padding: 10px 14px 12px;
+  background: var(--surface-low);
+  border-top: 1px solid var(--outline-variant);
+}
+
+.miniBarRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.miniBarLabel {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.45;
+}
+
+.miniBarPct {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.miniTrack {
+  height: 4px;
+  background: var(--surface-container);
+  overflow: hidden;
+}
+
+.miniFill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.4s ease;
+}
+
+.dashLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  background: var(--surface-low);
+  border: none;
+  border-top: 1px solid var(--outline-variant);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s;
+}
+.dashLink:hover { background: rgba(0, 72, 216, 0.06); }
