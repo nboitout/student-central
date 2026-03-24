@@ -80,9 +80,45 @@
 /* ── Two-column body ─────────────────────────────────────── */
 .body {
   flex: 1;
-  display: grid;
-  grid-template-columns: 55fr 45fr;
+  display: flex;
   min-height: calc(100vh - 64px);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Drag divider ────────────────────────────────────────── */
+.divider {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--surface-container);
+  cursor: col-resize;
+  position: relative;
+  transition: background 0.15s;
+  z-index: 10;
+}
+.divider:hover,
+.divider.dragging { background: var(--primary); }
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 36px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--surface-highest) 0px, var(--surface-highest) 3px,
+    transparent 3px, transparent 6px
+  );
+}
+.divider:hover::after,
+.divider.dragging::after {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,.7) 0px, rgba(255,255,255,.7) 3px,
+    transparent 3px, transparent 6px
+  );
 }
 
 /* ── LEFT: slide pane ────────────────────────────────────── */
@@ -94,11 +130,13 @@
   justify-content: center;
   padding: 40px 32px;
   gap: 16px;
-  border-right: none;
   position: sticky;
   top: 64px;
   height: calc(100vh - 64px);
   overflow-y: auto;
+  flex-shrink: 0;
+  min-width: 260px;
+  max-width: calc(100vw - 340px);
 }
 
 .slidePageBadge {
@@ -165,6 +203,8 @@
   gap: 28px;
   overflow-y: auto;
   min-height: calc(100vh - 64px);
+  flex: 1;
+  min-width: 300px;
 }
 
 /* ── Question ────────────────────────────────────────────── */
@@ -566,7 +606,9 @@
 /* ── Responsive: stack on mobile ────────────────────────── */
 @media (max-width: 768px) {
   .header { padding: 0 20px; }
-  .body { grid-template-columns: 1fr; }
+  .body { flex-direction: column; }
+  .divider { width: 100%; height: 5px; cursor: row-resize; }
+  .slidePane { position: static; height: auto; min-width: unset; max-width: unset; width: 100% !important; padding: 24px 20px; }
   .slidePane {
     position: static;
     height: auto;
