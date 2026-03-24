@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import { evaluateReasoning, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
+import { evaluateReasoning, getSlideSasUrl, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -34,6 +34,9 @@ function MCQContent() {
   const [signal,       setSignal]       = useState<ReasoningSignal | null>(null);
   const [evaluating,   setEvaluating]   = useState(false);
   const [evalError,    setEvalError]    = useState<string | null>(null);
+  const [slideOpen,    setSlideOpen]    = useState(false);
+  const [slideSasUrl,  setSlideSasUrl]  = useState<string | null>(null);
+  const [slideLoading, setSlideLoading] = useState(false);
 
   /* Load MCQ from API */
   const loadMCQ = () => {
@@ -63,6 +66,12 @@ function MCQContent() {
         const q: MCQQuestion = await res.json();
         setMcq(q);
         setScreen("question");
+        /* Fetch slide SAS URL in the background if mcqId is available */
+        if (q.mcqId && q.slideImageUrl) {
+          getSlideSasUrl(q.courseId, q.mcqId)
+            .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
+            .catch(() => { /* non-fatal — slide just won't be available */ });
+        }
       })
       .catch(err => {
         setLoadError(err.message);
@@ -109,6 +118,8 @@ function MCQContent() {
     setExplanation("");
     setSignal(null);
     setEvalError(null);
+    setSlideOpen(false);
+    setSlideSasUrl(null);
     loadMCQ();
   };
 
@@ -155,8 +166,45 @@ function MCQContent() {
           {/* ── Question ── */}
           {screen === "question" && mcq && (
             <>
-              {loadError && <div className={styles.errorBanner}>{loadError}</div>}
+              {/* ── Slide drawer ── */}
+              {slideSasUrl && (
+                <div className={styles.slideDrawer}>
+                  <button
+                    className={styles.slideToggle}
+                    onClick={() => setSlideOpen(o => !o)}
+                    aria-expanded={slideOpen}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                    </svg>
+                    {slideOpen ? (ui.slideHide ?? "Hide related slide") : (ui.slideView ?? "View related slide")}
+                    <svg
+                      width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      style={{ marginLeft: "auto", transition: "transform 0.2s", transform: slideOpen ? "rotate(180deg)" : "none" }}
+                    >
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  {slideOpen && (
+                    <div className={styles.slidePanel}>
+                      {mcq.pageNumber !== undefined && (
+                        <div className={styles.slidePageBadge}>
+                          {ui.slidePage ?? "Page"} {mcq.pageNumber + 1}
+                        </div>
+                      )}
+                      <img
+                        src={slideSasUrl}
+                        alt={`Slide page ${(mcq.pageNumber ?? 0) + 1}`}
+                        className={styles.slideImg}
+                        onLoad={() => setSlideLoading(false)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className={styles.questionWrap}>
+                {loadError && <div className={styles.errorBanner}>{loadError}</div>}
                 <div className={styles.questionLabel}>{ui.questionLabel}</div>
                 <h1 className={styles.question}>{mcq.question}</h1>
               </div>
