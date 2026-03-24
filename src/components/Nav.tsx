@@ -17,6 +17,8 @@ const LANGUAGES: { code: Lang; label: string; flag: string }[] = [
   { code: "pl", label: "Polski",     flag: "🇵🇱" },
   { code: "uk", label: "Українська", flag: "🇺🇦" },
   { code: "ru", label: "Русский",    flag: "🇷🇺" },
+  { code: "hu", label: "Magyar",     flag: "🇭🇺" },
+  { code: "hr", label: "Hrvatski",   flag: "🇭🇷" },
   { code: "sv", label: "Svenska",    flag: "🇸🇪" },
   { code: "da", label: "Dansk",      flag: "🇩🇰" },
   { code: "fi", label: "Suomi",      flag: "🇫🇮" },
