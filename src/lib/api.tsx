@@ -29,6 +29,9 @@ export interface MCQQuestion {
   correctIndex: number;
   explanation: string;
   courseId: string;
+  mcqId?: string;
+  pageNumber?: number;
+  slideImageUrl?: string | null;
 }
 
 export interface ReasoningSignal {
@@ -155,5 +158,15 @@ export async function triggerMCQGeneration(payload: {
   return request<{ status: string; message: string }>(
     `/api/upload/trigger-mcq-generation?course_id=${payload.courseId}&pdf_url=${encodeURIComponent(payload.pdfUrl)}`,
     { method: "POST" }
+  );
+}
+
+/* ── Slide SAS URL ──────────────────────────────────────── */
+export async function getSlideSasUrl(
+  courseId: string,
+  mcqId: string
+): Promise<{ sasUrl: string; pageNumber: number }> {
+  return request<{ sasUrl: string; pageNumber: number }>(
+    `/api/mcq/bank/${courseId}/${mcqId}/slide`
   );
 }
