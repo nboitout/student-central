@@ -491,17 +491,18 @@
 
 .chatThread { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 
+/* AI bubble — warm off-white, clearly distinct from option rows */
 .chatAI {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px 16px;
-  background: var(--surface-low);
-  border-left: 2px solid var(--primary);
+  padding: 14px 18px;
+  background: var(--surface-lowest);
+  box-shadow: 0 1px 4px rgba(26, 28, 46, 0.08), 0 0 0 1px rgba(26, 28, 46, 0.06);
   font-family: var(--font-body);
-  font-size: 0.875rem;
-  color: var(--on-surface-variant);
-  line-height: 1.55;
+  font-size: 0.9375rem;
+  color: var(--on-surface);
+  line-height: 1.6;
   max-width: 90%;
   align-self: flex-start;
 }
@@ -511,7 +512,8 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px 16px;
-  background: rgba(0, 60, 194, 0.07);
+  background: rgba(0, 60, 194, 0.08);
+  border: 1px solid rgba(0, 60, 194, 0.12);
   font-family: var(--font-body);
   font-size: 0.875rem;
   color: var(--on-surface);
@@ -528,29 +530,75 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--primary);
-  opacity: 0.7;
+  opacity: 0.6;
   display: block;
 }
-.chatStudent .chatSender { color: var(--on-surface-variant); }
+.chatStudent .chatSender { color: var(--on-surface-variant); opacity: 0.5; }
 
-.chatInputWrap { display: flex; flex-direction: column; gap: 8px; }
+/* ── Chatbot-style input bar ─────────────────────────────── */
+.chatInputWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--surface-lowest);
+  box-shadow: 0 0 0 1.5px rgba(26, 28, 46, 0.10), 0 4px 16px rgba(26, 28, 46, 0.06);
+  padding: 12px 16px 10px;
+  margin-top: 4px;
+}
+
+.chatTurnCounter {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.35;
+  align-self: flex-end;
+  margin-bottom: 6px;
+}
 
 .chatInput {
   background: transparent;
   border: none;
-  border-bottom: 2px solid rgba(67, 70, 86, 0.2);
-  padding: 10px 0;
+  padding: 0;
   color: var(--on-surface);
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   outline: none;
   width: 100%;
   resize: none;
   line-height: 1.65;
-  transition: border-color 0.2s;
 }
-.chatInput::placeholder { color: var(--on-surface-variant); opacity: 0.4; }
-.chatInput:focus { border-bottom-color: var(--primary); }
+.chatInput::placeholder { color: var(--on-surface-variant); opacity: 0.35; }
+
+/* Send row inside the bar */
+.chatInputBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--outline-variant);
+  margin-top: 8px;
+}
+
+.chatSendBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--primary-gradient);
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: opacity 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+.chatSendBtn:hover:not(:disabled) { opacity: 0.88; transform: scale(1.05); }
+.chatSendBtn:disabled { opacity: 0.25; cursor: not-allowed; }
+.chatSendBtn svg { color: #fff; }
 
 /* ── Signal banner ───────────────────────────────────────── */
 .signalBanner {
