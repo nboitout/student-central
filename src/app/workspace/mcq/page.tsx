@@ -7,8 +7,10 @@ import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
 import { evaluateReasoning, getSlideSasUrl, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
 
+/* ── DEV: placeholder slide for testing before backend ships slideImageUrl ── */
+const DEMO_SLIDE_URL = "https://placehold.co/900x506/e8eaff/0048d8?text=Slide+preview+coming+soon";
+
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
   "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
 import dynamic from "next/dynamic";
@@ -70,7 +72,10 @@ function MCQContent() {
         if (q.mcqId && q.slideImageUrl) {
           getSlideSasUrl(q.courseId, q.mcqId)
             .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
-            .catch(() => { /* non-fatal — slide just won't be available */ });
+            .catch(() => setSlideSasUrl(DEMO_SLIDE_URL));
+        } else {
+          /* DEV fallback — remove once backend ships mcqId + slideImageUrl */
+          setSlideSasUrl(DEMO_SLIDE_URL);
         }
       })
       .catch(err => {
