@@ -494,7 +494,7 @@ function MCQContent() {
               )}
             </div>
 
-            {/* Input — disabled when max turns reached */}
+            {/* Input — chatbot bar style */}
             {chatTurns < MAX_TURNS && (
               <div className={styles.chatInputWrap}>
                 <div className={styles.chatTurnCounter}>
@@ -509,6 +509,22 @@ function MCQContent() {
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && chatInput.trim()) { e.preventDefault(); sendChat(); } }}
                 />
                 {evalError && <div className={styles.errorBanner}>{evalError}</div>}
+                <div className={styles.chatInputBar}>
+                  <span style={{ flex: 1, fontSize: "0.75rem", color: "var(--on-surface-variant)", opacity: 0.4 }}>
+                    ↵ Enter to send
+                  </span>
+                  <button
+                    className={styles.chatSendBtn}
+                    onClick={sendChat}
+                    disabled={!chatInput.trim()}
+                    title={ui.send ?? "Send"}
+                    aria-label="Send"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -522,15 +538,6 @@ function MCQContent() {
                     disabled={evaluating}
                   >
                     {evaluating ? "…" : (ui.evaluateBtn ?? "Get evaluation →")}
-                  </button>
-                )}
-                {chatTurns < MAX_TURNS && (
-                  <button
-                    className={`${styles.submitBtn} ${!chatInput.trim() ? styles.submitDisabled : ""}`}
-                    onClick={sendChat}
-                    disabled={!chatInput.trim()}
-                  >
-                    {ui.send ?? "Send →"}
                   </button>
                 )}
               </div>
