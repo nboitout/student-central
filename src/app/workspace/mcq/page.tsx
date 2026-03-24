@@ -7,13 +7,12 @@ import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
 import { evaluateReasoning, getSlideSasUrl, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
 
-/* ── DEV: placeholder slide for testing before backend ships slideImageUrl ── */
-const DEMO_SLIDE_URL = "https://placehold.co/900x506/e8eaff/0048d8?text=Slide+preview+coming+soon";
+/* ── DEV: placeholder slide until backend ships mcqId + slideImageUrl ── */
+const DEMO_SLIDE_URL = "https://placehold.co/1280x720/e8eaff/0048d8?text=Slide+preview";
 
 const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
   "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
-
-import dynamic from "next/dynamic";
 
 const LETTERS = ["A", "B", "C", "D"];
 type Screen = "loading" | "waiting" | "question" | "explanation" | "result";
@@ -36,15 +35,15 @@ function MCQContent() {
   const [signal,       setSignal]       = useState<ReasoningSignal | null>(null);
   const [evaluating,   setEvaluating]   = useState(false);
   const [evalError,    setEvalError]    = useState<string | null>(null);
-  const [slideOpen,    setSlideOpen]    = useState(false);
   const [slideSasUrl,  setSlideSasUrl]  = useState<string | null>(null);
-  const [slideLoading, setSlideLoading] = useState(false);
+  const [slideLoaded,  setSlideLoaded]  = useState(false);
 
-  /* Load MCQ from API */
   const loadMCQ = () => {
     setScreen("loading");
     setMcq(null);
     setLoadError(null);
+    setSlideSasUrl(null);
+    setSlideLoaded(false);
 
     fetch(`${API_URL}/api/mcq/generate`, {
       method: "POST",
@@ -52,13 +51,11 @@ function MCQContent() {
       body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle }),
     })
       .then(async (res) => {
-        /* 202 — generation kicked off but not ready yet, poll again */
         if (res.status === 202) {
           setScreen("waiting");
           setTimeout(() => loadMCQ(), 10000);
           return;
         }
-        /* Any other non-OK response */
         if (!res.ok) {
           const err = await res.json().catch(() => ({ detail: `Error ${res.status}` }));
           setLoadError(err.detail ?? `Error ${res.status}`);
@@ -68,7 +65,7 @@ function MCQContent() {
         const q: MCQQuestion = await res.json();
         setMcq(q);
         setScreen("question");
-        /* Fetch slide SAS URL in the background if mcqId is available */
+        /* Fetch SAS URL for slide image */
         if (q.mcqId && q.slideImageUrl) {
           getSlideSasUrl(q.courseId, q.mcqId)
             .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
@@ -78,15 +75,11 @@ function MCQContent() {
           setSlideSasUrl(DEMO_SLIDE_URL);
         }
       })
-      .catch(err => {
-        setLoadError(err.message);
-        setScreen("question");
-      });
+      .catch(err => { setLoadError(err.message); setScreen("question"); });
   };
 
   useEffect(() => { loadMCQ(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* After submit, brief delay before moving to explanation screen */
   useEffect(() => {
     if (submitted) {
       const t = setTimeout(() => setScreen("explanation"), 400);
@@ -123,13 +116,51 @@ function MCQContent() {
     setExplanation("");
     setSignal(null);
     setEvalError(null);
-    setSlideOpen(false);
-    setSlideSasUrl(null);
     loadMCQ();
   };
 
   const isCorrect = mcq !== null && selected === mcq.correctIndex;
 
+  /* ── Loading / waiting: full page, no columns ── */
+  if (screen === "loading" || screen === "waiting") {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <button className={styles.backBtn} onClick={() => router.back()}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+            {ui.backToWorkspace}
+          </button>
+          <div className={styles.headerCenter}>
+            <span className={styles.headerEyebrow}>{ui.eyebrow}</span>
+            <span className={styles.headerTitle}>{courseTitle}</span>
+          </div>
+          <div className={styles.headerRight} />
+        </header>
+        <div className={styles.loadingPage}>
+          <div className={styles.loadingWrap}>
+            <div className={styles.loadingLabel}>
+              {screen === "waiting"
+                ? (ui.preparingQuestions ?? "Preparing your questions…")
+                : (ui.generating ?? "Generating your question…")}
+            </div>
+            <div className={styles.loadingDots}><span /><span /><span /></div>
+            <div className={styles.loadingHint}>
+              {screen === "waiting"
+                ? (ui.preparingHint ?? "Your document is being analysed. This takes about 60 seconds the first time.")
+                : (ui.generatingHint ?? "Reading course content with AI")}
+            </div>
+            {screen === "waiting" && (
+              <div className={styles.retryHint}>{ui.retryHint ?? "Checking again automatically…"}</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Question / Explanation / Result: two-column layout ── */
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -140,76 +171,50 @@ function MCQContent() {
           {ui.backToWorkspace}
         </button>
         <div className={styles.headerCenter}>
-          <div className={styles.headerEyebrow}>{ui.eyebrow}</div>
-          <div className={styles.headerTitle}>{courseTitle}</div>
+          <span className={styles.headerEyebrow}>{ui.eyebrow}</span>
+          <span className={styles.headerTitle}>{courseTitle}</span>
         </div>
         <div className={styles.headerRight} />
       </header>
 
-      <main className={styles.main}>
-        <div className={styles.card}>
+      <div className={styles.body}>
 
-          {/* ── Loading ── */}
-          {screen === "loading" && (
-            <div className={styles.loadingWrap}>
-              <div className={styles.loadingLabel}>{ui.generating ?? "Generating your question…"}</div>
-              <div className={styles.loadingDots}><span /><span /><span /></div>
-              <div className={styles.loadingHint}>{ui.generatingHint ?? "Reading course content with AI"}</div>
+        {/* ── LEFT: slide pane ── */}
+        <div className={styles.slidePane}>
+          {mcq?.pageNumber !== undefined && (
+            <div className={styles.slidePageBadge}>
+              {ui.slidePage ?? "Page"} {mcq.pageNumber + 1}
             </div>
           )}
-
-          {/* ── Waiting / polling ── */}
-          {screen === "waiting" && (
-            <div className={styles.loadingWrap}>
-              <div className={styles.loadingLabel}>{ui.preparingQuestions ?? "Preparing your questions…"}</div>
+          {!slideSasUrl && (
+            <div className={styles.slideLoadingWrap}>
               <div className={styles.loadingDots}><span /><span /><span /></div>
-              <div className={styles.loadingHint}>{ui.preparingHint ?? "Your document is being analysed. This takes about 60 seconds the first time."}</div>
-              <div className={styles.retryHint}>{ui.retryHint ?? "Checking again automatically…"}</div>
             </div>
           )}
+          {slideSasUrl && !slideLoaded && (
+            <div className={styles.slideLoadingWrap}>
+              <div className={styles.loadingDots}><span /><span /><span /></div>
+            </div>
+          )}
+          {slideSasUrl && (
+            <img
+              src={slideSasUrl}
+              alt={`Slide page ${(mcq?.pageNumber ?? 0) + 1}`}
+              className={styles.slideImg}
+              style={{ display: slideLoaded ? "block" : "none" }}
+              onLoad={() => setSlideLoaded(true)}
+            />
+          )}
+        </div>
 
-          {/* ── Question ── */}
+        {/* ── RIGHT: question pane ── */}
+        <div className={styles.questionPane}>
+
+          {/* ── Question screen ── */}
           {screen === "question" && mcq && (
             <>
-              {/* ── Slide drawer ── */}
-              {slideSasUrl && (
-                <div className={styles.slideDrawer}>
-                  <button
-                    className={styles.slideToggle}
-                    onClick={() => setSlideOpen(o => !o)}
-                    aria-expanded={slideOpen}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
-                    </svg>
-                    {slideOpen ? (ui.slideHide ?? "Hide related slide") : (ui.slideView ?? "View related slide")}
-                    <svg
-                      width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                      style={{ marginLeft: "auto", transition: "transform 0.2s", transform: slideOpen ? "rotate(180deg)" : "none" }}
-                    >
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </button>
-                  {slideOpen && (
-                    <div className={styles.slidePanel}>
-                      {mcq.pageNumber !== undefined && (
-                        <div className={styles.slidePageBadge}>
-                          {ui.slidePage ?? "Page"} {mcq.pageNumber + 1}
-                        </div>
-                      )}
-                      <img
-                        src={slideSasUrl}
-                        alt={`Slide page ${(mcq.pageNumber ?? 0) + 1}`}
-                        className={styles.slideImg}
-                        onLoad={() => setSlideLoading(false)}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
+              {loadError && <div className={styles.errorBanner}>{loadError}</div>}
               <div className={styles.questionWrap}>
-                {loadError && <div className={styles.errorBanner}>{loadError}</div>}
                 <div className={styles.questionLabel}>{ui.questionLabel}</div>
                 <h1 className={styles.question}>{mcq.question}</h1>
               </div>
@@ -221,7 +226,12 @@ function MCQContent() {
                   return (
                     <button
                       key={i}
-                      className={[styles.option, isSelected && !submitted ? styles.optSelected : "", isCorrectOpt ? styles.optCorrect : "", isWrongOpt ? styles.optWrong : ""].join(" ")}
+                      className={[
+                        styles.option,
+                        isSelected && !submitted ? styles.optSelected : "",
+                        isCorrectOpt ? styles.optCorrect : "",
+                        isWrongOpt   ? styles.optWrong   : "",
+                      ].join(" ")}
                       onClick={() => { if (!submitted) setSelected(i); }}
                       disabled={submitted}
                     >
@@ -235,12 +245,18 @@ function MCQContent() {
               </div>
               <div className={styles.actions}>
                 <button className={styles.cancelBtn} onClick={() => router.back()}>{ui.cancel}</button>
-                <button className={`${styles.submitBtn} ${selected === null ? styles.submitDisabled : ""}`} onClick={handleSubmit} disabled={selected === null || submitted}>{ui.submitAnswer}</button>
+                <button
+                  className={`${styles.submitBtn} ${selected === null ? styles.submitDisabled : ""}`}
+                  onClick={handleSubmit}
+                  disabled={selected === null || submitted}
+                >
+                  {ui.submitAnswer}
+                </button>
               </div>
             </>
           )}
 
-          {/* ── Explanation / reasoning ── */}
+          {/* ── Explanation screen ── */}
           {screen === "explanation" && mcq && (
             <>
               <div className={`${styles.resultBanner} ${isCorrect ? styles.bannerCorrect : styles.bannerWrong}`}>
@@ -281,7 +297,7 @@ function MCQContent() {
             </>
           )}
 
-          {/* ── Result ── */}
+          {/* ── Result screen ── */}
           {screen === "result" && mcq && signal && (
             <>
               <div className={`${styles.signalBanner} ${styles[`signal${signal.signal.replace(/ /g, "")}`]}`}>
@@ -310,7 +326,9 @@ function MCQContent() {
                   <div className={styles.ctaHeadline}>{ui.wantDeeper}</div>
                   <div className={styles.ctaSub}>{ui.exploreSub}</div>
                 </div>
-                <a href="https://app.stg.tutor.studentcentral.ai/login" target="_blank" rel="noopener noreferrer" className={styles.ctaBtn}>{ui.openTutor}</a>
+                <a href="https://app.stg.tutor.studentcentral.ai/login" target="_blank" rel="noopener noreferrer" className={styles.ctaBtn}>
+                  {ui.openTutor}
+                </a>
               </div>
 
               <div className={styles.actions}>
@@ -320,17 +338,15 @@ function MCQContent() {
             </>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
 
-const MCQPageClient = dynamic(() => Promise.resolve(MCQContent), { ssr: false });
-
 export default function MCQPage() {
   return (
     <Suspense fallback={<div style={{ background: "var(--surface-low)", minHeight: "100vh" }} />}>
-      <MCQPageClient />
+      <MCQContent />
     </Suspense>
   );
 }
