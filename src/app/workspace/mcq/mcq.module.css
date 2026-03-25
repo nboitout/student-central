@@ -1177,3 +1177,12 @@
   overflow: hidden;
   min-height: 0;
 }
+
+.slidePlaceholderHint {
+  font-family: var(--font-body);
+  font-size: 0.625rem;
+  color: var(--on-surface-variant);
+  opacity: 0.35;
+  margin-top: 4px;
+  text-align: center;
+}
