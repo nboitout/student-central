@@ -11,6 +11,7 @@ export interface Course {
   source: string;
   pdfUrl?: string | null;
   allowDownload?: boolean;
+  tutorLanguage?: string | null;    /* e.g. "en", "fr", "de" — language for MCQ + AI tutor */
   status: "Not Started" | "In Progress" | "Completed";
   exercisesTotal: number;
   exercisesDone: number;
@@ -69,6 +70,7 @@ export async function createCourse(payload: {
   userId?: string;
   exercisesTotal?: number;
   allowDownload?: boolean;
+  tutorLanguage?: string;
 }): Promise<Course> {
   return request<Course>("/api/courses", {
     method: "POST",
@@ -159,6 +161,45 @@ export async function triggerMCQGeneration(payload: {
     `/api/upload/trigger-mcq-generation?course_id=${payload.courseId}&pdf_url=${encodeURIComponent(payload.pdfUrl)}`,
     { method: "POST" }
   );
+}
+
+/* ── AI Tutor ───────────────────────────────────────────── */
+export interface TutorMessage {
+  role: "ai" | "student";
+  text: string;
+}
+
+export interface TutorProbeRequest {
+  courseId:     string;
+  question:     string;
+  options:      string[];
+  correctIndex: number;
+  selectedIndex: number;
+  isCorrect:    boolean;
+  explanation:  string;
+  language:     string;
+}
+
+export interface TutorReplyRequest extends TutorProbeRequest {
+  history: TutorMessage[];
+}
+
+export interface TutorResponse {
+  message: string;
+}
+
+export async function tutorProbe(payload: TutorProbeRequest): Promise<TutorResponse> {
+  return request<TutorResponse>("/api/tutor/probe", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function tutorReply(payload: TutorReplyRequest): Promise<TutorResponse> {
+  return request<TutorResponse>("/api/tutor/reply", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 /* ── Slide SAS URL ──────────────────────────────────────── */
