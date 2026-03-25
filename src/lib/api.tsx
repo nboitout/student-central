@@ -261,15 +261,19 @@ export async function createSession(payload: {
 }): Promise<SessionCreateResponse> {
   return request<SessionCreateResponse>("/api/sessions", {
     method: "POST",
-    body: JSON.stringify({ userId: "nicolas", ...payload }),
+    body: JSON.stringify({ userId: payload.userId ?? "nicolas", ...payload }),
   });
 }
 
 export async function getSessionQuestion(
   sessionId: string,
-  position: number
+  position: number,
+  courseId?: string,
+  userId = "nicolas"
 ): Promise<SessionQuestion> {
-  return request<SessionQuestion>(`/api/sessions/${sessionId}/question/${position}`);
+  const params = new URLSearchParams({ userId });
+  if (courseId) params.set("courseId", courseId);
+  return request<SessionQuestion>(`/api/sessions/${sessionId}/question/${position}?${params}`);
 }
 
 export async function patchSessionAnswer(
