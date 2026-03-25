@@ -5,15 +5,12 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import { evaluateReasoning, getSlideSasUrl, tutorProbe, tutorReply, type MCQQuestion, type ReasoningSignal, type TutorMessage } from "@/lib/api";
+import { createSession, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, getSlideSasUrl, tutorProbe, tutorReply, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type TutorMessage } from "@/lib/api";
 
 /* ─── Constants ──────────────────────────────────────────── */
 const MAX_QUESTIONS = 5;
 const MAX_TURNS     = 10;
 const LETTERS       = ["A", "B", "C", "D"];
-const API_URL       = process.env.NEXT_PUBLIC_API_URL ||
-  "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
-
 /* ─── Types ──────────────────────────────────────────────── */
 type Mode   = "assessment" | "tutoring";
 type Screen = "loading" | "waiting" | "question" | "review" | "summary" | "chat";
@@ -46,6 +43,9 @@ function MCQContent() {
     setMode(m);
     localStorage.setItem(`mcq-mode-${courseId}`, m);
   };
+
+  /* ── Session ── */
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   /* ── Question set state ── */
   const [screen,    setScreen]    = useState<Screen>("loading");
@@ -138,47 +138,69 @@ function MCQContent() {
   const isCorrect = mcq !== null && selected === mcq.correctIndex;
 
   /* ── Load MCQ ── */
-  const loadMCQ = useCallback(() => {
-    setScreen("loading"); setLoadError(null);
+
+  /* ── Convert session question to MCQQuestion ── */
+  const toMCQQuestion = (sq: SessionQuestion): MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string } => ({
+    question:     sq.question,
+    options:      sq.options,
+    correctIndex: sq.correctIndex,
+    explanation:  "",   /* explanation not stored on question — populated after evaluate */
+    mcqId:        sq.mcqId,
+    slideImageUrl: sq.slideImageUrl ?? undefined,
+    courseId:     sq.courseId ?? courseId,
+    pageNumber:   sq.pageNumber ?? undefined,
+  });
+
+  /* ── Load a question from the session into state ── */
+  const applyQuestion = (sq: SessionQuestion, idx: number) => {
+    const q = toMCQQuestion(sq);
+    setQuestions(prev => { const next = [...prev]; next[idx] = q; return next; });
+    setAnswers(prev => { const next = [...prev]; if (next[idx] === undefined) next[idx] = null; return next; });
     setSlideSasUrl(null); setSlideLoaded(false);
+    if (sq.slideImageUrl && sq.mcqId) {
+      getSlideSasUrl(sq.courseId ?? courseId, sq.mcqId)
+        .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
+        .catch(() => {});
+    }
+  };
 
-    fetch(`${API_URL}/api/mcq/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle, language: tutorLang }),
-    })
-      .then(res => {
-        if (res.status === 202) { setScreen("waiting"); setTimeout(() => loadMCQ(), 10000); return; }
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-        return res.json();
-      })
-      .then((q: MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string }) => {
-        if (!q) return;
-        setQuestions(prev => { const next = [...prev]; next[qIndex] = q; return next; });
-        setAnswers(prev => { const next = [...prev]; if (next[qIndex] === undefined) next[qIndex] = null; return next; });
-        if (q.mcqId && q.slideImageUrl) {
-          getSlideSasUrl(q.courseId ?? courseId, q.mcqId)
-            .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
-            .catch(() => {});
-        }
-        setScreen("question");
-      })
-      .catch(err => { setLoadError(err.message); setScreen("question"); });
-  }, [courseId, pdfUrl, courseTitle, qIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* ── Start session — called once on mount ── */
+  const startSession = useCallback(async () => {
+    setScreen("loading"); setLoadError(null);
+    try {
+      const { sessionId: sid, firstQuestion } = await createSession({
+        courseId, mode, language: tutorLang,
+      });
+      setSessionId(sid);
+      applyQuestion(firstQuestion, 0);
+      setScreen("question");
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to start session");
+      setScreen("question");
+    }
+  }, [courseId, mode, tutorLang]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { loadMCQ(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { startSession(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Submit answer ── */
   const handleSubmit = () => {
-    if (selected === null) return;
-    qDurations.current[qIndex] = qElapsed;
+    if (selected === null || !mcq) return;
+    const dur = qElapsed;
+    qDurations.current[qIndex] = dur;
+    /* Record answer in backend (fire-and-forget — non-blocking) */
+    if (sessionId) {
+      patchSessionAnswer(sessionId, {
+        position: qIndex + 1,
+        selectedIndex: selected,
+        durationSec: dur,
+      }).catch(() => { /* non-fatal */ });
+    }
     if (mode === "tutoring") {
       setStudentExp("");
       setScreen("review");
     } else {
-      /* Assessment: store minimal result and advance */
       const r: QuestionResult = {
-        question: mcq!, selected, durationSec: qElapsed,
+        question: mcq, selected, durationSec: dur,
         explanation: "", signal: null,
       };
       setResults(prev => { const next = [...prev]; next[qIndex] = r; return next; });
@@ -187,83 +209,52 @@ function MCQContent() {
   };
 
   /* ── Advance to next question or go to summary ── */
-  const advanceOrFinish = useCallback((fromIdx: number) => {
+  const advanceOrFinish = useCallback(async (fromIdx: number) => {
     const nextIdx = fromIdx + 1;
     if (nextIdx >= MAX_QUESTIONS) {
+      /* Complete the session in the background */
+      if (sessionId) { completeSession(sessionId).catch(() => {}); }
       setScreen("summary");
       return;
     }
-    /* Set index first, then imperatively fetch for that index */
     setQIndex(nextIdx);
     setScreen("loading");
     setLoadError(null);
-    setSlideSasUrl(null);
-    setSlideLoaded(false);
-
-    fetch(`${API_URL}/api/mcq/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle, language: tutorLang }),
-    })
-      .then(res => {
-        if (res.status === 202) {
-          setScreen("waiting");
-          /* Use a recursive retry that always has the right index */
-          const retry = () => {
-            fetch(`${API_URL}/api/mcq/generate`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle, language: tutorLang }),
-            })
-              .then(r => r.json())
-              .then((q: MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string }) => {
-                setQuestions(prev => { const next = [...prev]; next[nextIdx] = q; return next; });
-                setAnswers(prev => { const next = [...prev]; if (next[nextIdx] === undefined) next[nextIdx] = null; return next; });
-                if (q.mcqId && q.slideImageUrl) {
-                  getSlideSasUrl(q.courseId ?? courseId, q.mcqId)
-                    .then(({ sasUrl }) => setSlideSasUrl(sasUrl)).catch(() => {});
-                }
-                setScreen("question");
-              })
-              .catch(() => setTimeout(retry, 10000));
-          };
-          setTimeout(retry, 10000);
-          return;
-        }
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-        return res.json();
-      })
-      .then((q: MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string }) => {
-        if (!q) return;
-        setQuestions(prev => { const next = [...prev]; next[nextIdx] = q; return next; });
-        setAnswers(prev => { const next = [...prev]; if (next[nextIdx] === undefined) next[nextIdx] = null; return next; });
-        if (q.mcqId && q.slideImageUrl) {
-          getSlideSasUrl(q.courseId ?? courseId, q.mcqId)
-            .then(({ sasUrl }) => setSlideSasUrl(sasUrl)).catch(() => {});
-        }
-        setScreen("question");
-      })
-      .catch(err => { setLoadError(err.message); setScreen("question"); });
-  }, [courseId, pdfUrl, courseTitle, tutorLang]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!sessionId) { setLoadError("Session not found"); setScreen("question"); return; }
+    try {
+      const sq = await getSessionQuestion(sessionId, nextIdx + 1); /* position is 1-based */
+      applyQuestion(sq, nextIdx);
+      setScreen("question");
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load question");
+      setScreen("question");
+    }
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Review: proceed (tutoring mode) ── */
   const handleReviewNext = async () => {
     if (!mcq) return;
     setEvaluating(true);
     let signal: ReasoningSignal | null = null;
-    if (studentExp.trim()) {
+    const expText = studentExp.trim();
+    if (expText && sessionId) {
       try {
-        signal = await evaluateReasoning({
-          courseId, question: mcq.question,
-          options: mcq.options.map(o => o.text),
-          correctIndex: mcq.correctIndex, selectedIndex: selected!,
-          studentExplanation: studentExp.trim(),
+        /* patchSessionExplanation triggers evaluate on the backend and returns the signal */
+        const res = await patchSessionExplanation(sessionId, {
+          position: qIndex + 1,
+          studentExplanation: expText,
         });
-      } catch { /* non-fatal */ }
+        signal = {
+          signal:          res.signal,
+          confidence:      res.confidence,
+          facultyInsight:  res.facultyInsight,
+          studentFeedback: res.studentFeedback,
+        };
+      } catch { /* non-fatal — signal stays null */ }
     }
     const r: QuestionResult = {
       question: mcq, selected: selected!, durationSec: qDurations.current[qIndex] ?? qElapsed,
-      explanation: studentExp.trim(), signal,
+      explanation: expText, signal,
     };
     const updatedResults = results.slice();
     updatedResults[qIndex] = r;
@@ -271,7 +262,6 @@ function MCQContent() {
     setEvaluating(false);
     const isLastQ = qIndex + 1 >= MAX_QUESTIONS;
     if (mode === "tutoring" && isLastQ) {
-      /* Tutoring mode: go directly to AI debrief — results revealed after */
       startDebriefWithResults(updatedResults);
     } else {
       advanceOrFinish(qIndex);
@@ -300,6 +290,9 @@ function MCQContent() {
         language:      tutorLang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
+      if (sessionId) {
+        patchSessionChat(sessionId, { role: "ai", text: message, questionPosition: focusIdx + 1 }).catch(() => {});
+      }
     } catch {
       setChatMsgs([{ role: "ai", text: "Sorry, I couldn't connect. You can try again or return to the summary." }]);
     } finally {
@@ -310,7 +303,11 @@ function MCQContent() {
   /* Called from summary screen (assessment) or directly after last Q (tutoring) */
   const startDebrief = () => runDebrief(results);
   /* Called from handleReviewNext with fresh results before state update settles */
-  const startDebriefWithResults = (allResults: QuestionResult[]) => runDebrief(allResults);
+  const startDebriefWithResults = (allResults: QuestionResult[]) => {
+    /* Complete the session in the background before debrief */
+    if (sessionId) { completeSession(sessionId).catch(() => {}); }
+    runDebrief(allResults);
+  };
 
   /* ── Send chat message ── */
   const sendChat = async () => {
@@ -321,6 +318,10 @@ function MCQContent() {
     setChatTurns(newTurns);
     const updatedHistory: TutorMessage[] = [...chatMsgs, { role: "student", text: msg }];
     setChatMsgs(updatedHistory);
+    /* Persist student message */
+    if (sessionId) {
+      patchSessionChat(sessionId, { role: "student", text: msg, questionPosition: debriefQIdx + 1 }).catch(() => {});
+    }
     if (newTurns >= MAX_TURNS) return;
     setAiTyping(true);
     try {
@@ -337,6 +338,10 @@ function MCQContent() {
         history:       updatedHistory,
       });
       setChatMsgs(prev => [...prev, { role: "ai", text: message }]);
+      /* Persist AI reply */
+      if (sessionId) {
+        patchSessionChat(sessionId, { role: "ai", text: message, questionPosition: debriefQIdx + 1 }).catch(() => {});
+      }
     } catch {
       setChatMsgs(prev => [...prev, { role: "ai", text: "Sorry, I couldn't respond. Please try again." }]);
     } finally {
@@ -363,6 +368,9 @@ function MCQContent() {
         language:      tutorLang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
+      if (sessionId) {
+        patchSessionChat(sessionId, { role: "ai", text: message, questionPosition: idx + 1 }).catch(() => {});
+      }
     } catch {
       setChatMsgs([{ role: "ai", text: "Sorry, couldn't load this question. Try another." }]);
     } finally {
