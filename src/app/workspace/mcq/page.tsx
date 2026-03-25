@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import { createSession, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, getSlideSasUrl, tutorProbe, tutorReply, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type TutorMessage } from "@/lib/api";
+import { createSession, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, getSlideSasUrl, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type TutorMessage } from "@/lib/api";
 
 /* ─── Constants ──────────────────────────────────────────── */
 const MAX_QUESTIONS = 5;
@@ -141,9 +141,21 @@ function MCQContent() {
   /* ── Load MCQ ── */
 
   /* ── Convert session question to MCQQuestion ── */
+  /* Normalise options — backend sends plain strings, UI needs MCQOption objects */
+  const normaliseOptions = (opts: string[] | MCQOption[]): MCQOption[] => {
+    if (!opts || opts.length === 0) return [];
+    if (typeof opts[0] === "string") {
+      return (opts as string[]).map((text, i) => ({
+        letter: String.fromCharCode(65 + i), /* A, B, C, D */
+        text,
+      }));
+    }
+    return opts as MCQOption[];
+  };
+
   const toMCQQuestion = (sq: SessionQuestion): MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string } => ({
     question:     sq.question,
-    options:      sq.options,
+    options:      normaliseOptions(sq.options),
     correctIndex: sq.correctIndex,
     explanation:  "",   /* explanation not stored on question — populated after evaluate */
     mcqId:        sq.mcqId,
