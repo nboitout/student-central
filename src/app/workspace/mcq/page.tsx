@@ -265,16 +265,23 @@ function MCQContent() {
       question: mcq, selected: selected!, durationSec: qDurations.current[qIndex] ?? qElapsed,
       explanation: studentExp.trim(), signal,
     };
-    setResults(prev => { const next = [...prev]; next[qIndex] = r; return next; });
+    const updatedResults = results.slice();
+    updatedResults[qIndex] = r;
+    setResults(updatedResults);
     setEvaluating(false);
-    advanceOrFinish(qIndex);
+    const isLastQ = qIndex + 1 >= MAX_QUESTIONS;
+    if (mode === "tutoring" && isLastQ) {
+      /* Tutoring mode: go directly to AI debrief — results revealed after */
+      startDebriefWithResults(updatedResults);
+    } else {
+      advanceOrFinish(qIndex);
+    }
   };
 
-  /* ── Start AI debrief ── */
-  const startDebrief = async () => {
+  /* ── Start AI debrief (shared logic) ── */
+  const runDebrief = async (allResults: QuestionResult[]) => {
     setChatMsgs([]); setChatInput(""); setChatTurns(0); setChatError(null);
-    /* Focus on the weakest signal or first question */
-    const worstIdx = results.findIndex(r =>
+    const worstIdx = allResults.findIndex(r =>
       r.signal?.signal === "Low mastery" || r.signal?.signal === "Partial misconception"
     );
     const focusIdx = worstIdx >= 0 ? worstIdx : 0;
@@ -284,12 +291,12 @@ function MCQContent() {
     try {
       const { message } = await tutorProbe({
         courseId,
-        question:      results[focusIdx].question.question,
-        options:       results[focusIdx].question.options.map(o => o.text),
-        correctIndex:  results[focusIdx].question.correctIndex,
-        selectedIndex: results[focusIdx].selected,
-        isCorrect:     results[focusIdx].selected === results[focusIdx].question.correctIndex,
-        explanation:   results[focusIdx].question.explanation,
+        question:      allResults[focusIdx].question.question,
+        options:       allResults[focusIdx].question.options.map(o => o.text),
+        correctIndex:  allResults[focusIdx].question.correctIndex,
+        selectedIndex: allResults[focusIdx].selected,
+        isCorrect:     allResults[focusIdx].selected === allResults[focusIdx].question.correctIndex,
+        explanation:   allResults[focusIdx].question.explanation,
         language:      tutorLang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
@@ -299,6 +306,11 @@ function MCQContent() {
       setAiTyping(false);
     }
   };
+
+  /* Called from summary screen (assessment) or directly after last Q (tutoring) */
+  const startDebrief = () => runDebrief(results);
+  /* Called from handleReviewNext with fresh results before state update settles */
+  const startDebriefWithResults = (allResults: QuestionResult[]) => runDebrief(allResults);
 
   /* ── Send chat message ── */
   const sendChat = async () => {
@@ -390,14 +402,17 @@ function MCQContent() {
     <header className={styles.header}>
       <div className={styles.headerLeft}>
         <button className={styles.backBtn} onClick={() => {
-          if (screen === "chat") { setScreen("summary"); return; }
+          if (screen === "chat") {
+            if (mode === "tutoring") { setScreen("summary"); return; }
+            setScreen("summary"); return;
+          }
           if (screen === "summary") { router.back(); return; }
           prevQuestion();
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
-          {screen === "chat" ? "Summary" : screen === "summary" ? ui.backBtn : (qIndex === 0 ? ui.backToWorkspace ?? "Workspace" : ui.prevQuestion ?? "← Prev")}
+          {screen === "chat" ? (mode === "tutoring" ? "See results" : "Summary") : screen === "summary" ? ui.backBtn : (qIndex === 0 ? ui.backToWorkspace ?? "Workspace" : ui.prevQuestion ?? "← Prev")}
         </button>
         {/* Mode toggle */}
         <div className={styles.modeToggle}>
@@ -528,53 +543,32 @@ function MCQContent() {
             <div className={styles.questionLabel}>{ui.questionLabel ?? "Question"} {qIndex + 1}</div>
             <div className={styles.questionText}>{mcq.question}</div>
 
-            {/* Result banner */}
-            <div className={`${styles.resultBanner} ${isCorrect ? styles.bannerCorrect : styles.bannerWrong}`}>
-              <span className={styles.resultIcon}>{isCorrect ? "✓" : "✗"}</span>
-              <div>
-                <div className={styles.resultTitle}>{isCorrect ? ui.correctTitle : ui.incorrectTitle}</div>
-                <div className={styles.resultSub}>
-                  {isCorrect ? ui.correctSub : `${ui.incorrectPrefix ?? "Correct answer:"} "${mcq.options[mcq.correctIndex].text}"`}
-                </div>
-              </div>
-            </div>
-
-            {/* All options coloured */}
+            {/* Options — show student's selection neutrally, no correct/wrong reveal */}
             <div className={styles.options}>
-              {mcq.options.map((opt, i) => {
-                const isCorr = i === mcq.correctIndex;
-                const isSel  = i === selected;
-                return (
-                  <div key={i} className={[
-                    styles.optionStatic,
-                    isCorr                    ? styles.optCorrect : "",
-                    isSel && !isCorr          ? styles.optWrong   : "",
-                    !isCorr && !isSel         ? styles.optDimmed  : "",
-                  ].join(" ")}>
-                    <span className={styles.optLetter}>{LETTERS[i]}</span>
-                    <span className={styles.optText}>{opt.text}</span>
-                    {isCorr && <span className={styles.optMark}>✓</span>}
-                    {isSel && !isCorr && <span className={styles.optMark}>✗</span>}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* AI explanation of correct answer */}
-            <div className={styles.explanationSection}>
-              <div className={styles.sectionLabel}>{ui.whyMatters ?? "Why this matters"}</div>
-              <p className={styles.explanationText}>{mcq.explanation}</p>
+              {mcq.options.map((opt, i) => (
+                <div
+                  key={i}
+                  className={`${styles.optionStatic} ${i === selected ? styles.optSelected : styles.optDimmed}`}
+                >
+                  <span className={styles.optLetter}>{LETTERS[i]}</span>
+                  <span className={styles.optText}>{opt.text}</span>
+                  {i === selected && <span className={styles.optMark} style={{ color: "var(--primary)" }}>✓ your answer</span>}
+                </div>
+              ))}
             </div>
 
             {/* Student explanation textarea — optional but nudged */}
             <div className={styles.studentExpSection}>
-              <label className={styles.sectionLabel}>{ui.explainLabel ?? "Explain your reasoning"}</label>
+              <label className={styles.sectionLabel}>{ui.explainLabel ?? "What was your reasoning?"}</label>
+              <p className={styles.reviewBlind}>
+                Results will be revealed after the AI debrief.
+              </p>
               <textarea
                 className={styles.studentExpInput}
-                placeholder={ui.explainPlaceholder ?? "Why did you choose that? (optional — helps the AI tutor understand your thinking)"}
+                placeholder={ui.explainPlaceholder ?? "Why did you choose that answer? (optional — helps the AI tutor)"}
                 value={studentExp}
                 onChange={e => setStudentExp(e.target.value)}
-                rows={2}
+                rows={3}
               />
             </div>
 
@@ -584,7 +578,7 @@ function MCQContent() {
                 onClick={handleReviewNext}
                 disabled={evaluating}
               >
-                {evaluating ? "…" : (qIndex + 1 >= MAX_QUESTIONS ? "See results →" : (ui.nextQuestion ?? "Next question →"))}
+                {evaluating ? "…" : (qIndex + 1 >= MAX_QUESTIONS ? "Start AI debrief →" : (ui.nextQuestion ?? "Next question →"))}
               </button>
             </div>
           </div>
@@ -603,6 +597,9 @@ function MCQContent() {
         {headerEl}
         <div className={styles.summaryPane}>
           {/* Score header */}
+          <div className={styles.summaryEyebrow}>
+            {mode === "tutoring" ? "Results — revealed after debrief" : "Results"}
+          </div>
           <div className={styles.summaryHeader}>
             <div className={styles.summaryScore}>{score}/{MAX_QUESTIONS}</div>
             <div className={styles.summaryScoreLabel}>correct</div>
@@ -641,9 +638,15 @@ function MCQContent() {
             <button className={styles.ghostBtn} onClick={() => router.back()}>
               {ui.backToCourse ?? "Back to course"}
             </button>
-            <button className={styles.submitBtn} onClick={startDebrief}>
-              {ui.discussWithAI ?? "Discuss with AI →"}
-            </button>
+            {mode === "assessment" ? (
+              <button className={styles.submitBtn} onClick={startDebrief}>
+                {ui.discussWithAI ?? "Discuss with AI →"}
+              </button>
+            ) : (
+              <button className={styles.submitBtn} onClick={() => setScreen("chat")}>
+                Back to debrief →
+              </button>
+            )}
           </div>
         </div>
       </div>
