@@ -77,6 +77,7 @@ function MCQContent() {
   const [qElapsed,     setQElapsed]     = useState(0);
   const [totalElapsed, setTotalElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionStarted = useRef(false);
   const qDurations = useRef<number[]>([]);
 
   useEffect(() => {
@@ -168,7 +169,7 @@ function MCQContent() {
   const startSession = useCallback(async () => {
     setScreen("loading"); setLoadError(null);
     try {
-      const { sessionId: sid, firstQuestion } = await createSession({
+      const { sessionId: sid, question: firstQuestion } = await createSession({
         courseId, mode, language: tutorLang,
       });
       setSessionId(sid);
@@ -180,7 +181,11 @@ function MCQContent() {
     }
   }, [courseId, mode, tutorLang]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { startSession(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (sessionStarted.current) return;
+    sessionStarted.current = true;
+    startSession();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Submit answer ── */
   const handleSubmit = () => {
