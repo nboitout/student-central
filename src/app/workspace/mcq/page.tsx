@@ -46,6 +46,7 @@ function MCQContent() {
 
   /* ── Session ── */
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const setSession = (id: string) => { sessionIdRef.current = id; setSessionId(id); };
 
   /* ── Question set state ── */
   const [screen,    setScreen]    = useState<Screen>("loading");
@@ -78,6 +79,7 @@ function MCQContent() {
   const [totalElapsed, setTotalElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStarted = useRef(false);
+  const sessionIdRef    = useRef<string | null>(null);
   const qDurations = useRef<number[]>([]);
 
   useEffect(() => {
@@ -169,12 +171,9 @@ function MCQContent() {
     const q = toMCQQuestion(sq);
     setQuestions(prev => { const next = [...prev]; next[idx] = q; return next; });
     setAnswers(prev => { const next = [...prev]; if (next[idx] === undefined) next[idx] = null; return next; });
-    setSlideSasUrl(null); setSlideLoaded(false);
-    if (sq.slideImageUrl && sq.mcqId) {
-      getSlideSasUrl(sq.courseId ?? courseId, sq.mcqId)
-        .then(({ sasUrl }) => setSlideSasUrl(sasUrl))
-        .catch(() => {});
-    }
+    setSlideLoaded(false);
+    /* Session endpoint returns slideImageUrl directly — use it, no extra /slide call needed */
+    setSlideSasUrl(sq.slideImageUrl ?? null);
   };
 
   /* ── Start session — called once on mount ── */
@@ -184,7 +183,7 @@ function MCQContent() {
       const { sessionId: sid, question: firstQuestion } = await createSession({
         courseId, mode, language: tutorLang,
       });
-      setSessionId(sid);
+      setSession(sid);
       applyQuestion(firstQuestion, 0);
       setScreen("question");
     } catch (err) {
@@ -205,8 +204,8 @@ function MCQContent() {
     const dur = qElapsed;
     qDurations.current[qIndex] = dur;
     /* Record answer in backend (fire-and-forget — non-blocking) */
-    if (sessionId) {
-      patchSessionAnswer(sessionId, {
+    if (sessionIdRef.current) {
+      patchSessionAnswer(sessionIdRef.current, {
         position: qIndex + 1,
         selectedIndex: selected,
         durationSec: dur,
@@ -230,23 +229,25 @@ function MCQContent() {
     const nextIdx = fromIdx + 1;
     if (nextIdx >= MAX_QUESTIONS) {
       /* Complete the session in the background */
-      if (sessionId) { completeSession(sessionId).catch(() => {}); }
+      const sid = sessionIdRef.current;
+      if (sid) { completeSession(sid).catch(() => {}); }
       setScreen("summary");
       return;
     }
     setQIndex(nextIdx);
     setScreen("loading");
     setLoadError(null);
-    if (!sessionId) { setLoadError("Session not found"); setScreen("question"); return; }
+    const sid = sessionIdRef.current;
+    if (!sid) { setLoadError("Session not found"); setScreen("question"); return; }
     try {
-      const sq = await getSessionQuestion(sessionId, nextIdx + 1); /* position is 1-based */
+      const sq = await getSessionQuestion(sid, nextIdx + 1); /* position is 1-based */
       applyQuestion(sq, nextIdx);
       setScreen("question");
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load question");
       setScreen("question");
     }
-  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Review: proceed (tutoring mode) ── */
   const handleReviewNext = async () => {
@@ -254,10 +255,10 @@ function MCQContent() {
     setEvaluating(true);
     let signal: ReasoningSignal | null = null;
     const expText = studentExp.trim();
-    if (expText && sessionId) {
+    if (expText && sessionIdRef.current) {
       try {
         /* patchSessionExplanation triggers evaluate on the backend and returns the signal */
-        const res = await patchSessionExplanation(sessionId, {
+        const res = await patchSessionExplanation(sessionIdRef.current, {
           position: qIndex + 1,
           studentExplanation: expText,
         });
@@ -307,8 +308,8 @@ function MCQContent() {
         language:      tutorLang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
-      if (sessionId) {
-        patchSessionChat(sessionId, { role: "ai", text: message, questionPosition: focusIdx + 1 }).catch(() => {});
+      if (sessionIdRef.current) {
+        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: focusIdx + 1 }).catch(() => {});
       }
     } catch {
       setChatMsgs([{ role: "ai", text: "Sorry, I couldn't connect. You can try again or return to the summary." }]);
@@ -322,7 +323,7 @@ function MCQContent() {
   /* Called from handleReviewNext with fresh results before state update settles */
   const startDebriefWithResults = (allResults: QuestionResult[]) => {
     /* Complete the session in the background before debrief */
-    if (sessionId) { completeSession(sessionId).catch(() => {}); }
+    if (sessionIdRef.current) { completeSession(sessionIdRef.current).catch(() => {}); }
     runDebrief(allResults);
   };
 
@@ -336,8 +337,8 @@ function MCQContent() {
     const updatedHistory: TutorMessage[] = [...chatMsgs, { role: "student", text: msg }];
     setChatMsgs(updatedHistory);
     /* Persist student message */
-    if (sessionId) {
-      patchSessionChat(sessionId, { role: "student", text: msg, questionPosition: debriefQIdx + 1 }).catch(() => {});
+    if (sessionIdRef.current) {
+      patchSessionChat(sessionIdRef.current, { role: "student", text: msg, questionPosition: debriefQIdx + 1 }).catch(() => {});
     }
     if (newTurns >= MAX_TURNS) return;
     setAiTyping(true);
@@ -356,8 +357,8 @@ function MCQContent() {
       });
       setChatMsgs(prev => [...prev, { role: "ai", text: message }]);
       /* Persist AI reply */
-      if (sessionId) {
-        patchSessionChat(sessionId, { role: "ai", text: message, questionPosition: debriefQIdx + 1 }).catch(() => {});
+      if (sessionIdRef.current) {
+        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: debriefQIdx + 1 }).catch(() => {});
       }
     } catch {
       setChatMsgs(prev => [...prev, { role: "ai", text: "Sorry, I couldn't respond. Please try again." }]);
@@ -385,8 +386,8 @@ function MCQContent() {
         language:      tutorLang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
-      if (sessionId) {
-        patchSessionChat(sessionId, { role: "ai", text: message, questionPosition: idx + 1 }).catch(() => {});
+      if (sessionIdRef.current) {
+        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: idx + 1 }).catch(() => {});
       }
     } catch {
       setChatMsgs([{ role: "ai", text: "Sorry, couldn't load this question. Try another." }]);
