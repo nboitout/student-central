@@ -219,7 +219,7 @@ export interface SessionQuestion {
   mcqId:         string;
   position:      number;          /* 1-based */
   question:      string;
-  options:       MCQOption[];
+  options:       string[] | MCQOption[];  /* backend sends plain strings */
   correctIndex:  number;
   pageNumber?:   number | null;
   slideImageUrl?: string | null;
