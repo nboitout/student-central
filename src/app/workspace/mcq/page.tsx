@@ -191,17 +191,60 @@ function MCQContent() {
     const nextIdx = fromIdx + 1;
     if (nextIdx >= MAX_QUESTIONS) {
       setScreen("summary");
-    } else {
-      setQIndex(nextIdx);
-      setScreen("loading");
-      /* loadMCQ will be called by the useEffect on qIndex change */
+      return;
     }
-  }, []);
+    /* Set index first, then imperatively fetch for that index */
+    setQIndex(nextIdx);
+    setScreen("loading");
+    setLoadError(null);
+    setSlideSasUrl(null);
+    setSlideLoaded(false);
 
-  /* useEffect to load MCQ when qIndex changes */
-  useEffect(() => {
-    if (qIndex > 0) loadMCQ();
-  }, [qIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetch(`${API_URL}/api/mcq/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle, language: tutorLang }),
+    })
+      .then(res => {
+        if (res.status === 202) {
+          setScreen("waiting");
+          /* Use a recursive retry that always has the right index */
+          const retry = () => {
+            fetch(`${API_URL}/api/mcq/generate`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle, language: tutorLang }),
+            })
+              .then(r => r.json())
+              .then((q: MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string }) => {
+                setQuestions(prev => { const next = [...prev]; next[nextIdx] = q; return next; });
+                setAnswers(prev => { const next = [...prev]; if (next[nextIdx] === undefined) next[nextIdx] = null; return next; });
+                if (q.mcqId && q.slideImageUrl) {
+                  getSlideSasUrl(q.courseId ?? courseId, q.mcqId)
+                    .then(({ sasUrl }) => setSlideSasUrl(sasUrl)).catch(() => {});
+                }
+                setScreen("question");
+              })
+              .catch(() => setTimeout(retry, 10000));
+          };
+          setTimeout(retry, 10000);
+          return;
+        }
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+        return res.json();
+      })
+      .then((q: MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string }) => {
+        if (!q) return;
+        setQuestions(prev => { const next = [...prev]; next[nextIdx] = q; return next; });
+        setAnswers(prev => { const next = [...prev]; if (next[nextIdx] === undefined) next[nextIdx] = null; return next; });
+        if (q.mcqId && q.slideImageUrl) {
+          getSlideSasUrl(q.courseId ?? courseId, q.mcqId)
+            .then(({ sasUrl }) => setSlideSasUrl(sasUrl)).catch(() => {});
+        }
+        setScreen("question");
+      })
+      .catch(err => { setLoadError(err.message); setScreen("question"); });
+  }, [courseId, pdfUrl, courseTitle, tutorLang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Review: proceed (tutoring mode) ── */
   const handleReviewNext = async () => {
@@ -318,8 +361,11 @@ function MCQContent() {
   /* ── Navigation (prev question) ── */
   const prevQuestion = () => {
     if (qIndex === 0) { router.back(); return; }
-    setQIndex(qIndex - 1);
-    setScreen(answers[qIndex - 1] !== null ? "review" : "question");
+    const prevIdx = qIndex - 1;
+    setQIndex(prevIdx);
+    /* In assessment mode there is no review screen — go back to question */
+    const alreadyAnswered = answers[prevIdx] !== null;
+    setScreen(alreadyAnswered && mode === "tutoring" ? "review" : "question");
   };
 
   /* ══════════════════════════════════════════════════════
