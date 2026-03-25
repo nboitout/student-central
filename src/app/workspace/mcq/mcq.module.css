@@ -800,3 +800,228 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* ── Mode toggle ─────────────────────────────────────────── */
+.modeToggle {
+  display: flex;
+  gap: 0;
+  border: 0.5px solid var(--outline-variant);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.modeBtn {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+}
+.modeBtn + .modeBtn { border-left: 0.5px solid var(--outline-variant); }
+.modeBtnActive {
+  opacity: 1;
+  background: rgba(0, 72, 216, 0.08);
+  color: var(--primary);
+}
+
+/* ── Summary screen ──────────────────────────────────────── */
+.summaryPane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px 48px;
+  overflow-y: auto;
+  gap: 28px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+.summaryHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.summaryScore {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--on-surface);
+}
+.summaryScoreLabel {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+}
+.summaryTime {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+  margin-left: 8px;
+  padding-left: 12px;
+  border-left: 1px solid var(--outline-variant);
+}
+.summaryList {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 0.5px solid var(--outline-variant);
+}
+.summaryRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 0.5px solid var(--outline-variant);
+}
+.summaryRow:last-child { border-bottom: none; }
+.summaryRow:nth-child(even) { background: var(--surface-low); }
+.summaryQNum {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  width: 24px;
+  flex-shrink: 0;
+  text-align: center;
+}
+.summaryCorrect { color: #2d6a4f; }
+.summaryWrong   { color: var(--error); }
+.summaryQText {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.summaryMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.summaryDur {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  white-space: nowrap;
+}
+.signalBadge {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.summaryActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+/* ── Review screen ───────────────────────────────────────── */
+.studentExpSection {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.studentExpInput {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--on-surface);
+  background: var(--surface-lowest);
+  border: 0.5px solid var(--outline-variant);
+  padding: 10px 12px;
+  resize: vertical;
+  width: 100%;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+}
+.studentExpInput::placeholder { color: var(--on-surface-variant); opacity: 0.4; }
+.studentExpInput:focus { outline: none; border-color: var(--primary); }
+.reviewActions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Chat / debrief layout ───────────────────────────────── */
+.chatLayout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+.chatQPane {
+  width: 46%;
+  flex-shrink: 0;
+  border-right: 1px solid var(--outline-variant);
+  padding: 24px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.debriefPills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.debriefPill {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border: 0.5px solid var(--outline-variant);
+  background: var(--surface-low);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.debriefPill:hover { border-color: var(--primary); }
+.debriefPillActive {
+  background: rgba(0, 72, 216, 0.08);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.pillCorrect { color: #2d6a4f; }
+.pillWrong   { color: var(--error); }
+.chatStudentExp {
+  margin-top: 16px;
+  padding: 10px 12px;
+  background: var(--surface-low);
+  border-left: 2px solid var(--outline-variant);
+}
+.chatStudentExpText {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  font-style: italic;
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+.chatPane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
