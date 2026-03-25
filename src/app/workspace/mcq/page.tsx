@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import { evaluateReasoning, getSlideSasUrl, type MCQQuestion, type ReasoningSignal } from "@/lib/api";
+import { evaluateReasoning, getSlideSasUrl, tutorProbe, tutorReply, type MCQQuestion, type ReasoningSignal, type TutorMessage } from "@/lib/api";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -15,24 +15,11 @@ const LETTERS = ["A", "B", "C", "D"];
 
 type Screen = "loading" | "waiting" | "question" | "answered" | "chat" | "result";
 
-interface ChatMessage { role: "ai" | "student"; text: string; }
+
 
 const MAX_TURNS = 5;
 
-/* Contextual AI follow-up probe */
-function aiProbe(correct: boolean, questionText: string): string {
-  if (correct) {
-    return `Good — you picked the right answer. In your own words, why is that correct? What's the underlying concept?`;
-  }
-  return `You selected an incorrect option. What led you to that choice? Try to explain your reasoning.`;
-}
 
-const AI_FOLLOWUPS = [
-  `Thanks. Can you say more about how you'd distinguish between the correct answer and the distractors?`,
-  `Interesting. What prior knowledge or assumption guided your thinking here?`,
-  `Good. Can you connect this concept to something you've seen in the course material?`,
-  `Almost there — one last question: if you had to explain this to a classmate in one sentence, what would you say?`,
-];
 
 function MCQContent() {
   const params      = useSearchParams();
@@ -42,6 +29,7 @@ function MCQContent() {
   const courseId    = params.get("id") ?? "";
   const courseTitle = decodeURIComponent(params.get("title") ?? "Course");
   const pdfUrl      = decodeURIComponent(params.get("pdf") ?? "");
+  const tutorLang   = params.get("lang") ?? "en";   /* language for MCQ generation + AI prompts */
 
   /* ── Core MCQ state ── */
   const [screen,      setScreen]     = useState<Screen>("loading");
@@ -51,9 +39,10 @@ function MCQContent() {
   const [loadError,   setLoadError]  = useState<string | null>(null);
 
   /* ── Chat state ── */
-  const [chatMsgs,    setChatMsgs]   = useState<ChatMessage[]>([]);
+  const [chatMsgs,    setChatMsgs]   = useState<TutorMessage[]>([]);
   const [chatInput,   setChatInput]  = useState("");
   const [chatTurns,   setChatTurns]  = useState(0);
+  const [aiTyping,    setAiTyping]   = useState(false);
   const [evaluating,  setEvaluating] = useState(false);
   const [evalError,   setEvalError]  = useState<string | null>(null);
   const [signal,      setSignal]     = useState<ReasoningSignal | null>(null);
@@ -139,7 +128,7 @@ function MCQContent() {
     fetch(`${API_URL}/api/mcq/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle }),
+      body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle, language: tutorLang }),
     })
       .then(async (res) => {
         if (res.status === 202) { setScreen("waiting"); setTimeout(() => loadMCQ(), 10000); return; }
@@ -183,33 +172,66 @@ function MCQContent() {
     setAnswers(prev => { const next = [...prev]; next[qIndex] = i; return next; });
   };
 
-  /* ── Go to chat ── */
-  const startChat = () => {
-    setChatMsgs([{ role: "ai", text: aiProbe(isCorrect, mcq?.question ?? "") }]);
+  /* ── Start chat — call tutorProbe ── */
+  const startChat = async () => {
+    if (!mcq) return;
+    setChatMsgs([]);
     setChatInput("");
     setChatTurns(0);
     setSignal(null);
     setEvalError(null);
     setScreen("chat");
+    setAiTyping(true);
+    try {
+      const { message } = await tutorProbe({
+        courseId,
+        question:      mcq.question,
+        options:       mcq.options.map(o => o.text),
+        correctIndex:  mcq.correctIndex,
+        selectedIndex: selected ?? 0,
+        isCorrect,
+        explanation:   mcq.explanation,
+        language:      tutorLang,
+      });
+      setChatMsgs([{ role: "ai", text: message }]);
+    } catch {
+      setChatMsgs([{ role: "ai", text: "Sorry, I couldn't connect. Please try again." }]);
+    } finally {
+      setAiTyping(false);
+    }
   };
 
-  /* ── Send chat message ── */
-  const sendChat = () => {
-    if (!chatInput.trim() || chatTurns >= MAX_TURNS) return;
+  /* ── Send chat message — call tutorReply ── */
+  const sendChat = async () => {
+    if (!chatInput.trim() || chatTurns >= MAX_TURNS || aiTyping || !mcq) return;
     const msg = chatInput.trim();
     setChatInput("");
     const newTurns = chatTurns + 1;
     setChatTurns(newTurns);
+    const updatedHistory: TutorMessage[] = [...chatMsgs, { role: "student", text: msg }];
+    setChatMsgs(updatedHistory);
 
-    const aiReply = newTurns < MAX_TURNS
-      ? AI_FOLLOWUPS[Math.min(newTurns - 1, AI_FOLLOWUPS.length - 1)]
-      : null; /* no AI reply on final turn — conversation ends */
+    if (newTurns >= MAX_TURNS) return; /* conversation ends — no AI reply on final turn */
 
-    setChatMsgs(prev => [
-      ...prev,
-      { role: "student", text: msg },
-      ...(aiReply ? [{ role: "ai" as const, text: aiReply }] : []),
-    ]);
+    setAiTyping(true);
+    try {
+      const { message } = await tutorReply({
+        courseId,
+        question:      mcq.question,
+        options:       mcq.options.map(o => o.text),
+        correctIndex:  mcq.correctIndex,
+        selectedIndex: selected ?? 0,
+        isCorrect,
+        explanation:   mcq.explanation,
+        language:      tutorLang,
+        history:       updatedHistory,
+      });
+      setChatMsgs(prev => [...prev, { role: "ai", text: message }]);
+    } catch {
+      setChatMsgs(prev => [...prev, { role: "ai", text: "Sorry, I couldn't respond. You can still get your evaluation below." }]);
+    } finally {
+      setAiTyping(false);
+    }
   };
 
   /* ── Evaluate reasoning ── */
@@ -253,7 +275,7 @@ function MCQContent() {
     fetch(`${API_URL}/api/mcq/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle }),
+      body: JSON.stringify({ courseId, pdfUrl: pdfUrl || undefined, courseTitle, language: tutorLang }),
     })
       .then(async (res) => {
         if (!res.ok) { setLoadError(`Error ${res.status}`); setScreen("question"); return; }
@@ -519,6 +541,15 @@ function MCQContent() {
                   {msg.text}
                 </div>
               ))}
+              {/* AI typing indicator */}
+              {aiTyping && (
+                <div className={styles.chatAI}>
+                  <span className={styles.chatSender}>AI Tutor</span>
+                  <div className={styles.loadingDots} style={{ marginTop: 2 }}>
+                    <span /><span /><span />
+                  </div>
+                </div>
+              )}
               {/* End-of-conversation warning */}
               {chatTurns >= MAX_TURNS && (
                 <div className={styles.chatEndWarning}>
@@ -549,7 +580,7 @@ function MCQContent() {
                   <button
                     className={styles.chatSendBtn}
                     onClick={sendChat}
-                    disabled={!chatInput.trim()}
+                    disabled={!chatInput.trim() || aiTyping}
                     title={ui.send ?? "Send"}
                     aria-label="Send"
                   >
