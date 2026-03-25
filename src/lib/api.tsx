@@ -211,3 +211,96 @@ export async function getSlideSasUrl(
     `/api/mcq/bank/${courseId}/${mcqId}/slide`
   );
 }
+
+/* ── Session API ─────────────────────────────────────────── */
+
+/** Shape of a question as returned by the session endpoints */
+export interface SessionQuestion {
+  mcqId:         string;
+  position:      number;          /* 1-based */
+  question:      string;
+  options:       MCQOption[];
+  correctIndex:  number;
+  pageNumber?:   number | null;
+  slideImageUrl?: string | null;
+  courseId?:     string;
+}
+
+export interface SessionCreateResponse {
+  sessionId:    string;
+  firstQuestion: SessionQuestion;
+}
+
+export interface SessionAnswerResponse {
+  ok: boolean;
+}
+
+/** Returned by PATCH /explanation — includes the computed signal */
+export interface SessionExplanationResponse {
+  signal:      ReasoningSignal["signal"];
+  confidence:  ReasoningSignal["confidence"];
+  facultyInsight:  string;
+  studentFeedback: string;
+}
+
+export interface SessionSummary {
+  totalQuestions:  number;
+  correctCount:    number;
+  totalDurationSec: number;
+  signalBreakdown: Record<string, number>;
+}
+
+export async function createSession(payload: {
+  courseId:  string;
+  userId?:   string;
+  mode:      "assessment" | "tutoring";
+  language:  string;
+}): Promise<SessionCreateResponse> {
+  return request<SessionCreateResponse>("/api/sessions", {
+    method: "POST",
+    body: JSON.stringify({ userId: "nicolas", ...payload }),
+  });
+}
+
+export async function getSessionQuestion(
+  sessionId: string,
+  position: number
+): Promise<SessionQuestion> {
+  return request<SessionQuestion>(`/api/sessions/${sessionId}/question/${position}`);
+}
+
+export async function patchSessionAnswer(
+  sessionId: string,
+  payload: { position: number; selectedIndex: number; durationSec: number }
+): Promise<SessionAnswerResponse> {
+  return request<SessionAnswerResponse>(`/api/sessions/${sessionId}/answer`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function patchSessionExplanation(
+  sessionId: string,
+  payload: { position: number; studentExplanation: string }
+): Promise<SessionExplanationResponse> {
+  return request<SessionExplanationResponse>(`/api/sessions/${sessionId}/explanation`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function patchSessionChat(
+  sessionId: string,
+  payload: { role: "ai" | "student"; text: string; questionPosition: number }
+): Promise<void> {
+  await request<void>(`/api/sessions/${sessionId}/chat`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function completeSession(sessionId: string): Promise<SessionSummary> {
+  return request<SessionSummary>(`/api/sessions/${sessionId}/complete`, {
+    method: "POST",
+  });
+}
