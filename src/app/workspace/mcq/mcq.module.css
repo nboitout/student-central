@@ -225,7 +225,7 @@
   gap: 14px;
   padding: 13px 16px;
   background: var(--surface-low);
-  border: none;
+  border: 1px solid var(--outline-variant);
   cursor: pointer;
   text-align: left;
   width: 100%;
@@ -244,10 +244,15 @@
   background: transparent;
   transition: background 0.15s;
 }
-.option:hover { background: var(--tertiary-fixed); color: var(--on-surface); }
+.option:hover { background: rgba(0, 60, 194, 0.04); border-color: rgba(0, 60, 194, 0.35); color: var(--on-surface); }
 .option:hover::before { background: var(--primary); }
 
-.optSelected { background: rgba(0, 60, 194, 0.06) !important; color: var(--primary) !important; }
+.optSelected {
+  background: rgba(0, 60, 194, 0.08) !important;
+  border: 2px solid var(--primary) !important;
+  color: var(--primary) !important;
+  font-weight: 500;
+}
 .optSelected::before { background: var(--primary) !important; }
 
 /* ── Options (static — answered screen) ─────────────────── */
@@ -1028,8 +1033,10 @@
 
 /* ── Missing classes (revamp) ────────────────────────────── */
 .optionSelected {
-  background: rgba(0, 60, 194, 0.06) !important;
+  background: rgba(0, 60, 194, 0.08) !important;
+  border: 2px solid var(--primary) !important;
   color: var(--primary) !important;
+  font-weight: 500;
 }
 .optionSelected::before { background: var(--primary) !important; }
 
