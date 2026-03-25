@@ -1121,3 +1121,25 @@
 }
 
 .dragging { background: var(--primary); width: 10px; }
+
+/* ── Results reveal eyebrow ──────────────────────────────── */
+.summaryEyebrow {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+  opacity: 0.7;
+  margin-bottom: -12px;
+}
+
+/* ── Review blind-mode hint ──────────────────────────────── */
+.reviewBlind {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  font-style: italic;
+  margin: 0 0 6px;
+}
