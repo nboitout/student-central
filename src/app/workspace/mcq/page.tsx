@@ -399,12 +399,6 @@ function MCQContent() {
           </svg>
           {screen === "chat" ? "Summary" : screen === "summary" ? ui.backBtn : (qIndex === 0 ? ui.backToWorkspace ?? "Workspace" : ui.prevQuestion ?? "← Prev")}
         </button>
-      </div>
-      <div className={styles.headerCenter}>
-        <span className={styles.headerEyebrow}>COURSE MATERIALS</span>
-        <span className={styles.headerTitle}>{courseTitle}</span>
-      </div>
-      <div className={styles.headerRight}>
         {/* Mode toggle */}
         <div className={styles.modeToggle}>
           <button
@@ -418,6 +412,12 @@ function MCQContent() {
             title="Tutoring mode — review + explain after each question"
           >Tutoring</button>
         </div>
+      </div>
+      <div className={styles.headerCenter}>
+        <span className={styles.headerEyebrow}>COURSE MATERIALS</span>
+        <span className={styles.headerTitle}>{courseTitle}</span>
+      </div>
+      <div className={styles.headerRight}>
         {/* Timer (question screen only) */}
         {(screen === "question") && (
           <div className={styles.timerWrap}>
@@ -524,6 +524,10 @@ function MCQContent() {
           {slidePane}
           <div className={styles.divider} ref={dividerRef} onMouseDown={onMouseDown} />
           <div className={styles.questionPane}>
+            {/* Question text */}
+            <div className={styles.questionLabel}>{ui.questionLabel ?? "Question"} {qIndex + 1}</div>
+            <div className={styles.questionText}>{mcq.question}</div>
+
             {/* Result banner */}
             <div className={`${styles.resultBanner} ${isCorrect ? styles.bannerCorrect : styles.bannerWrong}`}>
               <span className={styles.resultIcon}>{isCorrect ? "✓" : "✗"}</span>
