@@ -227,8 +227,11 @@ export interface SessionQuestion {
 }
 
 export interface SessionCreateResponse {
-  sessionId:    string;
-  firstQuestion: SessionQuestion;
+  sessionId:      string;
+  question:       SessionQuestion;   /* backend returns "question", not "firstQuestion" */
+  mode?:          string;
+  language?:      string;
+  totalQuestions?: number;
 }
 
 export interface SessionAnswerResponse {
