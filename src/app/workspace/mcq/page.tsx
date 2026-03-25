@@ -243,7 +243,7 @@ function MCQContent() {
     const sid = sessionIdRef.current;
     if (!sid) { setLoadError("Session not found"); setScreen("question"); return; }
     try {
-      const sq = await getSessionQuestion(sid, nextIdx + 1); /* position is 1-based */
+      const sq = await getSessionQuestion(sid, nextIdx + 1, courseId); /* position is 1-based */
       /* Advance index ONLY after data is ready — prevents blank render */
       setQIndex(nextIdx);
       applyQuestion(sq, nextIdx);
@@ -508,7 +508,12 @@ function MCQContent() {
   const slidePane = (
     <div className={styles.slidePane} style={{ width: `${slideWidth}%` }}>
       {!slideSasUrl
-        ? <div className={styles.slidePlaceholder}><div className={styles.slidePlaceholderText}>Slide not available</div></div>
+        ? (
+          <div className={styles.slidePlaceholder}>
+            <div className={styles.slidePlaceholderText}>No slide for this question</div>
+            <div className={styles.slidePlaceholderHint}>Regenerate the MCQ bank to enable slides</div>
+          </div>
+        )
         : (
           <>
             {!slideLoaded && <div className={styles.slideLoading}><div className={styles.spinner} /></div>}
