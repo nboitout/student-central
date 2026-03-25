@@ -661,31 +661,37 @@ function MCQContent() {
     return (
       <div className={styles.page}>
         {headerEl}
-        <div className={styles.chatLayout}>
+        <div className={styles.body} ref={bodyRef}>
 
-          {/* Left: focused question card */}
-          <div className={styles.chatQPane}>
+          {/* Left: slide pane — same as question/review screens */}
+          {slidePane}
+          <div className={styles.divider} ref={dividerRef} onMouseDown={onMouseDown} />
+
+          {/* Right: Q-pills + question + options + chat stacked */}
+          <div className={styles.questionPane} style={{ gap: 0, padding: "0", display: "flex", flexDirection: "column" }}>
+
             {/* Q-selector pills */}
             <div className={styles.debriefPills}>
               {results.map((r, i) => {
-                const c = r.selected === r.question.correctIndex;
+                const corr = r.selected === r.question.correctIndex;
                 return (
                   <button
                     key={i}
                     className={`${styles.debriefPill} ${i === debriefQIdx ? styles.debriefPillActive : ""}`}
                     onClick={() => switchDebriefQ(i)}
                   >
-                    <span className={c ? styles.pillCorrect : styles.pillWrong}>{c ? "✓" : "✗"}</span>
+                    <span className={corr ? styles.pillCorrect : styles.pillWrong}>{corr ? "✓" : "✗"}</span>
                     Q{i + 1}
                   </button>
                 );
               })}
             </div>
 
-            {/* Question + options */}
+            {/* Focused question card */}
             {focusR && (
-              <>
-                <div className={styles.chatQuestionText}>{focusR.question.question}</div>
+              <div className={styles.debriefQCard}>
+                <div className={styles.questionLabel}>{ui.questionLabel ?? "Question"} {debriefQIdx + 1}</div>
+                <div className={styles.questionText}>{focusR.question.question}</div>
                 <div className={styles.options} style={{ marginTop: 12 }}>
                   {focusR.question.options.map((opt, i) => {
                     const isCorr = i === focusR.question.correctIndex;
@@ -705,31 +711,22 @@ function MCQContent() {
                     );
                   })}
                 </div>
-                {/* Student's explanation if available */}
                 {focusR.explanation && (
                   <div className={styles.chatStudentExp}>
-                    <div className={styles.sectionLabel}>Your explanation</div>
+                    <div className={styles.sectionLabel}>Your reasoning</div>
                     <p className={styles.chatStudentExpText}>{focusR.explanation}</p>
                   </div>
                 )}
-                {/* Signal badge */}
                 {focusR.signal && (
-                  <div
+                  <span
                     className={styles.signalBadge}
-                    style={{
-                      background: signalStyle(focusR.signal.signal).bg,
-                      color: signalStyle(focusR.signal.signal).color,
-                      marginTop: 12, display: "inline-block",
-                    }}
-                  >
-                    {focusR.signal.signal}
-                  </div>
+                    style={{ background: signalStyle(focusR.signal.signal).bg, color: signalStyle(focusR.signal.signal).color, marginTop: 10, display: "inline-block" }}
+                  >{focusR.signal.signal}</span>
                 )}
-              </>
+              </div>
             )}
-          </div>
 
-          {/* Right: chat */}
+          {/* Chat panel — fills remaining height */}
           <div className={styles.chatPane}>
             <div className={styles.chatThread}>
               {chatMsgs.map((msg, i) => (
@@ -779,9 +776,10 @@ function MCQContent() {
                 ← {ui.backBtn ?? "Back to summary"}
               </button>
             )}
-          </div>
+          </div>{/* end chatPane */}
 
-        </div>
+          </div>{/* end questionPane */}
+        </div>{/* end body */}
       </div>
     );
   }
