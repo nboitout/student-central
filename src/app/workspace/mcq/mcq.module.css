@@ -29,7 +29,7 @@
   gap: 16px;
 }
 
-.headerLeft { flex-shrink: 0; min-width: 160px; }
+.headerLeft { flex-shrink: 0; min-width: 0; display: flex; align-items: center; gap: 14px; }
 
 .backBtn {
   display: inline-flex;
@@ -77,7 +77,7 @@
   display: block;
 }
 
-.headerRight { flex-shrink: 0; min-width: 160px; display: flex; justify-content: flex-end; }
+.headerRight { flex-shrink: 0; min-width: 120px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 
 .qCounter {
   font-family: var(--font-display);
@@ -687,7 +687,7 @@
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
   .header { padding: 0 16px; }
-  .headerLeft, .headerRight { min-width: auto; }
+  .headerLeft, .headerRight { min-width: 0; }
   .body { flex-direction: column; }
   .divider { width: 100%; height: 8px; cursor: row-resize; }
   .dividerHandle { flex-direction: row; }
