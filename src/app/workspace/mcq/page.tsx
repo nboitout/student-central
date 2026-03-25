@@ -173,7 +173,11 @@ function MCQContent() {
     setAnswers(prev => { const next = [...prev]; if (next[idx] === undefined) next[idx] = null; return next; });
     setSlideLoaded(false);
     /* Session endpoint returns slideImageUrl directly — use it, no extra /slide call needed */
-    setSlideSasUrl(sq.slideImageUrl ?? null);
+    const slideUrl = sq.slideImageUrl ?? null;
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[MCQ] Q${idx + 1} slideImageUrl:`, slideUrl ?? "(none — slide not available for this course)");
+    }
+    setSlideSasUrl(slideUrl);
   };
 
   /* ── Start session — called once on mount ── */
@@ -234,17 +238,19 @@ function MCQContent() {
       setScreen("summary");
       return;
     }
-    setQIndex(nextIdx);
     setScreen("loading");
     setLoadError(null);
     const sid = sessionIdRef.current;
     if (!sid) { setLoadError("Session not found"); setScreen("question"); return; }
     try {
       const sq = await getSessionQuestion(sid, nextIdx + 1); /* position is 1-based */
+      /* Advance index ONLY after data is ready — prevents blank render */
+      setQIndex(nextIdx);
       applyQuestion(sq, nextIdx);
       setScreen("question");
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load question");
+      /* Keep current qIndex on error so existing question stays visible */
+      setLoadError(err instanceof Error ? err.message : `Failed to load question ${nextIdx + 1} — please retry`);
       setScreen("question");
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
