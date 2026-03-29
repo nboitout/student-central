@@ -1196,3 +1196,64 @@
   display: block;
   background: var(--surface-container);
 }
+
+/* ── Keyword search chips ────────────────────────────────── */
+.chipSearchWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--surface-low);
+  border: 0.5px solid var(--outline-variant);
+  border-radius: var(--border-radius-md);
+}
+
+.chipSearchLabel {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.45;
+}
+
+.chipSearchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chipSearch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 0.5px solid var(--outline-variant);
+  border-radius: 20px;
+  background: var(--surface-lowest);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.chipSearch:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(0, 72, 216, 0.05);
+}
+
+.chipSearch:active {
+  transform: scale(0.96);
+}
+
+.chipSearchCopied {
+  border-color: #3B6D11 !important;
+  color: #27500A !important;
+  background: #EAF3DE !important;
+  font-size: 0.625rem;
+}
