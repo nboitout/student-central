@@ -72,6 +72,7 @@ function MCQContent() {
   /* ── Slide state ── */
   const [slideSasUrl,  setSlideSasUrl]  = useState<string | null>(null);
   const [slideLoaded,  setSlideLoaded]  = useState(false);
+  const [pdfSasUrl,    setPdfSasUrl]    = useState<string | null>(null);
 
   /* ── Timers ── */
   const [qStartTime,   setQStartTime]   = useState<number>(Date.now());
@@ -200,6 +201,13 @@ function MCQContent() {
     if (sessionStarted.current) return;
     sessionStarted.current = true;
     startSession();
+    /* Fetch PDF SAS URL as fallback when no slide image exists */
+    if (courseId) {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io"}/api/courses/${courseId}/pdf-url?userId=nicolas`)
+        .then(r => r.json())
+        .then(({ sasUrl }) => { if (sasUrl) setPdfSasUrl(sasUrl); })
+        .catch(() => {});
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Submit answer ── */
@@ -507,26 +515,31 @@ function MCQContent() {
   /* ─── Slide pane helper (question + review screens) ──── */
   const slidePane = (
     <div className={styles.slidePane} style={{ width: `${slideWidth}%` }}>
-      {!slideSasUrl
-        ? (
-          <div className={styles.slidePlaceholder}>
-            <div className={styles.slidePlaceholderText}>No slide for this question</div>
-            <div className={styles.slidePlaceholderHint}>Regenerate the MCQ bank to enable slides</div>
-          </div>
-        )
-        : (
-          <>
-            {!slideLoaded && <div className={styles.slideLoading}><div className={styles.spinner} /></div>}
-            <img
-              src={slideSasUrl}
-              alt="Slide"
-              className={styles.slideImg}
-              style={{ opacity: slideLoaded ? 1 : 0 }}
-              onLoad={() => setSlideLoaded(true)}
-            />
-          </>
-        )
-      }
+      {slideSasUrl ? (
+        /* Specific slide image for this question */
+        <>
+          {!slideLoaded && <div className={styles.slideLoading}><div className={styles.spinner} /></div>}
+          <img
+            src={slideSasUrl}
+            alt="Slide"
+            className={styles.slideImg}
+            style={{ opacity: slideLoaded ? 1 : 0 }}
+            onLoad={() => setSlideLoaded(true)}
+          />
+        </>
+      ) : pdfSasUrl ? (
+        /* Fallback: full PDF viewer when no specific slide is available */
+        <iframe
+          src={`${pdfSasUrl}#toolbar=1&navpanes=0&view=FitH`}
+          className={styles.pdfFallbackFrame}
+          title="Course PDF"
+        />
+      ) : (
+        /* No PDF either */
+        <div className={styles.slidePlaceholder}>
+          <div className={styles.slidePlaceholderText}>No course material available</div>
+        </div>
+      )}
     </div>
   );
 
