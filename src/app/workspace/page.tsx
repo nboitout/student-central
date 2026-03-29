@@ -615,11 +615,16 @@ export default function WorkspacePage() {
       {prefsModal && (
         <LearningPrefsModal
           courseTitle={prefsModal.title}
-          onSave={async (prefs) => {
+          onSave={(prefs) => {
+            /* Store locally — backend will pick up on next course update */
             try {
-              const updated = await updateCourse(prefsModal.id, { learningPrefs: prefs });
-              setCourses(prev => prev.map(x => x.id === prefsModal.id ? updated : x));
-            } catch { /* non-fatal */ }
+              localStorage.setItem(
+                `learningPrefs_${prefsModal.id}`,
+                JSON.stringify(prefs)
+              );
+            } catch { /* localStorage unavailable */ }
+            /* Fire-and-forget patch — non-blocking, modal closes immediately */
+            updateCourse(prefsModal.id, { learningPrefs: prefs }).catch(() => {});
             setPrefsModal(null);
           }}
           onSkip={() => setPrefsModal(null)}
