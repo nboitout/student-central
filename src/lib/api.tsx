@@ -220,10 +220,14 @@ export interface SessionQuestion {
   position:      number;          /* 1-based */
   question:      string;
   options:       string[] | MCQOption[];  /* backend sends plain strings */
-  correctIndex:  number;
-  pageNumber?:   number | null;
-  slideImageUrl?: string | null;
+  correctIndex:  number;          /* camelCase — may come as correct_index */
+  correct_index?: number;         /* snake_case fallback */
+  pageNumber?:   number | null;   /* camelCase */
+  page_number?:  number | null;   /* snake_case fallback */
+  slideImageUrl?: string | null;  /* camelCase */
+  slide_image_url?: string | null; /* snake_case — FastAPI default */
   courseId?:     string;
+  course_id?:    string;
 }
 
 export interface SessionCreateResponse {
