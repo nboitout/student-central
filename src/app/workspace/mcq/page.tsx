@@ -97,6 +97,52 @@ function MCQContent() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [screen]); // eslint-disable-line react-hooks/exhaustive-deps
 
+
+  /* ── Keyword chip extractor ────────────────────────────── */
+  const STOP_WORDS = new Set([
+    "a","an","the","is","are","was","were","be","been","being",
+    "have","has","had","do","does","did","will","would","could","should","may","might",
+    "in","on","at","by","for","of","to","from","with","about","into","through","during",
+    "what","which","who","when","where","why","how","that","this","these","those",
+    "it","its","if","or","and","but","not","no","nor","so","yet","than","as",
+    "can","does","each","between","against","before","after","above","below","because",
+  ]);
+
+  const extractKeyChips = (question: string, opts: { text: string }[]): string[] => {
+    const allText = [question, ...opts.map(o => o.text)].join(" ");
+    /* tokenise, lowercase, strip punctuation */
+    const tokens = allText
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .split(/\s+/)
+      .filter(t => t.length > 3 && !STOP_WORDS.has(t));
+    /* count frequency */
+    const freq: Record<string, number> = {};
+    tokens.forEach(t => { freq[t] = (freq[t] ?? 0) + 1; });
+    /* prioritise tokens that appear in the question (not just options) */
+    const questionTokens = new Set(
+      question.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").split(/\s+/).filter(t => t.length > 3 && !STOP_WORDS.has(t))
+    );
+    /* sort: question-source first, then by frequency, deduplicated */
+    const unique = Array.from(new Set(tokens));
+    unique.sort((a, b) => {
+      const aQ = questionTokens.has(a) ? 1 : 0;
+      const bQ = questionTokens.has(b) ? 1 : 0;
+      if (aQ !== bQ) return bQ - aQ;
+      return (freq[b] ?? 0) - (freq[a] ?? 0);
+    });
+    /* return top 6 chips, capitalised */
+    return unique.slice(0, 6).map(t => t.charAt(0).toUpperCase() + t.slice(1));
+  };
+
+  /* ── Toast state for copy feedback ── */
+  const [copiedChip, setCopiedChip] = useState<string | null>(null);
+  const copyChip = (word: string) => {
+    navigator.clipboard.writeText(word).catch(() => {});
+    setCopiedChip(word);
+    setTimeout(() => setCopiedChip(null), 2000);
+  };
+
   const fmtTimer = (sec: number) => {
     const m = Math.floor(sec / 60).toString().padStart(2, "0");
     const s = (sec % 60).toString().padStart(2, "0");
@@ -535,6 +581,36 @@ function MCQContent() {
             {loadError && <div className={styles.errorBanner}>{loadError}</div>}
             <div className={styles.questionLabel}>{ui.questionLabel ?? "Question"} {qIndex + 1}</div>
             <div className={styles.questionText}>{mcq.question}</div>
+
+            {/* ── Key term search chips ── */}
+            {pdfSasUrl && (
+              <div className={styles.chipSearchWrap}>
+                <span className={styles.chipSearchLabel}>Search PDF for:</span>
+                <div className={styles.chipSearchRow}>
+                  {extractKeyChips(mcq.question, mcq.options).map(word => (
+                    <button
+                      key={word}
+                      className={`${styles.chipSearch} ${copiedChip === word ? styles.chipSearchCopied : ""}`}
+                      onClick={() => copyChip(word)}
+                      title="Click to copy, then press Ctrl+F in the PDF"
+                    >
+                      {copiedChip === word ? (
+                        <>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          Copied — press Ctrl+F
+                        </>
+                      ) : (
+                        <>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                          {word}
+                        </>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className={styles.options}>
               {mcq.options.map((opt, i) => (
                 <button
