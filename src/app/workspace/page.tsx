@@ -172,6 +172,9 @@ function CreateModal({
         /* Fire-and-forget: kick off MCQ generation in the background */
         triggerMCQGeneration({ courseId: course.id, pdfUrl: url }).catch(() => {});
         onCreate(updated, /* showPrefs */ true);
+      } else if (driveUrl.trim()) {
+        /* Drive URL also triggers questionnaire — MCQ will be generated later */
+        onCreate(course, /* showPrefs */ true);
       } else {
         onCreate(course, false);
       }
@@ -309,23 +312,23 @@ function CourseCard({
   index,
   onDelete,
   onDetails,
+  isProcessing,
   ui,
 }: {
   course: Course;
   index: number;
   onDelete: (id: string) => void;
   onDetails: (c: Course) => void;
+  isProcessing: boolean;
   ui: ReturnType<typeof getT>["workspace"];
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const progress   = Math.round((course.exercisesDone / course.exercisesTotal) * 100);
+  const total    = course.exercisesTotal || 0;
+  const done     = course.exercisesDone  || 0;
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0;
   const initials   = course.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
   const sourceCount = course.source.split(",").length;
   const dateStr    = new Date(course.createdAt ?? Date.now()).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-
-  const isProcessing = course.mcqStatus === "generating" ||
-    /* Fallback until backend returns mcqStatus: a course with PDF but 0 questions is still generating */
-    (course.mcqStatus !== "ready" && course.mcqStatus !== "error" && !!course.pdfUrl && course.exercisesTotal === 0);
 
   return (
     <div
@@ -373,7 +376,7 @@ function CourseCard({
               <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>
                 {{ "Not Started": ui.statusNotStarted, "In Progress": ui.statusInProgress, "Completed": ui.statusCompleted }[course.status]}
               </div>
-              <div className={styles.exerciseBadge}>{course.exercisesDone} {ui.exercisesOf} {course.exercisesTotal}</div>
+              <div className={styles.exerciseBadge}>{done} {ui.exercisesOf} {total}</div>
             </div>
             <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>{ui.detailsBtn}</button>
           </>
@@ -401,6 +404,7 @@ export default function WorkspacePage() {
   const [modal, setModal]             = useState<Modal>(null);
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
   const [prefsModal, setPrefsModal]   = useState<Course | null>(null); /* course awaiting prefs */
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set()); /* frontend-tracked generating IDs */
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [search, setSearch]           = useState("");
   const [searchOpen, setSearchOpen]   = useState(false);
@@ -417,9 +421,9 @@ export default function WorkspacePage() {
   }, []);
 
   /* Poll every 8 s while any course is generating */
-  const hasGenerating = courses.some(c => c.mcqStatus === "generating");
+  const hasProcessing = processingIds.size > 0;
   useEffect(() => {
-    if (!hasGenerating) {
+    if (!hasProcessing) {
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       return;
     }
@@ -428,15 +432,20 @@ export default function WorkspacePage() {
       listCourses()
         .then(fresh => {
           setCourses(fresh);
-          /* Stop polling if no more generating */
-          if (!fresh.some(c => c.mcqStatus === "generating")) {
-            if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-          }
+          /* Clear processingIds for courses that now have questions ready */
+          setProcessingIds(prev => {
+            if (prev.size === 0) return prev;
+            const next = new Set(prev);
+            fresh.forEach(course => {
+              if ((course.exercisesTotal ?? 0) > 0) next.delete(course.id);
+            });
+            return next;
+          });
         })
         .catch(() => {});
     }, 8000);
     return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
-  }, [hasGenerating]);
+  }, [hasProcessing]);
 
   const SORT_LABELS: Record<SortKey, string> = { recent: ui.sortRecent, title: ui.sortTitle };
 
@@ -563,7 +572,7 @@ export default function WorkspacePage() {
           ) : viewMode === "grid" ? (
             <div className={styles.grid}>
               {filtered.map((c, i) => (
-                <CourseCard key={c.id} course={c} index={i} onDelete={handleDelete} onDetails={openDetails} ui={ui} />
+                <CourseCard key={c.id} course={c} index={i} onDelete={handleDelete} onDetails={openDetails} isProcessing={processingIds.has(c.id)} ui={ui} />
               ))}
             </div>
           ) : (
@@ -593,6 +602,8 @@ export default function WorkspacePage() {
           onClose={closeModal}
           onCreate={(newCourse, showPrefs) => {
             setCourses(prev => [newCourse, ...prev]);
+            /* Mark as processing in local state immediately */
+            setProcessingIds(prev => new Set(Array.from(prev).concat(newCourse.id)));
             closeModal();
             if (showPrefs) setPrefsModal(newCourse);
           }}
