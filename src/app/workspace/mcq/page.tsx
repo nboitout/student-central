@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import { createSession, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, getSlideSasUrl, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type TutorMessage } from "@/lib/api";
+import { createSession, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type TutorMessage } from "@/lib/api";
 
 /* ─── Constants ──────────────────────────────────────────── */
 const MAX_QUESTIONS = 5;
@@ -70,8 +70,6 @@ function MCQContent() {
   const [debriefQIdx,  setDebriefQIdx]  = useState(0);
 
   /* ── Slide state ── */
-  const [slideSasUrl,  setSlideSasUrl]  = useState<string | null>(null);
-  const [slideLoaded,  setSlideLoaded]  = useState(false);
   const [pdfSasUrl,    setPdfSasUrl]    = useState<string | null>(null);
 
   /* ── Timers ── */
@@ -172,13 +170,7 @@ function MCQContent() {
     const q = toMCQQuestion(sq);
     setQuestions(prev => { const next = [...prev]; next[idx] = q; return next; });
     setAnswers(prev => { const next = [...prev]; if (next[idx] === undefined) next[idx] = null; return next; });
-    setSlideLoaded(false);
-    /* Session endpoint returns slideImageUrl directly — use it, no extra /slide call needed */
-    const slideUrl = sq.slideImageUrl ?? sq.slide_image_url ?? null;
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[MCQ] Q${idx + 1} slide:`, slideUrl ?? "(none)", "| raw sq keys:", Object.keys(sq).filter(k => k.toLowerCase().includes("slide")));
-    }
-    setSlideSasUrl(slideUrl);
+
   };
 
   /* ── Start session — called once on mount ── */
@@ -512,32 +504,20 @@ function MCQContent() {
     );
   }
 
-  /* ─── Slide pane helper (question + review screens) ──── */
+  /* ─── Slide pane — PDF open at the question's page ──── */
+  const currentPage = mcq?.pageNumber ?? 1;
   const slidePane = (
     <div className={styles.slidePane} style={{ width: `${slideWidth}%` }}>
-      {slideSasUrl ? (
-        /* Specific slide image for this question */
-        <>
-          {!slideLoaded && <div className={styles.slideLoading}><div className={styles.spinner} /></div>}
-          <img
-            src={slideSasUrl}
-            alt="Slide"
-            className={styles.slideImg}
-            style={{ opacity: slideLoaded ? 1 : 0 }}
-            onLoad={() => setSlideLoaded(true)}
-          />
-        </>
-      ) : pdfSasUrl ? (
-        /* Fallback: full PDF viewer when no specific slide is available */
+      {pdfSasUrl ? (
         <iframe
-          src={`${pdfSasUrl}#toolbar=1&navpanes=0&view=FitH`}
+          key={currentPage}   /* re-mount iframe when page changes */
+          src={`${pdfSasUrl}#toolbar=1&navpanes=0&scrollbar=0&view=FitH&page=${currentPage}`}
           className={styles.pdfFallbackFrame}
-          title="Course PDF"
+          title={`Course PDF — page ${currentPage}`}
         />
       ) : (
-        /* No PDF either */
         <div className={styles.slidePlaceholder}>
-          <div className={styles.slidePlaceholderText}>No course material available</div>
+          <div className={styles.slidePlaceholderText}>Loading course material…</div>
         </div>
       )}
     </div>
