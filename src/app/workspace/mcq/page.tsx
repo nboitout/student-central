@@ -158,12 +158,12 @@ function MCQContent() {
   const toMCQQuestion = (sq: SessionQuestion): MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string } => ({
     question:     sq.question,
     options:      normaliseOptions(sq.options),
-    correctIndex: sq.correctIndex,
+    correctIndex: sq.correctIndex ?? sq.correct_index ?? 0,
     explanation:  "",   /* explanation not stored on question — populated after evaluate */
     mcqId:        sq.mcqId,
-    slideImageUrl: sq.slideImageUrl ?? undefined,
-    courseId:     sq.courseId ?? courseId,
-    pageNumber:   sq.pageNumber ?? undefined,
+    slideImageUrl: sq.slideImageUrl ?? sq.slide_image_url ?? undefined,
+    courseId:     sq.courseId ?? sq.course_id ?? courseId,
+    pageNumber:   sq.pageNumber ?? sq.page_number ?? undefined,
   });
 
   /* ── Load a question from the session into state ── */
@@ -173,9 +173,9 @@ function MCQContent() {
     setAnswers(prev => { const next = [...prev]; if (next[idx] === undefined) next[idx] = null; return next; });
     setSlideLoaded(false);
     /* Session endpoint returns slideImageUrl directly — use it, no extra /slide call needed */
-    const slideUrl = sq.slideImageUrl ?? null;
+    const slideUrl = sq.slideImageUrl ?? sq.slide_image_url ?? null;
     if (process.env.NODE_ENV !== "production") {
-      console.log(`[MCQ] Q${idx + 1} slideImageUrl:`, slideUrl ?? "(none — slide not available for this course)");
+      console.log(`[MCQ] Q${idx + 1} slide:`, slideUrl ?? "(none)", "| raw sq keys:", Object.keys(sq).filter(k => k.toLowerCase().includes("slide")));
     }
     setSlideSasUrl(slideUrl);
   };
