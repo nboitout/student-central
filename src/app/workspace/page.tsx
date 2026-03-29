@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./workspace.module.css";
 import { useLanguage } from "@/context/LanguageContext";
@@ -23,6 +23,109 @@ type SortKey = "recent" | "title";
 type Modal   = null | "create" | "details";
 
 /* ════════════════════════════════════════════════════════
+   LEARNING PREFERENCES MODAL
+════════════════════════════════════════════════════════ */
+type LearningPrefs = {
+  masteryLevel:  "familiarity" | "working" | "deep";
+  priorKnowledge: "none" | "some" | "solid" | "adjacent";
+  cadence:       "oneshot" | "days" | "weeks";
+  focusNote:     string;
+};
+
+function LearningPrefsModal({
+  courseTitle,
+  onSave,
+  onSkip,
+}: {
+  courseTitle: string;
+  onSave: (prefs: LearningPrefs) => void;
+  onSkip: () => void;
+}) {
+  const [mastery, setMastery] = useState<LearningPrefs["masteryLevel"]>("working");
+  const [prior,   setPrior]   = useState<LearningPrefs["priorKnowledge"]>("none");
+  const [cadence, setCadence] = useState<LearningPrefs["cadence"]>("days");
+  const [note,    setNote]    = useState("");
+
+  return (
+    <div className={styles.overlay} onClick={onSkip}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+        {/* Progress bar — cosmetic, shows we are step 2/2 */}
+        <div className={styles.prefsProgressBar}><div className={styles.prefsProgressFill} /></div>
+        <div className={styles.modalHeader}>
+          <div>
+            <div className={styles.modalEyebrow}>Setting up your course</div>
+            <h2 className={styles.modalTitle}>How do you want to learn this?</h2>
+            <p className={styles.prefsSub}>
+              Takes 30 seconds — helps the AI tutor adapt to you. Your MCQs are generating in the background.
+            </p>
+          </div>
+          <button className={styles.modalClose} onClick={onSkip}>✕</button>
+        </div>
+        <div className={styles.modalBody}>
+          {/* Mastery level */}
+          <div className={styles.prefsGroup}>
+            <div className={styles.prefsLabel}>What level of mastery are you aiming for?</div>
+            <div className={styles.chipRow}>
+              {([
+                { v: "familiarity", l: "Familiarity" },
+                { v: "working",     l: "Working knowledge" },
+                { v: "deep",        l: "Deep mastery" },
+              ] as { v: LearningPrefs["masteryLevel"]; l: string }[]).map(({ v, l }) => (
+                <button key={v} className={`${styles.prefChip} ${mastery === v ? styles.prefChipSel : ""}`} onClick={() => setMastery(v)}>{l}</button>
+              ))}
+            </div>
+          </div>
+          {/* Prior knowledge */}
+          <div className={styles.prefsGroup}>
+            <div className={styles.prefsLabel}>How familiar are you with this topic already?</div>
+            <div className={styles.chipRow}>
+              {([
+                { v: "none",     l: "Complete beginner" },
+                { v: "some",     l: "Some exposure" },
+                { v: "solid",    l: "Solid foundations" },
+                { v: "adjacent", l: "Expert in adjacent area" },
+              ] as { v: LearningPrefs["priorKnowledge"]; l: string }[]).map(({ v, l }) => (
+                <button key={v} className={`${styles.prefChip} ${prior === v ? styles.prefChipSel : ""}`} onClick={() => setPrior(v)}>{l}</button>
+              ))}
+            </div>
+          </div>
+          {/* Cadence */}
+          <div className={styles.prefsGroup}>
+            <div className={styles.prefsLabel}>How do you plan to study this?</div>
+            <div className={styles.chipRow}>
+              {([
+                { v: "oneshot", l: "One focused session" },
+                { v: "days",    l: "Several sessions over days" },
+                { v: "weeks",   l: "Weekly over months" },
+              ] as { v: LearningPrefs["cadence"]; l: string }[]).map(({ v, l }) => (
+                <button key={v} className={`${styles.prefChip} ${cadence === v ? styles.prefChipSel : ""}`} onClick={() => setCadence(v)}>{l}</button>
+              ))}
+            </div>
+          </div>
+          {/* Focus note */}
+          <div className={styles.prefsGroup}>
+            <div className={styles.prefsLabel}>Anything specific to focus on? <span style={{ fontWeight: 400, opacity: 0.5 }}>(optional)</span></div>
+            <textarea
+              className={styles.prefsTextarea}
+              placeholder={`e.g. I'm preparing for a technical interview on ${courseTitle}…`}
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              rows={2}
+            />
+          </div>
+        </div>
+        <div className={styles.modalFooter}>
+          <button className={styles.cancelBtn} onClick={onSkip}>Skip for now</button>
+          <button className={styles.createBtn} onClick={() => onSave({ masteryLevel: mastery, priorKnowledge: prior, cadence, focusNote: note.trim() })}>
+            Save preferences →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
    CREATE COURSE MODAL
 ════════════════════════════════════════════════════════ */
 function CreateModal({
@@ -32,7 +135,7 @@ function CreateModal({
   userId,
 }: {
   onClose: () => void;
-  onCreate: (c: Course) => void;
+  onCreate: (c: Course, showPrefs?: boolean) => void;
   ui: ReturnType<typeof getT>["workspace"];
   userId: string;
 }) {
@@ -67,12 +170,10 @@ function CreateModal({
         const { url } = await uploadPdf(file);
         const updated = await attachPdf(course.id, url, userId);
         /* Fire-and-forget: kick off MCQ generation in the background */
-        triggerMCQGeneration({ courseId: course.id, pdfUrl: url }).catch(() => {
-          /* Non-fatal — MCQ will be generated on first open if this fails */
-        });
-        onCreate(updated);
+        triggerMCQGeneration({ courseId: course.id, pdfUrl: url }).catch(() => {});
+        onCreate(updated, /* showPrefs */ true);
       } else {
-        onCreate(course);
+        onCreate(course, false);
       }
       onClose();
     } catch (err) {
@@ -222,8 +323,14 @@ function CourseCard({
   const sourceCount = course.source.split(",").length;
   const dateStr    = new Date(course.createdAt ?? Date.now()).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
+  const isProcessing = course.mcqStatus === "generating";
+
   return (
-    <div className={styles.card} onClick={() => onDetails(course)}>
+    <div
+      className={`${styles.card} ${isProcessing ? styles.cardProcessing : ""}`}
+      onClick={() => !isProcessing && onDetails(course)}
+      style={{ cursor: isProcessing ? "default" : "pointer" }}
+    >
       <div className={styles.cardBand}>
         <div className={styles.cardInitials}>{initials}</div>
         <div className={styles.cardMenu} onClick={(e) => e.stopPropagation()}>
@@ -250,14 +357,31 @@ function CourseCard({
         <div className={`${styles.progressPct} ${progress === 0 ? styles.progressPctZero : ""}`}>{progress}%</div>
       </div>
       <div className={styles.cardFooter} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.cardFooterLeft}>
-          <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>
-            {{ "Not Started": ui.statusNotStarted, "In Progress": ui.statusInProgress, "Completed": ui.statusCompleted }[course.status]}
+        {isProcessing ? (
+          <div className={styles.processingFooter}>
+            <div className={styles.processingBadge}>
+              <span className={styles.processingDot} />
+              Generating MCQs
+            </div>
+            <span className={styles.processingEta}>~2 min</span>
           </div>
-          <div className={styles.exerciseBadge}>{course.exercisesDone} {ui.exercisesOf} {course.exercisesTotal}</div>
-        </div>
-        <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>{ui.detailsBtn}</button>
+        ) : (
+          <>
+            <div className={styles.cardFooterLeft}>
+              <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>
+                {{ "Not Started": ui.statusNotStarted, "In Progress": ui.statusInProgress, "Completed": ui.statusCompleted }[course.status]}
+              </div>
+              <div className={styles.exerciseBadge}>{course.exercisesDone} {ui.exercisesOf} {course.exercisesTotal}</div>
+            </div>
+            <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>{ui.detailsBtn}</button>
+          </>
+        )}
       </div>
+      {isProcessing && (
+        <div className={styles.processingHint}>
+          Questions are being generated from your PDF. Other courses are still accessible.
+        </div>
+      )}
     </div>
   );
 }
@@ -274,6 +398,8 @@ export default function WorkspacePage() {
   const [loading, setLoading]         = useState(true);
   const [modal, setModal]             = useState<Modal>(null);
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
+  const [prefsModal, setPrefsModal]   = useState<Course | null>(null); /* course awaiting prefs */
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [search, setSearch]           = useState("");
   const [searchOpen, setSearchOpen]   = useState(false);
   const [sortKey, setSortKey]         = useState<SortKey>("recent");
@@ -287,6 +413,28 @@ export default function WorkspacePage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  /* Poll every 8 s while any course is generating */
+  const hasGenerating = courses.some(c => c.mcqStatus === "generating");
+  useEffect(() => {
+    if (!hasGenerating) {
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      return;
+    }
+    if (pollingRef.current) return; /* already polling */
+    pollingRef.current = setInterval(() => {
+      listCourses()
+        .then(fresh => {
+          setCourses(fresh);
+          /* Stop polling if no more generating */
+          if (!fresh.some(c => c.mcqStatus === "generating")) {
+            if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+          }
+        })
+        .catch(() => {});
+    }, 8000);
+    return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
+  }, [hasGenerating]);
 
   const SORT_LABELS: Record<SortKey, string> = { recent: ui.sortRecent, title: ui.sortTitle };
 
