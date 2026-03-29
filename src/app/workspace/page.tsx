@@ -26,10 +26,11 @@ type Modal   = null | "create" | "details";
    LEARNING PREFERENCES MODAL
 ════════════════════════════════════════════════════════ */
 type LearningPrefs = {
-  masteryLevel:  "familiarity" | "working" | "deep";
+  masteryLevel:   "familiarity" | "working" | "deep";
   priorKnowledge: "none" | "some" | "solid" | "adjacent";
-  cadence:       "oneshot" | "days" | "weeks";
-  focusNote:     string;
+  cadence:        "oneshot" | "days" | "weeks";
+  domainLevel:    "1" | "2" | "3" | "4" | "5";  /* self-assessed 1–5 */
+  focusNote:      string;
 };
 
 function LearningPrefsModal({
@@ -45,6 +46,7 @@ function LearningPrefsModal({
   const [prior,   setPrior]   = useState<LearningPrefs["priorKnowledge"]>("none");
   const [cadence, setCadence] = useState<LearningPrefs["cadence"]>("days");
   const [note,    setNote]    = useState("");
+  const [domain,  setDomain]  = useState<LearningPrefs["domainLevel"]>("2");
 
   return (
     <div className={styles.overlay} onClick={onSkip}>
@@ -102,6 +104,17 @@ function LearningPrefsModal({
               ))}
             </div>
           </div>
+          {/* Self-assessed domain level */}
+          <div className={styles.prefsGroup}>
+            <div className={styles.prefsLabel}>How would you rate your current level in this specific domain? <span style={{ fontWeight: 400, opacity: 0.5 }}>(1 = beginner, 5 = expert)</span></div>
+            <div className={styles.chipRow}>
+              {(["1","2","3","4","5"] as LearningPrefs["domainLevel"][]).map(v => (
+                <button key={v} className={`${styles.prefChip} ${domain === v ? styles.prefChipSel : ""}`} onClick={() => setDomain(v)}>
+                  {v === "1" ? "1 — Beginner" : v === "2" ? "2 — Novice" : v === "3" ? "3 — Intermediate" : v === "4" ? "4 — Advanced" : "5 — Expert"}
+                </button>
+              ))}
+            </div>
+          </div>
           {/* Focus note */}
           <div className={styles.prefsGroup}>
             <div className={styles.prefsLabel}>Anything specific to focus on? <span style={{ fontWeight: 400, opacity: 0.5 }}>(optional)</span></div>
@@ -116,7 +129,7 @@ function LearningPrefsModal({
         </div>
         <div className={styles.modalFooter}>
           <button className={styles.cancelBtn} onClick={onSkip}>Skip for now</button>
-          <button className={styles.createBtn} onClick={() => onSave({ masteryLevel: mastery, priorKnowledge: prior, cadence, focusNote: note.trim() })}>
+          <button className={styles.createBtn} onClick={() => onSave({ masteryLevel: mastery, priorKnowledge: prior, cadence, domainLevel: domain, focusNote: note.trim() })}>
             Save preferences →
           </button>
         </div>
@@ -577,21 +590,38 @@ export default function WorkspacePage() {
             </div>
           ) : (
             <div className={styles.listView}>
-              {filtered.map((c, i) => (
-                <div key={c.id} className={styles.listRow} onClick={() => openDetails(c)}>
-                  <div className={styles.listAccent} style={{ background: ["#dceeff","#e8f0fe","#d2e3fc","#f0e9ff","#e8f5e9"][i % 5] }}>
-                    <span className={styles.listInitials}>{c.title.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()}</span>
+              {filtered.map((c, i) => {
+                const isProc = processingIds.has(c.id);
+                return (
+                  <div
+                    key={c.id}
+                    className={`${styles.listRow} ${isProc ? styles.listRowProcessing : ""}`}
+                    onClick={() => !isProc && openDetails(c)}
+                    style={{ cursor: isProc ? "default" : "pointer" }}
+                  >
+                    <div className={styles.listAccent} style={{ background: ["#dceeff","#e8f0fe","#d2e3fc","#f0e9ff","#e8f5e9"][i % 5] }}>
+                      <span className={styles.listInitials}>{c.title.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()}</span>
+                    </div>
+                    <div className={styles.listBody}>
+                      <div className={styles.listTitle}>{c.title}</div>
+                      <div className={styles.listMeta}>{c.author} · {new Date(c.createdAt ?? Date.now()).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}</div>
+                    </div>
+                    <div className={styles.listRight}>
+                      {isProc ? (
+                        <div className={styles.processingBadge}>
+                          <span className={styles.processingDot} />
+                          Generating MCQs
+                        </div>
+                      ) : (
+                        <>
+                          <div className={`${styles.statusBadge} ${styles[`status${c.status.replace(" ","")}`]}`}>{{ "Not Started": ui.statusNotStarted, "In Progress": ui.statusInProgress, "Completed": ui.statusCompleted }[c.status]}</div>
+                          <div className={styles.exerciseBadge}>{c.exercisesDone} {ui.exercisesOf} {c.exercisesTotal}</div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className={styles.listBody}>
-                    <div className={styles.listTitle}>{c.title}</div>
-                    <div className={styles.listMeta}>{c.author} · {new Date(c.createdAt ?? Date.now()).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}</div>
-                  </div>
-                  <div className={styles.listRight}>
-                    <div className={`${styles.statusBadge} ${styles[`status${c.status.replace(" ","")}`]}`}>{{ "Not Started": ui.statusNotStarted, "In Progress": ui.statusInProgress, "Completed": ui.statusCompleted }[c.status]}</div>
-                    <div className={styles.exerciseBadge}>{c.exercisesDone} {ui.exercisesOf} {c.exercisesTotal}</div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
