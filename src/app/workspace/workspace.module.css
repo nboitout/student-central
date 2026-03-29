@@ -1251,3 +1251,133 @@
   color: #b3261e;
   line-height: 1.5;
 }
+
+/* ── Learning preferences modal ─────────────────────────── */
+.prefsProgressBar {
+  height: 3px;
+  background: var(--outline-variant);
+  margin: 0;
+}
+.prefsProgressFill {
+  height: 100%;
+  width: 66%;
+  background: var(--primary-gradient);
+}
+.prefsSub {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.prefsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.prefsLabel {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.prefChip {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 5px 13px;
+  border: 0.5px solid var(--outline-variant);
+  border-radius: 20px;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  background: var(--surface-lowest);
+  transition: all 0.15s;
+}
+.prefChip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.prefChipSel {
+  background: rgba(0, 72, 216, 0.08);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.prefsTextarea {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  background: var(--surface-low);
+  border: 0.5px solid var(--outline-variant);
+  padding: 9px 12px;
+  resize: vertical;
+  width: 100%;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+}
+.prefsTextarea::placeholder { color: var(--on-surface-variant); opacity: 0.4; }
+.prefsTextarea:focus { outline: none; border-color: var(--primary); }
+
+/* ── Processing card state ───────────────────────────────── */
+.cardProcessing {
+  border: 0.5px solid #FAC775 !important;
+  background: #FAEEDA !important;
+  pointer-events: none;
+}
+.cardProcessing .cardTitle { color: #633806; }
+.cardProcessing .cardMeta  { color: #854F0B; opacity: 0.7; }
+
+.processingFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.processingBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #633806;
+  background: rgba(186, 117, 23, 0.15);
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+.processingDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #BA7517;
+  animation: processingPulse 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes processingPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+.processingEta {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #854F0B;
+  opacity: 0.6;
+}
+.processingHint {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: #854F0B;
+  line-height: 1.4;
+  background: rgba(186, 117, 23, 0.1);
+  padding: 8px 10px;
+  margin-top: 6px;
+  border-top: 0.5px solid rgba(186, 117, 23, 0.2);
+}
