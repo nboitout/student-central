@@ -587,20 +587,6 @@ function MCQContent() {
               ))}
             </div>
 
-            {/* Student explanation textarea — optional but nudged */}
-            <div className={styles.studentExpSection}>
-              <label className={styles.sectionLabel}>{ui.explainLabel ?? "What was your reasoning?"}</label>
-              <p className={styles.reviewBlind}>
-                Results will be revealed after the AI debrief.
-              </p>
-              <textarea
-                className={styles.studentExpInput}
-                placeholder={ui.explainPlaceholder ?? "Why did you choose that answer? (optional — helps the AI tutor)"}
-                value={studentExp}
-                onChange={e => setStudentExp(e.target.value)}
-                rows={3}
-              />
-            </div>
 
             <div className={styles.reviewActions}>
               <button
