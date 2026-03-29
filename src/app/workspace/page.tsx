@@ -323,7 +323,9 @@ function CourseCard({
   const sourceCount = course.source.split(",").length;
   const dateStr    = new Date(course.createdAt ?? Date.now()).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
-  const isProcessing = course.mcqStatus === "generating";
+  const isProcessing = course.mcqStatus === "generating" ||
+    /* Fallback until backend returns mcqStatus: a course with PDF but 0 questions is still generating */
+    (course.mcqStatus !== "ready" && course.mcqStatus !== "error" && !!course.pdfUrl && course.exercisesTotal === 0);
 
   return (
     <div
@@ -586,8 +588,32 @@ export default function WorkspacePage() {
         </div>
       </main>
 
-      {modal === "create"  && <CreateModal onClose={closeModal} onCreate={(c) => setCourses(prev => [c, ...prev])} ui={ui} userId={userId} />}
+      {modal === "create"  && (
+        <CreateModal
+          onClose={closeModal}
+          onCreate={(newCourse, showPrefs) => {
+            setCourses(prev => [newCourse, ...prev]);
+            closeModal();
+            if (showPrefs) setPrefsModal(newCourse);
+          }}
+          ui={ui}
+          userId={userId}
+        />
+      )}
       {modal === "details" && activeCourse && <CourseDetailsModal course={activeCourse} onClose={closeModal} ui={ui} />}
+      {prefsModal && (
+        <LearningPrefsModal
+          courseTitle={prefsModal.title}
+          onSave={async (prefs) => {
+            try {
+              const updated = await updateCourse(prefsModal.id, { learningPrefs: prefs });
+              setCourses(prev => prev.map(x => x.id === prefsModal.id ? updated : x));
+            } catch { /* non-fatal */ }
+            setPrefsModal(null);
+          }}
+          onSkip={() => setPrefsModal(null)}
+        />
+      )}
     </div>
   );
 }
