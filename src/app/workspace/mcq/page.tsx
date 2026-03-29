@@ -666,6 +666,13 @@ function MCQContent() {
 
             <div className={styles.reviewActions}>
               <button
+                className={styles.ghostBtn}
+                onClick={() => setScreen("question")}
+                disabled={evaluating}
+              >
+                ← Change my answer
+              </button>
+              <button
                 className={styles.submitBtn}
                 onClick={handleReviewNext}
                 disabled={evaluating}
