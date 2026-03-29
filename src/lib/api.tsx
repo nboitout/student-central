@@ -12,6 +12,13 @@ export interface Course {
   pdfUrl?: string | null;
   allowDownload?: boolean;
   tutorLanguage?: string | null;    /* e.g. "en", "fr", "de" — language for MCQ + AI tutor */
+  mcqStatus?: "idle" | "generating" | "ready" | "error";  /* MCQ bank generation state */
+  learningPrefs?: {
+    masteryLevel?:  "familiarity" | "working" | "deep";
+    priorKnowledge?: "none" | "some" | "solid" | "adjacent";
+    cadence?:       "oneshot" | "days" | "weeks";
+    focusNote?:     string;
+  } | null;
   status: "Not Started" | "In Progress" | "Completed";
   exercisesTotal: number;
   exercisesDone: number;
@@ -71,6 +78,7 @@ export async function createCourse(payload: {
   exercisesTotal?: number;
   allowDownload?: boolean;
   tutorLanguage?: string;
+  learningPrefs?: Course["learningPrefs"];
 }): Promise<Course> {
   return request<Course>("/api/courses", {
     method: "POST",
@@ -80,7 +88,7 @@ export async function createCourse(payload: {
 
 export async function updateCourse(
   courseId: string,
-  updates: { status?: string; exercisesDone?: number },
+  updates: { status?: string; exercisesDone?: number; learningPrefs?: Course["learningPrefs"] },
   userId = "nicolas"
 ): Promise<Course> {
   return request<Course>(`/api/courses/${courseId}?userId=${userId}`, {
