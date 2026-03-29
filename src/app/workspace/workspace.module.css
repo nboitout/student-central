@@ -580,6 +580,12 @@
   transition: background 0.2s;
 }
 .listRow:hover { background: var(--surface); }
+.listRowProcessing {
+  background: #FAEEDA !important;
+  cursor: default !important;
+  pointer-events: none;
+}
+.listRowProcessing:hover { background: #FAEEDA !important; }
 
 .listAccent {
   width: 44px;
