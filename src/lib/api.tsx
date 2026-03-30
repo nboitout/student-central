@@ -290,9 +290,10 @@ export async function getSessionQuestion(
 
 export async function patchSessionAnswer(
   sessionId: string,
-  payload: { position: number; selectedIndex: number; durationSec: number }
+  payload: { position: number; selectedIndex: number; durationSec: number },
+  userId = "nicolas"
 ): Promise<SessionAnswerResponse> {
-  return request<SessionAnswerResponse>(`/api/sessions/${sessionId}/answer`, {
+  return request<SessionAnswerResponse>(`/api/sessions/${sessionId}/answer?userId=${userId}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
@@ -300,9 +301,10 @@ export async function patchSessionAnswer(
 
 export async function patchSessionExplanation(
   sessionId: string,
-  payload: { position: number; studentExplanation: string }
+  payload: { position: number; studentExplanation: string },
+  userId = "nicolas"
 ): Promise<SessionExplanationResponse> {
-  return request<SessionExplanationResponse>(`/api/sessions/${sessionId}/explanation`, {
+  return request<SessionExplanationResponse>(`/api/sessions/${sessionId}/explanation?userId=${userId}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
@@ -310,16 +312,17 @@ export async function patchSessionExplanation(
 
 export async function patchSessionChat(
   sessionId: string,
-  payload: { role: "ai" | "student"; text: string; questionPosition: number }
+  payload: { role: "ai" | "student"; text: string; questionPosition: number },
+  userId = "nicolas"
 ): Promise<void> {
-  await request<void>(`/api/sessions/${sessionId}/chat`, {
+  await request<void>(`/api/sessions/${sessionId}/chat?userId=${userId}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
 }
 
-export async function completeSession(sessionId: string): Promise<SessionSummary> {
-  return request<SessionSummary>(`/api/sessions/${sessionId}/complete`, {
+export async function completeSession(sessionId: string, userId = "nicolas"): Promise<SessionSummary> {
+  return request<SessionSummary>(`/api/sessions/${sessionId}/complete?userId=${userId}`, {
     method: "POST",
   });
 }
