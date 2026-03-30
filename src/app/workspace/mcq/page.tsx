@@ -1,1447 +1,1028 @@
-/* ════════════════════════════════════════════════════════
-   MCQ PAGE — Two-column learning layout with resizable split
-════════════════════════════════════════════════════════ */
-
-.page {
-  min-height: 100vh;
-  background: var(--surface-low);
-  color: var(--on-surface);
-  font-family: var(--font-body);
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Header ──────────────────────────────────────────────── */
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px 0 32px;
-  height: 64px;
-  background: rgba(249, 249, 252, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--shadow-ambient);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  flex-shrink: 0;
-  gap: 16px;
-}
-
-.headerLeft { flex-shrink: 0; min-width: 0; display: flex; align-items: center; gap: 14px; }
-
-.backBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  color: var(--on-surface-variant);
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-  text-decoration-color: var(--primary);
-  text-underline-offset: 4px;
-  text-decoration-thickness: 2px;
-  transition: color 0.2s;
-  white-space: nowrap;
-}
-.backBtn:hover { color: var(--primary); }
-
-.headerCenter { text-align: center; flex: 1; min-width: 0; }
-
-.headerEyebrow {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--primary);
-  margin-bottom: 2px;
-  display: block;
-}
-
-.headerTitle {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--on-surface-variant);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-
-.headerRight { flex-shrink: 0; min-width: 120px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-
-.qCounter {
-  font-family: var(--font-display);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--on-surface-variant);
-  background: var(--surface-container);
-  padding: 4px 10px;
-  letter-spacing: 0.04em;
-}
-
-/* ── Resizable body ──────────────────────────────────────── */
-.body {
-  flex: 1;
-  display: flex;
-  min-height: calc(100vh - 64px);
-  overflow: hidden;
-  user-select: none;
-}
-
-/* ── Drag divider — prominent ────────────────────────────── */
-.divider {
-  width: 8px;
-  flex-shrink: 0;
-  background: var(--surface-container);
-  cursor: col-resize;
-  position: relative;
-  transition: background 0.15s, width 0.1s;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.divider:hover { background: var(--primary); width: 10px; }
-.divider.dragging { background: var(--primary); width: 10px; }
-
-/* Grip dots — visible at all times */
-.dividerHandle {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-  pointer-events: none;
-}
-.dividerHandle span {
-  display: block;
-  width: 3px;
-  height: 3px;
-  background: var(--surface-highest);
-  border-radius: 50%;
-  transition: background 0.15s;
-}
-.divider:hover .dividerHandle span,
-.divider.dragging .dividerHandle span {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-/* ── LEFT: slide pane ────────────────────────────────────── */
-.slidePane {
-  background: var(--surface-container);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px;
-  gap: 14px;
-  position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
-  overflow-y: auto;
-  flex-shrink: 0;
-  min-width: 260px;
-  max-width: calc(100vw - 340px);
-}
-
-.slidePageBadge {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-  align-self: flex-start;
-}
-
-.slideImg {
-  width: 100%;
-  height: auto;
-  display: block;
-  box-shadow: var(--shadow-float);
-  background: var(--surface-highest);
-}
-
-.slideLoadingWrap {
-  width: 100%;
-  aspect-ratio: 16/9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-highest);
-}
-
-/* ── RIGHT: question pane ────────────────────────────────── */
-.questionPane {
-  background: var(--surface-lowest);
-  display: flex;
-  flex-direction: column;
-  padding: 40px 40px 32px;
-  gap: 24px;
-  overflow-y: auto;
-  min-height: calc(100vh - 64px);
-  flex: 1;
-  min-width: 300px;
-}
-
-/* ── Question ────────────────────────────────────────────── */
-.questionWrap { display: flex; flex-direction: column; gap: 10px; }
-
-.questionLabel {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-}
-
-.question {
-  font-family: var(--font-display);
-  font-size: clamp(1rem, 1.6vw, 1.25rem);
-  font-weight: 600;
-  color: var(--on-surface);
-  line-height: 1.5;
-  letter-spacing: -0.015em;
-}
-
-/* ── Options (interactive — question screen) ─────────────── */
-.options { display: flex; flex-direction: column; gap: 8px; }
-
-.option {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 13px 16px;
-  background: var(--surface-low);
-  border: 1px solid var(--outline-variant);
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
-  color: var(--on-surface-variant);
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  transition: background 0.15s, color 0.15s;
-  position: relative;
-}
-.option::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: transparent;
-  transition: background 0.15s;
-}
-.option:hover { background: rgba(0, 60, 194, 0.04); border-color: rgba(0, 60, 194, 0.35); color: var(--on-surface); }
-.option:hover::before { background: var(--primary); }
-
-.optSelected {
-  background: rgba(0, 60, 194, 0.08) !important;
-  border: 2px solid var(--primary) !important;
-  color: var(--primary) !important;
-  font-weight: 500;
-}
-.optSelected::before { background: var(--primary) !important; }
-
-/* ── Options (static — answered screen) ─────────────────── */
-.optionStatic {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 13px 16px;
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: var(--on-surface-variant);
-  background: var(--surface-low);
-  opacity: 0.6;
-  border-left: 3px solid transparent;
-}
-
-.optCorrect {
-  background: rgba(45, 106, 79, 0.08) !important;
-  color: #2d6a4f !important;
-  border-left-color: #2d6a4f !important;
-  opacity: 1 !important;
-}
-.optWrong {
-  background: rgba(179, 38, 30, 0.06) !important;
-  color: #b3261e !important;
-  border-left-color: #b3261e !important;
-  opacity: 1 !important;
-}
-
-.optLetter {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  width: 24px;
-  height: 24px;
-  border: 1.5px solid currentColor;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  opacity: 0.65;
-}
-.optText { flex: 1; }
-.optMark { font-size: 1rem; font-weight: 700; flex-shrink: 0; }
-
-/* ── Result banner ───────────────────────────────────────── */
-.resultBanner {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 18px 22px;
-}
-.bannerCorrect { background: rgba(45, 106, 79, 0.08); border-left: 3px solid #2d6a4f; }
-.bannerWrong   { background: rgba(179, 38, 30, 0.06); border-left: 3px solid #b3261e; }
-
-.resultIconWrap { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.resultIcon { font-size: 1.25rem; font-weight: 700; }
-.bannerCorrect .resultIcon { color: #2d6a4f; }
-.bannerWrong   .resultIcon { color: #b3261e; }
-
-.resultTitle {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--on-surface);
-  margin-bottom: 3px;
-}
-.resultSub { font-family: var(--font-body); font-size: 0.875rem; color: var(--on-surface-variant); line-height: 1.5; }
-
-/* ── Recap question (answered screen) ───────────────────── */
-.recapQuestion {
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--on-surface);
-  line-height: 1.45;
-  letter-spacing: -0.01em;
-  padding: 0 0 4px;
-}
-
-/* ── Answered actions ────────────────────────────────────── */
-.answeredActions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: auto;
-  padding-top: 8px;
-  flex-wrap: wrap;
-}
-
-.answeredActionsRight { display: flex; gap: 10px; align-items: center; }
-
-/* ── Buttons ─────────────────────────────────────────────── */
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: auto;
-  padding-top: 8px;
-}
-
-.ghostBtn {
-  background: none;
-  border: none;
-  color: var(--on-surface-variant);
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-  text-decoration-color: var(--outline-variant);
-  text-underline-offset: 3px;
-  transition: color 0.2s;
-  white-space: nowrap;
-}
-.ghostBtn:hover { color: var(--on-surface); }
-
-.skipBtn {
-  background: var(--surface-highest);
-  color: var(--on-surface);
-  border: none;
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 600;
-  padding: 11px 22px;
-  cursor: pointer;
-  transition: background 0.2s;
-  white-space: nowrap;
-}
-.skipBtn:hover { background: var(--surface-high); }
-
-.submitBtn {
-  background: var(--primary-gradient);
-  color: #ffffff;
-  border: none;
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 600;
-  padding: 11px 24px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-  white-space: nowrap;
-}
-.submitBtn:hover { opacity: 0.88; }
-.submitDisabled { opacity: 0.3; cursor: not-allowed; }
-.submitDisabled:hover { opacity: 0.3; }
-
-/* ── Section / explanation / feedback ───────────────────── */
-.sectionLabel {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-}
-
-.explanationSection { display: flex; flex-direction: column; gap: 8px; }
-
-.explanationText {
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  color: var(--on-surface-variant);
-  line-height: 1.7;
-  padding: 16px 18px;
-  background: var(--surface-lowest);
-  box-shadow: 0 0 0 1px rgba(26, 28, 46, 0.07);
-  border-left: 3px solid var(--primary);
-}
-
-.recapSection { display: flex; flex-direction: column; gap: 8px; }
-
-.feedbackText {
-  font-family: var(--font-body);
-  font-size: 0.9375rem;
-  color: var(--on-surface);
-  line-height: 1.7;
-  padding: 16px 20px;
-  background: var(--surface-lowest);
-  box-shadow: 0 0 0 1px rgba(26, 28, 46, 0.07);
-  border-left: 3px solid var(--primary);
-}
-
-.facultySection { display: flex; flex-direction: column; gap: 8px; }
-
-.facultyText {
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  color: var(--on-surface-variant);
-  line-height: 1.65;
-  padding: 14px 18px;
-  background: var(--tertiary-fixed);
-  border-left: 3px solid var(--on-tertiary-fixed);
-  opacity: 0.85;
-}
-
-/* ── Chat ────────────────────────────────────────────────── */
-.chatRecap {
-  background: var(--surface-low);
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-left: 3px solid var(--surface-container);
-}
-
-.chatRecapBadge {
-  font-family: var(--font-display);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  align-self: flex-start;
-}
-.badgeCorrect { background: rgba(45, 106, 79, 0.1); color: #2d6a4f; }
-.badgeWrong   { background: rgba(179, 38, 30, 0.08); color: #b3261e; }
-
-.chatRecapQ {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--on-surface);
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-}
-
-.chatRecapLabel {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--on-surface-variant);
-  opacity: 0.6;
-}
-
-.chatRecapAnswer { font-family: var(--font-body); font-size: 0.8125rem; color: var(--on-surface-variant); line-height: 1.4; }
-.chatRecapCorrect { font-family: var(--font-body); font-size: 0.8125rem; color: #2d6a4f; line-height: 1.4; }
-
-.chatThread { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-
-/* AI bubble — warm off-white, clearly distinct from option rows */
-.chatAI {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 18px;
-  background: var(--surface-lowest);
-  box-shadow: 0 1px 4px rgba(26, 28, 46, 0.08), 0 0 0 1px rgba(26, 28, 46, 0.06);
-  font-family: var(--font-body);
-  font-size: 0.9375rem;
-  color: var(--on-surface);
-  line-height: 1.6;
-  max-width: 90%;
-  align-self: flex-start;
-}
-
-.chatStudent {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 16px;
-  background: rgba(0, 60, 194, 0.08);
-  border: 1px solid rgba(0, 60, 194, 0.12);
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  color: var(--on-surface);
-  line-height: 1.55;
-  max-width: 90%;
-  align-self: flex-end;
-  text-align: right;
-}
-
-.chatSender {
-  font-family: var(--font-display);
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--primary);
-  opacity: 0.6;
-  display: block;
-}
-.chatStudent .chatSender { color: var(--on-surface-variant); opacity: 0.5; }
-
-/* ── Chatbot-style input bar ─────────────────────────────── */
-/* ── Chat input — Claude-style unified box ───────────────── */
-.chatInputWrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 16px;
-  background: var(--surface-lowest);
-  border-top: 0.5px solid var(--outline-variant);
-  flex-shrink: 0;
-}
-
-.chatInputBox {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  background: var(--surface-low);
-  border: 1px solid var(--outline-variant);
-  border-radius: 14px;
-  padding: 10px 10px 10px 16px;
-  transition: border-color 0.15s;
-}
-.chatInputBox:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 72, 216, 0.08);
-}
-
-.chatInput {
-  flex: 1;
-  background: transparent;
-  border: none;
-  padding: 0;
-  color: var(--on-surface);
-  font-family: var(--font-body);
-  font-size: 0.9375rem;
-  outline: none;
-  resize: none;
-  line-height: 1.55;
-  min-height: 24px;
-  max-height: 120px;
-  overflow-y: auto;
-}
-.chatInput::placeholder { color: var(--on-surface-variant); opacity: 0.4; }
-
-.chatSendBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  background: var(--primary-gradient);
-  border: none;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: opacity 0.15s, transform 0.12s;
-  flex-shrink: 0;
-  margin-bottom: 0;
-}
-.chatSendBtn:hover:not(:disabled) { opacity: 0.88; transform: scale(1.06); }
-.chatSendBtn:active:not(:disabled) { transform: scale(0.96); }
-.chatSendBtn:disabled { opacity: 0.2; cursor: not-allowed; }
-.chatSendBtn svg { color: #fff; }
-
-.chatMeta {
-  display: flex;
-  justify-content: space-between;
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 500;
-  color: var(--on-surface-variant);
-  opacity: 0.35;
-  letter-spacing: 0.04em;
-  padding: 0 4px;
-}
-
-/* ── Signal banner ───────────────────────────────────────── */
-.signalBanner {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 20px 24px;
-}
-.signalStrong            { background: rgba(45, 106, 79, 0.08);  border-left: 3px solid #2d6a4f; }
-.signalFragile           { background: rgba(180, 120, 10, 0.08); border-left: 3px solid #b47a0a; }
-.signalPartialmisconception { background: rgba(180, 80, 10, 0.08);  border-left: 3px solid #b3501e; }
-.signalLowmastery        { background: rgba(179, 38, 30, 0.06);  border-left: 3px solid #b3261e; }
-
-.signalLabel {
-  font-family: var(--font-display);
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-}
-.signalValue {
-  font-family: var(--font-display);
-  font-size: 1.0625rem;
-  font-weight: 700;
-  color: var(--on-surface);
-  letter-spacing: -0.02em;
-}
-.signalConfidence { font-family: var(--font-body); font-size: 0.8125rem; color: var(--on-surface-variant); }
-
-/* ── Loading ─────────────────────────────────────────────── */
-.loadingPage { flex: 1; display: flex; align-items: center; justify-content: center; }
-
-.loadingWrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 64px 24px;
-  text-align: center;
-}
-
-.loadingLabel {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--on-surface);
-  letter-spacing: -0.01em;
-}
-
-.loadingDots { display: flex; gap: 6px; align-items: center; }
-.loadingDots span {
-  display: block;
-  width: 8px;
-  height: 8px;
-  background: var(--primary);
-  border-radius: 50%;
-  animation: loadPulse 1.2s ease-in-out infinite;
-}
-.loadingDots span:nth-child(2) { animation-delay: 0.2s; }
-.loadingDots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes loadPulse { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
-
-.loadingHint { font-family: var(--font-body); font-size: 0.8125rem; color: var(--on-surface-variant); opacity: 0.6; }
-.retryHint { font-family: var(--font-body); font-size: 0.75rem; color: var(--primary); opacity: 0.7; }
-
-/* ── Error ───────────────────────────────────────────────── */
-.errorBanner {
-  background: rgba(179, 38, 30, 0.06);
-  border-left: 3px solid #b3261e;
-  padding: 12px 16px;
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  color: #b3261e;
-  line-height: 1.5;
-}
-
-/* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .header { padding: 0 16px; }
-  .headerLeft, .headerRight { min-width: 0; }
-  .body { flex-direction: column; }
-  .divider { width: 100%; height: 8px; cursor: row-resize; }
-  .dividerHandle { flex-direction: row; }
-  .slidePane { position: static; height: auto; min-width: unset; max-width: unset; width: 100% !important; padding: 20px 16px; }
-  .questionPane { padding: 24px 16px 28px; min-height: auto; min-width: unset; }
-  .answeredActions { flex-direction: column; align-items: stretch; }
-  .answeredActionsRight { flex-direction: column; }
-  .submitBtn, .skipBtn, .ghostBtn { width: 100%; text-align: center; }
-}
-
-/* ── Chat question block (full question + options visible) ── */
-.chatQuestionBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px 20px;
-  background: var(--surface-low);
-  border-left: 3px solid var(--surface-container);
-}
-
-.chatResultBadge {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  align-self: flex-start;
-}
-
-.chatQuestionText {
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--on-surface);
-  line-height: 1.45;
-  letter-spacing: -0.01em;
-}
-
-.chatOptions {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.chatOption {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 14px;
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  color: var(--on-surface-variant);
-  line-height: 1.4;
-  border-left: 2px solid transparent;
-}
-
-.chatOptDimmed {
-  opacity: 0.45;
-  background: transparent;
-}
-
-/* ── Turn counter ────────────────────────────────────────── */
-.chatTurnCounter {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-  opacity: 0.4;
-  align-self: flex-end;
-  margin-bottom: 2px;
-}
-
-/* ── End-of-conversation warning ────────────────────────── */
-.chatEndWarning {
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--primary);
-  padding: 14px 18px;
-  background: var(--tertiary-fixed);
-  border-left: 3px solid var(--primary);
-  text-align: center;
-}
-
-/* ── Header timer ────────────────────────────────────────── */
-.timerWrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-label);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--on-surface-variant);
-  opacity: 0.6;
-}
-
-.timerQ {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--primary);
-  opacity: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.timerSep {
-  opacity: 0.4;
-}
-
-.timerTotal {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* ── Mode toggle ─────────────────────────────────────────── */
-.modeToggle {
-  display: flex;
-  gap: 0;
-  border: 0.5px solid var(--outline-variant);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.modeBtn {
-  font-family: var(--font-display);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border: none;
-  cursor: pointer;
-  background: transparent;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-  transition: background 0.15s, color 0.15s, opacity 0.15s;
-}
-.modeBtn + .modeBtn { border-left: 0.5px solid var(--outline-variant); }
-.modeBtnActive {
-  opacity: 1;
-  background: rgba(0, 72, 216, 0.08);
-  color: var(--primary);
-}
-
-/* ── Summary screen ──────────────────────────────────────── */
-.summaryPane {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40px 24px 48px;
-  overflow-y: auto;
-  gap: 28px;
-  max-width: 720px;
-  margin: 0 auto;
-  width: 100%;
-}
-.summaryHeader {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-.summaryScore {
-  font-family: var(--font-display);
-  font-size: 3rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--on-surface);
-}
-.summaryScoreLabel {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  color: var(--on-surface-variant);
-}
-.summaryTime {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  color: var(--on-surface-variant);
-  margin-left: 8px;
-  padding-left: 12px;
-  border-left: 1px solid var(--outline-variant);
-}
-.summaryList {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border: 0.5px solid var(--outline-variant);
-}
-.summaryRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 0.5px solid var(--outline-variant);
-}
-.summaryRow:last-child { border-bottom: none; }
-.summaryRow:nth-child(even) { background: var(--surface-low); }
-.summaryQNum {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 700;
-  width: 24px;
-  flex-shrink: 0;
-  text-align: center;
-}
-.summaryCorrect { color: #2d6a4f; }
-.summaryWrong   { color: var(--error); }
-.summaryQText {
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  color: var(--on-surface-variant);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.summaryMeta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.summaryDur {
-  font-family: var(--font-label);
-  font-size: 0.75rem;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-  white-space: nowrap;
-}
-.signalBadge {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 2px 8px;
-  white-space: nowrap;
-}
-.summaryActions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  width: 100%;
-}
-
-/* ── Review screen ───────────────────────────────────────── */
-.studentExpSection {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.studentExpInput {
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  color: var(--on-surface);
-  background: var(--surface-lowest);
-  border: 0.5px solid var(--outline-variant);
-  padding: 10px 12px;
-  resize: vertical;
-  width: 100%;
-  line-height: 1.5;
-  transition: border-color 0.15s;
-}
-.studentExpInput::placeholder { color: var(--on-surface-variant); opacity: 0.4; }
-.studentExpInput:focus { outline: none; border-color: var(--primary); }
-.reviewActions {
-  margin-top: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-/* ── Chat / debrief layout ───────────────────────────────── */
-.chatLayout {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  min-height: 0;
-}
-.chatQPane {
-  width: 46%;
-  flex-shrink: 0;
-  border-right: 1px solid var(--outline-variant);
-  padding: 24px 20px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.debriefPills {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-.debriefPill {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border: 0.5px solid var(--outline-variant);
-  background: var(--surface-low);
-  color: var(--on-surface-variant);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: background 0.15s, border-color 0.15s;
-}
-.debriefPill:hover { border-color: var(--primary); }
-.debriefPillActive {
-  background: rgba(0, 72, 216, 0.08);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.pillCorrect { color: #2d6a4f; }
-.pillWrong   { color: var(--error); }
-.chatStudentExp {
-  margin-top: 16px;
-  padding: 10px 12px;
-  background: var(--surface-low);
-  border-left: 2px solid var(--outline-variant);
-}
-.chatStudentExpText {
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  color: var(--on-surface-variant);
-  font-style: italic;
-  margin: 4px 0 0;
-  line-height: 1.5;
-}
-.chatPane {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: 0;
-}
-
-/* ── Missing classes (revamp) ────────────────────────────── */
-.optionSelected {
-  background: rgba(0, 60, 194, 0.08) !important;
-  border: 2px solid var(--primary) !important;
-  color: var(--primary) !important;
-  font-weight: 500;
-}
-.optionSelected::before { background: var(--primary) !important; }
-
-.optDimmed { opacity: 0.45; }
-
-.questionText {
-  font-family: var(--font-body);
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--on-surface);
-  font-weight: 400;
-}
-
-.questionActions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
-
-.loadingPane {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  min-height: calc(100vh - 64px);
-}
-
-.loadingText {
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--on-surface);
-  letter-spacing: -0.01em;
-}
-
-.spinner {
-  width: 28px;
-  height: 28px;
-  border: 2.5px solid var(--outline-variant);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.slidePlaceholder {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-container);
-  width: 100%;
-  min-height: 200px;
-}
-.slidePlaceholderText {
-  font-family: var(--font-display);
-  font-size: 0.75rem;
-  color: var(--on-surface-variant);
-  opacity: 0.4;
-}
-
-.slideLoading {
-  width: 100%;
-  aspect-ratio: 16/9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-container);
-}
-
-.chatTurnCount {
-  font-family: var(--font-display);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-  opacity: 0.4;
-  padding: 6px 16px 2px;
-}
-
-.dragging { background: var(--primary); width: 10px; }
-
-/* ── Results reveal eyebrow ──────────────────────────────── */
-.summaryEyebrow {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--primary);
-  opacity: 0.7;
-  margin-bottom: -12px;
-}
-
-/* ── Review blind-mode hint ──────────────────────────────── */
-.reviewBlind {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-  font-style: italic;
-  margin: 0 0 6px;
-}
-
-/* ── Debrief Q card (inside right pane) ──────────────────── */
-.debriefQCard {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--outline-variant);
-  flex-shrink: 0;
-}
-
-.debriefPills {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  padding: 12px 24px 10px;
-  border-bottom: 0.5px solid var(--outline-variant);
-  flex-shrink: 0;
-}
-
-/* Override chatPane to fill remaining height inside questionPane column */
-.chatPane {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  border-top: none;
-}
-
-/* chatLayout no longer needed but kept for safety */
-.chatLayout {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.slidePlaceholderHint {
-  font-family: var(--font-body);
-  font-size: 0.625rem;
-  color: var(--on-surface-variant);
-  opacity: 0.35;
-  margin-top: 4px;
-  text-align: center;
-}
-
-/* ── PDF fallback iframe in slide pane ───────────────────── */
-.pdfFallbackFrame {
-  width: 100%;
-  height: 100%;
-  min-height: calc(100vh - 64px);
-  border: none;
-  display: block;
-  background: var(--surface-container);
-}
-
-/* ── Keyword search chips ────────────────────────────────── */
-.chipSearchWrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 14px;
-  background: var(--surface-low);
-  border: 0.5px solid var(--outline-variant);
-  border-radius: var(--border-radius-md);
-}
-
-.chipSearchLabel {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-  opacity: 0.45;
-}
-
-.chipSearchRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.chipSearch {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 4px 10px;
-  border: 0.5px solid var(--outline-variant);
-  border-radius: 20px;
-  background: var(--surface-lowest);
-  color: var(--on-surface-variant);
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-
-.chipSearch:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: rgba(0, 72, 216, 0.05);
-}
-
-.chipSearch:active {
-  transform: scale(0.96);
-}
-
-.chipSearchCopied {
-  border-color: #3B6D11 !important;
-  color: #27500A !important;
-  background: #EAF3DE !important;
-  font-size: 0.625rem;
-}
-
-/* ── Compact context strip (debrief) ─────────────────────── */
-.ctxStrip {
-  padding: 10px 16px 10px;
-  border-bottom: 1px solid var(--outline-variant);
-  flex-shrink: 0;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  transition: background 0.12s;
-}
-.ctxStrip:hover { background: var(--surface-low); }
-
-.ctxTop {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-.ctxQuestion {
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--on-surface);
-  line-height: 1.45;
-  flex: 1;
-}
-.ctxToggle {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--on-surface-variant);
-  opacity: 0.45;
-  white-space: nowrap;
-  padding-top: 2px;
-  flex-shrink: 0;
-}
-
-.ctxBadges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  align-items: center;
-}
-.ctxBadgeWrong {
-  font-family: var(--font-display);
-  font-size: 0.625rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  background: #FCEBEB;
-  color: #791F1F;
-  border-left: 2px solid #E24B4A;
-}
-.ctxBadgeCorrect {
-  font-family: var(--font-display);
-  font-size: 0.625rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  background: #EAF3DE;
-  color: #27500A;
-  border-left: 2px solid #639922;
-}
-
-/* Expanded options */
-.ctxOptions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 4px;
-  border-top: 0.5px solid var(--outline-variant);
-  padding-top: 8px;
-}
-.ctxOpt {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  padding: 4px 6px;
-  line-height: 1.35;
-  border-radius: 3px;
-}
-.ctxOptLtr {
-  font-size: 0.625rem;
-  font-weight: 700;
-  color: var(--on-surface-variant);
-  width: 14px;
-  flex-shrink: 0;
-}
-.ctxOptTxt { flex: 1; color: var(--on-surface-variant); }
-.ctxOptMark { font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
-.ctxOptCorrect { background: #EAF3DE; }
-.ctxOptCorrect .ctxOptLtr,
-.ctxOptCorrect .ctxOptTxt  { color: #27500A; }
-.ctxOptCorrect .ctxOptMark { color: #27500A; }
-.ctxOptWrong { background: #FCEBEB; }
-.ctxOptWrong .ctxOptLtr,
-.ctxOptWrong .ctxOptTxt  { color: #791F1F; }
-.ctxOptWrong .ctxOptMark { color: #791F1F; }
-
-.ctxExp {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: var(--on-surface-variant);
-  font-style: italic;
-  line-height: 1.45;
-  margin-top: 4px;
-  padding: 6px 8px;
-  background: var(--surface-low);
-  border-left: 2px solid var(--outline-variant);
-}
-.ctxExpLabel { font-weight: 600; font-style: normal; }
-
-/* ── Chat nav row (debrief Q navigation) ─────────────────── */
-.chatNavRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px 10px;
-  flex-shrink: 0;
-}
-.chatNavBtn {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--on-surface-variant);
-  background: none;
-  border: 0.5px solid var(--outline-variant);
-  padding: 4px 12px;
-  cursor: pointer;
-  transition: all 0.12s;
-  opacity: 0.6;
-}
-.chatNavBtn:hover {
-  opacity: 1;
-  border-color: var(--primary);
-  color: var(--primary);
-  background: rgba(0, 72, 216, 0.04);
-}
-.chatNavBtnNext {
-  margin-left: auto;
-  opacity: 1;
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.chatNavBtnNext:hover {
-  background: rgba(0, 72, 216, 0.08);
-}
-
-/* ── Summary row — clickable variant ────────────────────── */
-.summaryRowClickable {
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  background: none;
-  border: none;
-  transition: background 0.12s;
-}
-.summaryRowClickable:hover {
-  background: rgba(0, 72, 216, 0.04);
-}
-.summaryRowClickable:hover .summaryQNum { opacity: 1; }
-.summaryRowClickable:hover .summaryDiscussHint { opacity: 1; }
-
-.summaryDiscussHint {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--primary);
-  opacity: 0;
-  transition: opacity 0.12s;
-  white-space: nowrap;
-  flex-shrink: 0;
+"use client";
+
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import styles from "./mcq.module.css";
+import { useLanguage } from "@/context/LanguageContext";
+import { tx as getT } from "@/i18n/translations";
+import { createSession, getSession, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type StoredSession, type TutorMessage } from "@/lib/api";
+
+/* ─── Constants ──────────────────────────────────────────── */
+const MAX_QUESTIONS = 5;
+const MAX_TURNS     = 10;
+const LETTERS       = ["A", "B", "C", "D"];
+/* ─── Types ──────────────────────────────────────────────── */
+type Mode   = "assessment" | "tutoring";
+type Screen = "loading" | "waiting" | "question" | "review" | "summary" | "chat";
+
+interface QuestionResult {
+  question:   MCQQuestion;
+  selected:   number;
+  durationSec: number;
+  explanation: string;      /* student's own words (tutoring) or "" (assessment) */
+  signal:      ReasoningSignal | null;
+}
+
+/* ─── MCQ page ───────────────────────────────────────────── */
+function MCQContent() {
+  const params      = useSearchParams();
+  const router      = useRouter();
+  const { lang }    = useLanguage();
+  const ui          = getT(lang).mcq;
+  const courseId    = params.get("id")    ?? "";
+  const courseTitle = decodeURIComponent(params.get("title") ?? "Course");
+  const pdfUrl      = decodeURIComponent(params.get("pdf")   ?? "");
+  const tutorLang      = params.get("lang")         ?? "en";
+  const resumeSessionId = params.get("resumeSession") ?? null;
+
+  /* ── Mode toggle ── */
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof window === "undefined") return "tutoring";
+    return (localStorage.getItem(`mcq-mode-${courseId}`) as Mode) ?? "tutoring";
+  });
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    localStorage.setItem(`mcq-mode-${courseId}`, m);
+  };
+
+  /* ── Session ── */
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const setSession = (id: string) => { sessionIdRef.current = id; setSessionId(id); };
+
+  /* ── Question set state ── */
+  const [screen,    setScreen]    = useState<Screen>("loading");
+  const [questions, setQuestions] = useState<MCQQuestion[]>([]);
+  const [qIndex,    setQIndex]    = useState(0);
+  const [answers,   setAnswers]   = useState<(number | null)[]>([]);
+  const [results,   setResults]   = useState<QuestionResult[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  /* ── Review screen state (tutoring mode) ── */
+  const [studentExp,   setStudentExp]   = useState("");
+  const [evaluating,   setEvaluating]   = useState(false);
+
+  /* ── Chat / debrief state ── */
+  const [chatMsgs,     setChatMsgs]     = useState<TutorMessage[]>([]);
+  const [chatInput,    setChatInput]    = useState("");
+  const [chatTurns,    setChatTurns]    = useState(0);
+  const [aiTyping,     setAiTyping]     = useState(false);
+  const [chatError,    setChatError]    = useState<string | null>(null);
+  /* Which question the debrief is currently focused on */
+  const [debriefQIdx,  setDebriefQIdx]  = useState(0);
+
+  /* ── Slide state ── */
+  const [pdfSasUrl,    setPdfSasUrl]    = useState<string | null>(null);
+
+  /* ── Timers ── */
+  const [qStartTime,   setQStartTime]   = useState<number>(Date.now());
+  const [qElapsed,     setQElapsed]     = useState(0);
+  const [totalElapsed, setTotalElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionStarted = useRef(false);
+  const sessionIdRef    = useRef<string | null>(null);
+  const qDurations = useRef<number[]>([]);
+
+  useEffect(() => {
+    if (screen === "question") {
+      const start = Date.now();
+      setQStartTime(start);
+      setQElapsed(0);
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setQElapsed(Math.floor((Date.now() - start) / 1000));
+        setTotalElapsed(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [screen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+  /* ── Keyword chip extractor ────────────────────────────── */
+  const STOP_WORDS = new Set([
+    "a","an","the","is","are","was","were","be","been","being",
+    "have","has","had","do","does","did","will","would","could","should","may","might",
+    "in","on","at","by","for","of","to","from","with","about","into","through","during",
+    "what","which","who","when","where","why","how","that","this","these","those",
+    "it","its","if","or","and","but","not","no","nor","so","yet","than","as",
+    "can","does","each","between","against","before","after","above","below","because",
+  ]);
+
+  const extractKeyChips = (question: string, opts: { text: string }[]): string[] => {
+    const allText = [question, ...opts.map(o => o.text)].join(" ");
+    /* tokenise, lowercase, strip punctuation */
+    const tokens = allText
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .split(/\s+/)
+      .filter(t => t.length > 3 && !STOP_WORDS.has(t));
+    /* count frequency */
+    const freq: Record<string, number> = {};
+    tokens.forEach(t => { freq[t] = (freq[t] ?? 0) + 1; });
+    /* prioritise tokens that appear in the question (not just options) */
+    const questionTokens = new Set(
+      question.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").split(/\s+/).filter(t => t.length > 3 && !STOP_WORDS.has(t))
+    );
+    /* sort: question-source first, then by frequency, deduplicated */
+    const unique = Array.from(new Set(tokens));
+    unique.sort((a, b) => {
+      const aQ = questionTokens.has(a) ? 1 : 0;
+      const bQ = questionTokens.has(b) ? 1 : 0;
+      if (aQ !== bQ) return bQ - aQ;
+      return (freq[b] ?? 0) - (freq[a] ?? 0);
+    });
+    /* return top 6 chips, capitalised */
+    return unique.slice(0, 6).map(t => t.charAt(0).toUpperCase() + t.slice(1));
+  };
+
+  /* ── Toast state for copy feedback ── */
+  const [copiedChip, setCopiedChip] = useState<string | null>(null);
+  const [ctxExpanded, setCtxExpanded] = useState(false);
+  const copyChip = (word: string) => {
+    navigator.clipboard.writeText(word).catch(() => {});
+    setCopiedChip(word);
+    setTimeout(() => setCopiedChip(null), 2000);
+  };
+
+  const fmtTimer = (sec: number) => {
+    const m = Math.floor(sec / 60).toString().padStart(2, "0");
+    const s = (sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  /* ── Resizable split ── */
+  const [slideWidth, setSlideWidth] = useState(55);
+  const bodyRef    = useRef<HTMLDivElement>(null);
+  const dragging   = useRef(false);
+  const dividerRef = useRef<HTMLDivElement>(null);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); dragging.current = true;
+    dividerRef.current?.classList.add(styles.dragging);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging.current || !bodyRef.current) return;
+      const { left, width } = bodyRef.current.getBoundingClientRect();
+      setSlideWidth(Math.min(Math.max(((e.clientX - left) / width) * 100, 25), 72));
+    };
+    const onUp = () => {
+      if (!dragging.current) return;
+      dragging.current = false;
+      dividerRef.current?.classList.remove(styles.dragging);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+  }, []);
+
+  /* ── Derived ── */
+  const mcq      = questions[qIndex] ?? null;
+  const selected = answers[qIndex]   ?? null;
+  const isCorrect = mcq !== null && selected === mcq.correctIndex;
+
+  /* ── Load MCQ ── */
+
+  /* ── Convert session question to MCQQuestion ── */
+  /* Normalise options — backend sends plain strings, UI needs MCQOption objects */
+  const normaliseOptions = (opts: string[] | MCQOption[]): MCQOption[] => {
+    if (!opts || opts.length === 0) return [];
+    if (typeof opts[0] === "string") {
+      return (opts as string[]).map((text, i) => ({
+        letter: String.fromCharCode(65 + i), /* A, B, C, D */
+        text,
+      }));
+    }
+    return opts as MCQOption[];
+  };
+
+  const toMCQQuestion = (sq: SessionQuestion): MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string } => ({
+    question:     sq.question,
+    options:      normaliseOptions(sq.options),
+    correctIndex: sq.correctIndex ?? sq.correct_index ?? 0,
+    explanation:  "",   /* explanation not stored on question — populated after evaluate */
+    mcqId:        sq.mcqId,
+    slideImageUrl: sq.slideImageUrl ?? sq.slide_image_url ?? undefined,
+    courseId:     sq.courseId ?? sq.course_id ?? courseId,
+    pageNumber:   sq.pageNumber ?? sq.page_number ?? undefined,
+  });
+
+  /* ── Load a question from the session into state ── */
+  const applyQuestion = (sq: SessionQuestion, idx: number) => {
+    const q = toMCQQuestion(sq);
+    setQuestions(prev => { const next = [...prev]; next[idx] = q; return next; });
+    setAnswers(prev => { const next = [...prev]; if (next[idx] === undefined) next[idx] = null; return next; });
+
+  };
+
+  /* ── Start session — called once on mount ── */
+  /* ── Rebuild QuestionResult[] from a stored session ── */
+  const hydrateResults = (storedSession: StoredSession): QuestionResult[] => {
+    return (storedSession.questions ?? []).map(sq => {
+      const selIdx = sq.selectedIndex ?? sq.selected_index ?? 0;
+      const corrIdx = sq.correctIndex ?? sq.correct_index ?? 0;
+      const signal = (sq.evaluationSignal ?? sq.evaluation_signal)
+        ? {
+            signal:          (sq.evaluationSignal ?? sq.evaluation_signal ?? "Fragile") as ReasoningSignal["signal"],
+            confidence:      (sq.evaluationConfidence ?? "Medium") as ReasoningSignal["confidence"],
+            facultyInsight:  sq.facultyInsight ?? "",
+            studentFeedback: sq.studentFeedback ?? "",
+          }
+        : null;
+      /* Rebuild a minimal MCQQuestion from stored data */
+      const question: MCQQuestion & { mcqId?: string; pageNumber?: number; courseId?: string } = {
+        question:     sq.question,
+        options:      normaliseOptions(sq.options),
+        correctIndex: corrIdx,
+        explanation:  "",
+        courseId:     courseId,
+        mcqId:        sq.mcqId,
+        pageNumber:   sq.pageNumber ?? sq.page_number ?? undefined,
+      };
+      return {
+        question,
+        selected:    selIdx,
+        durationSec: sq.durationSec ?? sq.duration_sec ?? 0,
+        explanation: sq.studentExplanation ?? sq.student_explanation ?? "",
+        signal,
+      };
+    });
+  };
+
+  const startSession = useCallback(async () => {
+    setScreen("loading"); setLoadError(null);
+
+    /* ── Resume path: load existing completed session ── */
+    if (resumeSessionId) {
+      try {
+        const stored = await getSession(resumeSessionId, courseId);
+        setSession(resumeSessionId);
+        const hydrated = hydrateResults(stored);
+        setResults(hydrated);
+        /* Populate questions array so slide pane works */
+        setQuestions(hydrated.map(r => r.question));
+        /* Focus on weakest signal or Q1 */
+        const worstIdx = hydrated.findIndex(r =>
+          r.signal?.signal === "Low mastery" || r.signal?.signal === "Partial misconception"
+        );
+        setDebriefQIdx(worstIdx >= 0 ? worstIdx : 0);
+        /* Launch debrief directly */
+        setQIndex(hydrated.length - 1);
+        startDebriefWithResults(hydrated);
+      } catch (err) {
+        /* If resume fails, fall through to a fresh session */
+        setLoadError("Could not load previous session — starting fresh.");
+        setTimeout(() => setLoadError(null), 3000);
+      }
+      return;
+    }
+
+    /* ── Normal path: create new session ── */
+    try {
+      const { sessionId: sid, question: firstQuestion } = await createSession({
+        courseId, mode, language: tutorLang,
+      });
+      setSession(sid);
+      applyQuestion(firstQuestion, 0);
+      setScreen("question");
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to start session");
+      setScreen("question");
+    }
+  }, [courseId, mode, tutorLang, resumeSessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (sessionStarted.current) return;
+    sessionStarted.current = true;
+    startSession();
+    /* Fetch PDF SAS URL as fallback when no slide image exists */
+    if (courseId) {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io"}/api/courses/${courseId}/pdf-url?userId=nicolas`)
+        .then(r => r.json())
+        .then(({ sasUrl }) => { if (sasUrl) setPdfSasUrl(sasUrl); })
+        .catch(() => {});
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Submit answer ── */
+  const handleSubmit = () => {
+    if (selected === null || !mcq) return;
+    const dur = qElapsed;
+    qDurations.current[qIndex] = dur;
+    /* Record answer in backend (fire-and-forget — non-blocking) */
+    if (sessionIdRef.current) {
+      patchSessionAnswer(sessionIdRef.current, {
+        position: qIndex + 1,
+        selectedIndex: selected,
+        durationSec: dur,
+      }, courseId).catch(() => { /* non-fatal */ });
+    }
+    if (mode === "tutoring") {
+      setStudentExp("");
+      setScreen("review");
+    } else {
+      const r: QuestionResult = {
+        question: mcq, selected, durationSec: dur,
+        explanation: "", signal: null,
+      };
+      setResults(prev => { const next = [...prev]; next[qIndex] = r; return next; });
+      advanceOrFinish(qIndex);
+    }
+  };
+
+  /* ── Advance to next question or go to summary ── */
+  const advanceOrFinish = useCallback(async (fromIdx: number) => {
+    const nextIdx = fromIdx + 1;
+    if (nextIdx >= MAX_QUESTIONS) {
+      /* Complete the session in the background */
+      const sid = sessionIdRef.current;
+      if (sid) { completeSession(sid, courseId).catch(() => {}); }
+      setScreen("summary");
+      return;
+    }
+    setScreen("loading");
+    setLoadError(null);
+    const sid = sessionIdRef.current;
+    if (!sid) { setLoadError("Session not found"); setScreen("question"); return; }
+    try {
+      const sq = await getSessionQuestion(sid, nextIdx + 1, courseId); /* position is 1-based */
+      /* Advance index ONLY after data is ready — prevents blank render */
+      setQIndex(nextIdx);
+      applyQuestion(sq, nextIdx);
+      setScreen("question");
+    } catch (err) {
+      /* Keep current qIndex on error so existing question stays visible */
+      setLoadError(err instanceof Error ? err.message : `Failed to load question ${nextIdx + 1} — please retry`);
+      setScreen("question");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Review: proceed (tutoring mode) ── */
+  const handleReviewNext = async () => {
+    if (!mcq) return;
+    setEvaluating(true);
+    let signal: ReasoningSignal | null = null;
+    const expText = studentExp.trim();
+    if (expText && sessionIdRef.current) {
+      try {
+        /* patchSessionExplanation triggers evaluate on the backend and returns the signal */
+        const res = await patchSessionExplanation(sessionIdRef.current, {
+          position: qIndex + 1,
+          studentExplanation: expText,
+        }, courseId);
+        signal = {
+          signal:          res.signal,
+          confidence:      res.confidence,
+          facultyInsight:  res.facultyInsight,
+          studentFeedback: res.studentFeedback,
+        };
+      } catch { /* non-fatal — signal stays null */ }
+    }
+    const r: QuestionResult = {
+      question: mcq, selected: selected!, durationSec: qDurations.current[qIndex] ?? qElapsed,
+      explanation: expText, signal,
+    };
+    const updatedResults = results.slice();
+    updatedResults[qIndex] = r;
+    setResults(updatedResults);
+    setEvaluating(false);
+    const isLastQ = qIndex + 1 >= MAX_QUESTIONS;
+    if (mode === "tutoring" && isLastQ) {
+      startDebriefWithResults(updatedResults);
+    } else {
+      advanceOrFinish(qIndex);
+    }
+  };
+
+  /* ── Start AI debrief (shared logic) ── */
+  const runDebrief = async (allResults: QuestionResult[]) => {
+    setChatMsgs([]); setChatInput(""); setChatTurns(0); setChatError(null);
+    const worstIdx = allResults.findIndex(r =>
+      r.signal?.signal === "Low mastery" || r.signal?.signal === "Partial misconception"
+    );
+    const focusIdx = worstIdx >= 0 ? worstIdx : 0;
+    setDebriefQIdx(focusIdx);
+    setScreen("chat");
+    setAiTyping(true);
+    try {
+      const { message } = await tutorProbe({
+        courseId,
+        question:      allResults[focusIdx].question.question,
+        options:       allResults[focusIdx].question.options.map(o => o.text),
+        correctIndex:  allResults[focusIdx].question.correctIndex,
+        selectedIndex: allResults[focusIdx].selected,
+        isCorrect:     allResults[focusIdx].selected === allResults[focusIdx].question.correctIndex,
+        explanation:   allResults[focusIdx].question.explanation,
+        language:      tutorLang,
+      });
+      setChatMsgs([{ role: "ai", text: message }]);
+      if (sessionIdRef.current) {
+        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: focusIdx + 1 }, courseId).catch(() => {});
+      }
+    } catch {
+      setChatMsgs([{ role: "ai", text: "Sorry, I couldn't connect. You can try again or return to the summary." }]);
+    } finally {
+      setAiTyping(false);
+    }
+  };
+
+  /* Called from summary screen (assessment) or directly after last Q (tutoring) */
+  const startDebrief = () => runDebrief(results);
+  /* Called from handleReviewNext with fresh results before state update settles */
+  const startDebriefWithResults = (allResults: QuestionResult[]) => {
+    /* Complete the session in the background before debrief */
+    if (sessionIdRef.current) { completeSession(sessionIdRef.current, courseId).catch(() => {}); }
+    runDebrief(allResults);
+  };
+
+  /* ── Send chat message ── */
+  const sendChat = async () => {
+    if (!chatInput.trim() || chatTurns >= MAX_TURNS || aiTyping) return;
+    const msg = chatInput.trim();
+    setChatInput("");
+    const newTurns = chatTurns + 1;
+    setChatTurns(newTurns);
+    const updatedHistory: TutorMessage[] = [...chatMsgs, { role: "student", text: msg }];
+    setChatMsgs(updatedHistory);
+    /* Persist student message */
+    if (sessionIdRef.current) {
+      patchSessionChat(sessionIdRef.current, { role: "student", text: msg, questionPosition: debriefQIdx + 1 }, courseId).catch(() => {});
+    }
+    if (newTurns >= MAX_TURNS) return;
+    setAiTyping(true);
+    try {
+      const focusR = results[debriefQIdx];
+      const { message } = await tutorReply({
+        courseId,
+        question:      focusR.question.question,
+        options:       focusR.question.options.map(o => o.text),
+        correctIndex:  focusR.question.correctIndex,
+        selectedIndex: focusR.selected,
+        isCorrect:     focusR.selected === focusR.question.correctIndex,
+        explanation:   focusR.question.explanation,
+        language:      tutorLang,
+        history:       updatedHistory,
+      });
+      setChatMsgs(prev => [...prev, { role: "ai", text: message }]);
+      /* Persist AI reply */
+      if (sessionIdRef.current) {
+        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: debriefQIdx + 1 }, courseId).catch(() => {});
+      }
+    } catch {
+      setChatMsgs(prev => [...prev, { role: "ai", text: "Sorry, I couldn't respond. Please try again." }]);
+    } finally {
+      setAiTyping(false);
+    }
+  };
+
+  /* ── Switch debrief question ── */
+  const switchDebriefQ = async (idx: number) => {
+    if (idx === debriefQIdx) return;
+    setDebriefQIdx(idx);
+    setChatMsgs([]); setChatInput(""); setChatTurns(0);
+    setAiTyping(true);
+    try {
+      const r = results[idx];
+      const { message } = await tutorProbe({
+        courseId,
+        question:      r.question.question,
+        options:       r.question.options.map(o => o.text),
+        correctIndex:  r.question.correctIndex,
+        selectedIndex: r.selected,
+        isCorrect:     r.selected === r.question.correctIndex,
+        explanation:   r.question.explanation,
+        language:      tutorLang,
+      });
+      setChatMsgs([{ role: "ai", text: message }]);
+      if (sessionIdRef.current) {
+        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: idx + 1 }, courseId).catch(() => {});
+      }
+    } catch {
+      setChatMsgs([{ role: "ai", text: "Sorry, couldn't load this question. Try another." }]);
+    } finally {
+      setAiTyping(false);
+    }
+  };
+
+  /* ── Navigation (prev question) ── */
+  const prevQuestion = () => {
+    if (qIndex === 0) { router.back(); return; }
+    const prevIdx = qIndex - 1;
+    setQIndex(prevIdx);
+    /* In assessment mode there is no review screen — go back to question */
+    const alreadyAnswered = answers[prevIdx] !== null;
+    setScreen(alreadyAnswered && mode === "tutoring" ? "review" : "question");
+  };
+
+  /* ======================================================
+     RENDER HELPERS
+  ====================================================== */
+
+  const SIGNAL_COLORS: Record<string, { bg: string; color: string }> = {
+    "Strong":               { bg: "#EAF3DE", color: "#27500A" },
+    "Fragile":              { bg: "#FAEEDA", color: "#633806" },
+    "Partial misconception": { bg: "#FAECE7", color: "#712B13" },
+    "Low mastery":          { bg: "#FCEBEB", color: "#791F1F" },
+  };
+  const signalStyle = (sig: string) => SIGNAL_COLORS[sig] ?? { bg: "#F1EFE8", color: "#444441" };
+
+  const fmtDur = (sec: number) => {
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return m > 0 ? `${m}m ${s.toString().padStart(2,"0")}s` : `${s}s`;
+  };
+
+  /* ─── Header ─────────────────────────────────────────── */
+  const headerEl = (
+    <header className={styles.header}>
+      <div className={styles.headerLeft}>
+        <button className={styles.backBtn} onClick={() => {
+          if (screen === "chat") {
+            if (mode === "tutoring") { setScreen("summary"); return; }
+            setScreen("summary"); return;
+          }
+          if (screen === "summary") { router.back(); return; }
+          prevQuestion();
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          {screen === "chat" ? (mode === "tutoring" ? "See results" : "Summary") : screen === "summary" ? ui.backBtn : (qIndex === 0 ? ui.backToWorkspace ?? "Workspace" : ui.prevQuestion ?? "← Prev")}
+        </button>
+        {/* Mode toggle */}
+        <div className={styles.modeToggle}>
+          <button
+            className={`${styles.modeBtn} ${mode === "assessment" ? styles.modeBtnActive : ""}`}
+            onClick={() => switchMode("assessment")}
+            title="Assessment mode — no review between questions"
+          >Assessment</button>
+          <button
+            className={`${styles.modeBtn} ${mode === "tutoring" ? styles.modeBtnActive : ""}`}
+            onClick={() => switchMode("tutoring")}
+            title="Tutoring mode — review + explain after each question"
+          >Tutoring</button>
+        </div>
+      </div>
+      <div className={styles.headerCenter}>
+        <span className={styles.headerEyebrow}>COURSE MATERIALS</span>
+        <span className={styles.headerTitle}>{courseTitle}</span>
+      </div>
+      <div className={styles.headerRight}>
+        {/* Timer (question screen only) */}
+        {(screen === "question") && (
+          <div className={styles.timerWrap}>
+            <span className={styles.timerQ}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              {fmtTimer(qElapsed)}
+            </span>
+            <span className={styles.timerSep}>·</span>
+            <span className={styles.timerTotal}>{fmtTimer(totalElapsed)}</span>
+          </div>
+        )}
+        {(screen === "question" || screen === "review") && (
+          <span className={styles.qCounter}>Q{qIndex + 1}/{MAX_QUESTIONS}</span>
+        )}
+      </div>
+    </header>
+  );
+
+  /* ─── Loading / waiting ───────────────────────────────── */
+  if (screen === "loading" || screen === "waiting") {
+    return (
+      <div className={styles.page}>
+        {headerEl}
+        <div className={styles.loadingPane}>
+          <div className={styles.spinner} />
+          <div className={styles.loadingText}>
+            {screen === "waiting" ? (ui.preparingQuestions ?? "Preparing…") : (ui.generating ?? "Generating…")}
+          </div>
+          <div className={styles.loadingHint}>
+            {screen === "waiting" ? (ui.preparingHint ?? "Analysing document…") : (ui.generatingHint ?? "Reading with AI")}
+          </div>
+          {screen === "waiting" && <div className={styles.retryHint}>{ui.retryHint ?? "Checking again…"}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Slide pane — PDF open at the question's page ──── */
+  /* During debrief use the focused question's page; otherwise use current MCQ page */
+  const currentPage = screen === "chat"
+    ? (results[debriefQIdx]?.question?.pageNumber ?? 1)
+    : (mcq?.pageNumber ?? 1);
+  const slidePane = (
+    <div className={styles.slidePane} style={{ width: `${slideWidth}%` }}>
+      {pdfSasUrl ? (
+        <iframe
+          key={currentPage}   /* re-mount iframe when page changes */
+          src={`${pdfSasUrl}#toolbar=1&navpanes=0&scrollbar=0&view=FitH&page=${currentPage}`}
+          className={styles.pdfFallbackFrame}
+          title={`Course PDF — page ${currentPage}`}
+        />
+      ) : (
+        <div className={styles.slidePlaceholder}>
+          <div className={styles.slidePlaceholderText}>Loading course material…</div>
+        </div>
+      )}
+    </div>
+  );
+
+  /* ─── QUESTION screen ─────────────────────────────────── */
+  if (screen === "question" && mcq) {
+    return (
+      <div className={styles.page}>
+        {headerEl}
+        <div className={styles.body} ref={bodyRef}>
+          {slidePane}
+          <div className={styles.divider} ref={dividerRef} onMouseDown={onMouseDown} />
+          <div className={styles.questionPane}>
+            {loadError && <div className={styles.errorBanner}>{loadError}</div>}
+            <div className={styles.questionLabel}>{ui.questionLabel ?? "Question"} {qIndex + 1}</div>
+            <div className={styles.questionText}>{mcq.question}</div>
+
+            {/* ── Key term search chips ── */}
+            {pdfSasUrl && (
+              <div className={styles.chipSearchWrap}>
+                <span className={styles.chipSearchLabel}>Search PDF for:</span>
+                <div className={styles.chipSearchRow}>
+                  {extractKeyChips(mcq.question, mcq.options).map(word => (
+                    <button
+                      key={word}
+                      className={`${styles.chipSearch} ${copiedChip === word ? styles.chipSearchCopied : ""}`}
+                      onClick={() => copyChip(word)}
+                      title="Click to copy, then press Ctrl+F in the PDF"
+                    >
+                      {copiedChip === word ? (
+                        <>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          Copied — press Ctrl+F
+                        </>
+                      ) : (
+                        <>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                          {word}
+                        </>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className={styles.options}>
+              {mcq.options.map((opt, i) => (
+                <button
+                  key={i}
+                  className={`${styles.option} ${selected === i ? styles.optionSelected : ""}`}
+                  onClick={() => setAnswers(prev => { const next = [...prev]; next[qIndex] = i; return next; })}
+                >
+                  <span className={styles.optLetter}>{LETTERS[i]}</span>
+                  <span className={styles.optText}>{opt.text}</span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.questionActions}>
+              <button
+                className={styles.submitBtn}
+                onClick={handleSubmit}
+                disabled={selected === null}
+              >{ui.submitAnswer}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── REVIEW screen (tutoring mode) ──────────────────── */
+  if (screen === "review" && mcq) {
+    return (
+      <div className={styles.page}>
+        {headerEl}
+        <div className={styles.body} ref={bodyRef}>
+          {slidePane}
+          <div className={styles.divider} ref={dividerRef} onMouseDown={onMouseDown} />
+          <div className={styles.questionPane}>
+            {/* Question text */}
+            <div className={styles.questionLabel}>{ui.questionLabel ?? "Question"} {qIndex + 1}</div>
+            <div className={styles.questionText}>{mcq.question}</div>
+
+            {/* Options — show student's selection neutrally, no correct/wrong reveal */}
+            <div className={styles.options}>
+              {mcq.options.map((opt, i) => (
+                <div
+                  key={i}
+                  className={`${styles.optionStatic} ${i === selected ? styles.optSelected : styles.optDimmed}`}
+                >
+                  <span className={styles.optLetter}>{LETTERS[i]}</span>
+                  <span className={styles.optText}>{opt.text}</span>
+                  {i === selected && <span className={styles.optMark} style={{ color: "var(--primary)" }}>✓ your answer</span>}
+                </div>
+              ))}
+            </div>
+
+
+            <div className={styles.reviewActions}>
+              <button
+                className={styles.ghostBtn}
+                onClick={() => setScreen("question")}
+                disabled={evaluating}
+              >
+                ← Change my answer
+              </button>
+              <button
+                className={styles.submitBtn}
+                onClick={handleReviewNext}
+                disabled={evaluating}
+              >
+                {evaluating ? "…" : (qIndex + 1 >= MAX_QUESTIONS ? "Start AI debrief →" : (ui.nextQuestion ?? "Next question →"))}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── SUMMARY screen ─────────────────────────────────── */
+  if (screen === "summary") {
+    const score    = results.filter(r => r.selected === r.question.correctIndex).length;
+    const totalSec = results.reduce((s, r) => s + r.durationSec, 0);
+
+    return (
+      <div className={styles.page}>
+        {headerEl}
+        <div className={styles.summaryPane}>
+          {/* Score header */}
+          <div className={styles.summaryEyebrow}>
+            {mode === "tutoring" ? "Results — revealed after debrief" : "Results"}
+          </div>
+          <div className={styles.summaryHeader}>
+            <div className={styles.summaryScore}>{score}/{MAX_QUESTIONS}</div>
+            <div className={styles.summaryScoreLabel}>correct</div>
+            <div className={styles.summaryTime}>{fmtDur(totalSec)} total</div>
+          </div>
+
+          {/* Question list — each row clickable to start debrief from that Q */}
+          <div className={styles.summaryList}>
+            {results.map((r, i) => {
+              const correct = r.selected === r.question.correctIndex;
+              const sig     = r.signal;
+              const jumpToDebrief = () => {
+                setDebriefQIdx(i);
+                setChatMsgs([]); setChatInput(""); setChatTurns(0);
+                setScreen("chat");
+                setAiTyping(true);
+                tutorProbe({
+                  courseId,
+                  question:      r.question.question,
+                  options:       r.question.options.map(o => o.text),
+                  correctIndex:  r.question.correctIndex,
+                  selectedIndex: r.selected,
+                  isCorrect:     r.selected === r.question.correctIndex,
+                  explanation:   r.question.explanation,
+                  language:      tutorLang,
+                })
+                  .then(({ message }) => {
+                    setChatMsgs([{ role: "ai", text: message }]);
+                    if (sessionIdRef.current) {
+                      patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: i + 1 }, courseId).catch(() => {});
+                    }
+                  })
+                  .catch(() => setChatMsgs([{ role: "ai", text: "Sorry, I couldn't connect." }]))
+                  .finally(() => setAiTyping(false));
+              };
+              return (
+                <button key={i} className={`${styles.summaryRow} ${styles.summaryRowClickable}`} onClick={jumpToDebrief}>
+                  <div className={`${styles.summaryQNum} ${correct ? styles.summaryCorrect : styles.summaryWrong}`}>
+                    {correct ? "✓" : "✗"}
+                  </div>
+                  <div className={styles.summaryQText}>{r.question.question}</div>
+                  <div className={styles.summaryMeta}>
+                    {sig && (
+                      <span
+                        className={styles.signalBadge}
+                        style={{ background: signalStyle(sig.signal).bg, color: signalStyle(sig.signal).color }}
+                      >
+                        {sig.signal === "Partial misconception" ? "Partial" : sig.signal}
+                      </span>
+                    )}
+                    <span className={styles.summaryDur}>{fmtDur(r.durationSec)}</span>
+                    <span className={styles.summaryDiscussHint}>Discuss →</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* CTAs */}
+          <div className={styles.summaryActions}>
+            <button className={styles.ghostBtn} onClick={() => router.back()}>
+              {ui.backToCourse ?? "Back to course"}
+            </button>
+            <button className={styles.submitBtn} onClick={mode === "assessment" ? startDebrief : () => setScreen("chat")}>
+              {mode === "assessment" ? (ui.discussWithAI ?? "Discuss all →") : "Back to debrief →"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── CHAT / DEBRIEF screen ──────────────────────────── */
+  if (screen === "chat") {
+    const focusR   = results[debriefQIdx];
+    const fCorr    = focusR?.selected === focusR?.question.correctIndex;
+
+    return (
+      <div className={styles.page}>
+        {headerEl}
+        <div className={styles.body} ref={bodyRef}>
+
+          {/* Left: slide pane — same as question/review screens */}
+          {slidePane}
+          <div className={styles.divider} ref={dividerRef} onMouseDown={onMouseDown} />
+
+          {/* Right: Q-pills + question + options + chat stacked */}
+          <div className={styles.questionPane} style={{ gap: 0, padding: "0", display: "flex", flexDirection: "column" }}>
+
+            {/* Q-selector pills */}
+            <div className={styles.debriefPills}>
+              {results.map((r, i) => {
+                const corr = r.selected === r.question.correctIndex;
+                return (
+                  <button
+                    key={i}
+                    className={`${styles.debriefPill} ${i === debriefQIdx ? styles.debriefPillActive : ""}`}
+                    onClick={() => switchDebriefQ(i)}
+                  >
+                    <span className={corr ? styles.pillCorrect : styles.pillWrong}>{corr ? "✓" : "✗"}</span>
+                    Q{i + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Compact context strip */}
+            {focusR && (
+              <div className={styles.ctxStrip} onClick={() => setCtxExpanded(x => !x)}>
+                <div className={styles.ctxTop}>
+                  <div className={styles.ctxQuestion}>{focusR.question.question}</div>
+                  <div className={styles.ctxToggle}>{ctxExpanded ? "hide ▴" : "show answers ▾"}</div>
+                </div>
+                <div className={styles.ctxBadges}>
+                  <span className={styles.ctxBadgeWrong}>
+                    Your answer: {LETTERS[focusR.selected]}
+                  </span>
+                  {focusR.selected !== focusR.question.correctIndex && (
+                    <span className={styles.ctxBadgeCorrect}>
+                      Correct: {LETTERS[focusR.question.correctIndex]}
+                    </span>
+                  )}
+                  {focusR.selected === focusR.question.correctIndex && (
+                    <span className={styles.ctxBadgeCorrect}>Correct ✓</span>
+                  )}
+                  {focusR.signal && (
+                    <span
+                      className={styles.signalBadge}
+                      style={{ background: signalStyle(focusR.signal.signal).bg, color: signalStyle(focusR.signal.signal).color }}
+                    >
+                      {focusR.signal.signal === "Partial misconception" ? "Partial" : focusR.signal.signal}
+                    </span>
+                  )}
+                </div>
+                {ctxExpanded && (
+                  <div className={styles.ctxOptions} onClick={e => e.stopPropagation()}>
+                    {focusR.question.options.map((opt, i) => {
+                      const isCorr = i === focusR.question.correctIndex;
+                      const isSel  = i === focusR.selected;
+                      return (
+                        <div key={i} className={[
+                          styles.ctxOpt,
+                          isCorr           ? styles.ctxOptCorrect : "",
+                          isSel && !isCorr ? styles.ctxOptWrong   : "",
+                          !isCorr && !isSel ? styles.optDimmed    : "",
+                        ].join(" ")}>
+                          <span className={styles.ctxOptLtr}>{LETTERS[i]}</span>
+                          <span className={styles.ctxOptTxt}>{opt.text}</span>
+                          {isCorr && <span className={styles.ctxOptMark}>✓</span>}
+                          {isSel && !isCorr && <span className={styles.ctxOptMark}>✗</span>}
+                        </div>
+                      );
+                    })}
+                    {focusR.explanation && (
+                      <div className={styles.ctxExp}>
+                        <span className={styles.ctxExpLabel}>Your reasoning: </span>
+                        {focusR.explanation}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+          {/* Chat panel — fills remaining height */}
+          <div className={styles.chatPane}>
+            <div className={styles.chatThread}>
+              {chatMsgs.map((msg, i) => (
+                <div key={i} className={msg.role === "ai" ? styles.chatAI : styles.chatStudent}>
+                  <span className={styles.chatSender}>{msg.role === "ai" ? "AI Tutor" : (ui.you ?? "You")}</span>
+                  {msg.text}
+                </div>
+              ))}
+              {aiTyping && (
+                <div className={styles.chatAI}>
+                  <span className={styles.chatSender}>AI Tutor</span>
+                  <div className={styles.loadingDots}><span /><span /><span /></div>
+                </div>
+              )}
+              {chatTurns >= MAX_TURNS && (
+                <div className={styles.chatEndWarning}>{ui.chatEnded ?? "End of discussion."}</div>
+              )}
+            </div>
+
+            {chatTurns < MAX_TURNS && (
+              <div className={styles.chatInputWrap}>
+                <div className={styles.chatInputBox}>
+                  <textarea
+                    className={styles.chatInput}
+                    value={chatInput}
+                    onChange={e => {
+                      setChatInput(e.target.value);
+                      /* auto-grow */
+                      e.target.style.height = "auto";
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                    }}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && chatInput.trim()) { e.preventDefault(); sendChat(); }}}
+                    placeholder="Reply to the AI tutor…"
+                    rows={1}
+                  />
+                  <button
+                    className={styles.chatSendBtn}
+                    onClick={sendChat}
+                    disabled={!chatInput.trim() || aiTyping}
+                    aria-label="Send"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                  </button>
+                </div>
+                <div className={styles.chatMeta}>
+                  <span>{chatTurns}/{MAX_TURNS} exchanges</span>
+                  <span>↵ to send · Shift+↵ new line</span>
+                </div>
+              </div>
+            )}
+
+            {chatTurns >= 1 && (
+              <div className={styles.chatNavRow}>
+                <button className={styles.chatNavBtn} onClick={() => setScreen("summary")}>
+                  ← Results
+                </button>
+                {(() => {
+                  /* Find the next question index to discuss */
+                  const nextIdx = results.findIndex((_, i) => i > debriefQIdx);
+                  const prevIdx = debriefQIdx - 1;
+                  return (
+                    <>
+                      {prevIdx >= 0 && (
+                        <button className={styles.chatNavBtn} onClick={() => switchDebriefQ(prevIdx)}>
+                          ← Q{prevIdx + 1}
+                        </button>
+                      )}
+                      {nextIdx >= 0 && (
+                        <button className={`${styles.chatNavBtn} ${styles.chatNavBtnNext}`} onClick={() => switchDebriefQ(nextIdx)}>
+                          Discuss Q{nextIdx + 1} →
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>{/* end chatPane */}
+
+          </div>{/* end questionPane */}
+        </div>{/* end body */}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+export default function MCQPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh" }} />}>
+      <MCQContent />
+    </Suspense>
+  );
 }
