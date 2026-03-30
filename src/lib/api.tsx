@@ -337,8 +337,8 @@ export async function patchSessionChat(
   });
 }
 
-export async function completeSession(sessionId: string, userId = "nicolas"): Promise<SessionSummary> {
-  return request<SessionSummary>(`/api/sessions/${sessionId}/complete?userId=${userId}`, {
+export async function completeSession(sessionId: string, courseId: string, userId = "nicolas"): Promise<SessionSummary> {
+  return request<SessionSummary>(`/api/sessions/${sessionId}/complete?courseId=${courseId}&userId=${userId}`, {
     method: "POST",
   });
 }
@@ -395,6 +395,6 @@ export async function listSessions(
   return Array.isArray(data) ? data : (data as { sessions: StoredSession[] }).sessions ?? [];
 }
 
-export async function getSession(sessionId: string): Promise<StoredSession> {
-  return request<StoredSession>(`/api/sessions/${sessionId}`);
+export async function getSession(sessionId: string, courseId: string, userId = "nicolas"): Promise<StoredSession> {
+  return request<StoredSession>(`/api/sessions/${sessionId}?courseId=${courseId}&userId=${userId}`);
 }
