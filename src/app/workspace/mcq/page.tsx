@@ -551,7 +551,10 @@ function MCQContent() {
   }
 
   /* ─── Slide pane — PDF open at the question's page ──── */
-  const currentPage = mcq?.pageNumber ?? 1;
+  /* During debrief use the focused question's page; otherwise use current MCQ page */
+  const currentPage = screen === "chat"
+    ? (results[debriefQIdx]?.question?.pageNumber ?? 1)
+    : (mcq?.pageNumber ?? 1);
   const slidePane = (
     <div className={styles.slidePane} style={{ width: `${slideWidth}%` }}>
       {pdfSasUrl ? (
