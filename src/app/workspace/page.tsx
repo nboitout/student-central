@@ -273,10 +273,20 @@ function CourseDetailsModal({
   useEffect(() => {
     listSessions(course.id)
       .then(sessions => {
-        const completed = sessions.find(s => s.status === "completed");
-        setRecentSession(completed ?? null);
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[CourseDetails] sessions:", sessions.map(s => ({ id: s.id, status: s.status, q: s.questions?.length })));
+        }
+        /* Accept completed OR sessions that have at least one answered question */
+        const usable = sessions.find(s =>
+          s.status === "completed" ||
+          s.status === "chatting" ||
+          (s.questions?.some(q => (q.selectedIndex ?? q.selected_index) !== null && (q.selectedIndex ?? q.selected_index) !== undefined))
+        );
+        setRecentSession(usable ?? null);
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (process.env.NODE_ENV !== "production") console.error("[CourseDetails] listSessions error:", err);
+      })
       .finally(() => setSessionsLoaded(true));
   }, [course.id]);
 
