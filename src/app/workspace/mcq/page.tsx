@@ -260,7 +260,7 @@ function MCQContent() {
     /* ── Resume path: load existing completed session ── */
     if (resumeSessionId) {
       try {
-        const stored = await getSession(resumeSessionId);
+        const stored = await getSession(resumeSessionId, courseId);
         setSession(resumeSessionId);
         const hydrated = hydrateResults(stored);
         setResults(hydrated);
@@ -341,7 +341,7 @@ function MCQContent() {
     if (nextIdx >= MAX_QUESTIONS) {
       /* Complete the session in the background */
       const sid = sessionIdRef.current;
-      if (sid) { completeSession(sid).catch(() => {}); }
+      if (sid) { completeSession(sid, courseId).catch(() => {}); }
       setScreen("summary");
       return;
     }
@@ -436,7 +436,7 @@ function MCQContent() {
   /* Called from handleReviewNext with fresh results before state update settles */
   const startDebriefWithResults = (allResults: QuestionResult[]) => {
     /* Complete the session in the background before debrief */
-    if (sessionIdRef.current) { completeSession(sessionIdRef.current).catch(() => {}); }
+    if (sessionIdRef.current) { completeSession(sessionIdRef.current, courseId).catch(() => {}); }
     runDebrief(allResults);
   };
 
