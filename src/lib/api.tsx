@@ -291,14 +291,16 @@ export async function getSessionQuestion(
 export async function patchSessionAnswer(
   sessionId: string,
   payload: { position: number; selectedIndex: number; durationSec: number },
+  courseId: string,
   userId = "nicolas"
 ): Promise<SessionAnswerResponse> {
-  return request<SessionAnswerResponse>(`/api/sessions/${sessionId}/answer?userId=${userId}`, {
+  return request<SessionAnswerResponse>(
+    `/api/sessions/${sessionId}/answer?courseId=${courseId}&userId=${userId}`, {
     method: "PATCH",
     body: JSON.stringify({
-      position:       payload.position,
-      selected_index: payload.selectedIndex,
-      duration_sec:   payload.durationSec,
+      position:      payload.position,
+      selectedIndex: payload.selectedIndex,
+      durationSec:   payload.durationSec,
     }),
   });
 }
@@ -306,13 +308,15 @@ export async function patchSessionAnswer(
 export async function patchSessionExplanation(
   sessionId: string,
   payload: { position: number; studentExplanation: string },
+  courseId: string,
   userId = "nicolas"
 ): Promise<SessionExplanationResponse> {
-  return request<SessionExplanationResponse>(`/api/sessions/${sessionId}/explanation?userId=${userId}`, {
+  return request<SessionExplanationResponse>(
+    `/api/sessions/${sessionId}/explanation?courseId=${courseId}&userId=${userId}`, {
     method: "PATCH",
     body: JSON.stringify({
-      position:            payload.position,
-      student_explanation: payload.studentExplanation,
+      position:          payload.position,
+      studentExplanation: payload.studentExplanation,
     }),
   });
 }
@@ -320,14 +324,15 @@ export async function patchSessionExplanation(
 export async function patchSessionChat(
   sessionId: string,
   payload: { role: "ai" | "student"; text: string; questionPosition: number },
+  courseId: string,
   userId = "nicolas"
 ): Promise<void> {
-  await request<void>(`/api/sessions/${sessionId}/chat?userId=${userId}`, {
+  await request<void>(`/api/sessions/${sessionId}/chat?courseId=${courseId}&userId=${userId}`, {
     method: "PATCH",
     body: JSON.stringify({
-      role:              payload.role,
-      text:              payload.text,
-      question_position: payload.questionPosition,
+      role:             payload.role,
+      text:             payload.text,
+      questionPosition: payload.questionPosition,
     }),
   });
 }
