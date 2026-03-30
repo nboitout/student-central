@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import styles from "./workspace.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
 import {
   listCourses,
+  setCurrentUser,
   createCourse,
   updateCourse,
   deleteCourse,
@@ -467,7 +469,13 @@ function CourseCard({
 export default function WorkspacePage() {
   const { lang }  = useLanguage();
   const ui        = getT(lang).workspace;
-  const userId = "nicolas";
+  const { data: session } = useSession();
+  const userId = session?.user?.email ?? "nicolas";
+
+  /* Keep api.ts in sync with real userId */
+  useEffect(() => {
+    if (userId !== "nicolas") setCurrentUser(userId);
+  }, [userId]);
 
   const [courses, setCourses]         = useState<Course[]>([]);
   const [loading, setLoading]         = useState(true);
