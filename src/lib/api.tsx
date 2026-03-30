@@ -295,7 +295,11 @@ export async function patchSessionAnswer(
 ): Promise<SessionAnswerResponse> {
   return request<SessionAnswerResponse>(`/api/sessions/${sessionId}/answer?userId=${userId}`, {
     method: "PATCH",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      position:       payload.position,
+      selected_index: payload.selectedIndex,
+      duration_sec:   payload.durationSec,
+    }),
   });
 }
 
@@ -306,7 +310,10 @@ export async function patchSessionExplanation(
 ): Promise<SessionExplanationResponse> {
   return request<SessionExplanationResponse>(`/api/sessions/${sessionId}/explanation?userId=${userId}`, {
     method: "PATCH",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      position:            payload.position,
+      student_explanation: payload.studentExplanation,
+    }),
   });
 }
 
@@ -317,7 +324,11 @@ export async function patchSessionChat(
 ): Promise<void> {
   await request<void>(`/api/sessions/${sessionId}/chat?userId=${userId}`, {
     method: "PATCH",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      role:              payload.role,
+      text:              payload.text,
+      question_position: payload.questionPosition,
+    }),
   });
 }
 
