@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import styles from "./workspace.module.css";
 import { useLanguage } from "@/context/LanguageContext";
@@ -469,13 +468,18 @@ function CourseCard({
 export default function WorkspacePage() {
   const { lang }  = useLanguage();
   const ui        = getT(lang).workspace;
-  const { data: session } = useSession();
-  const userId = session?.user?.email ?? "nicolas";
-
-  /* Keep api.ts in sync with real userId */
+  /* userId is resolved from the session cookie via the server layout.
+     Falls back to "nicolas" in local dev without auth.            */
+  const [userId, setUserId] = useState("nicolas");
   useEffect(() => {
-    if (userId !== "nicolas") setCurrentUser(userId);
-  }, [userId]);
+    fetch("/api/auth/session")
+      .then(r => r.json())
+      .then(s => {
+        const id = s?.user?.email ?? s?.user?.id;
+        if (id) { setUserId(id); setCurrentUser(id); }
+      })
+      .catch(() => {});
+  }, []);
 
   const [courses, setCourses]         = useState<Course[]>([]);
   const [loading, setLoading]         = useState(true);
