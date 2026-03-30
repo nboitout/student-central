@@ -1269,3 +1269,117 @@
   background: #EAF3DE !important;
   font-size: 0.625rem;
 }
+
+/* ── Compact context strip (debrief) ─────────────────────── */
+.ctxStrip {
+  padding: 10px 16px 10px;
+  border-bottom: 1px solid var(--outline-variant);
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background 0.12s;
+}
+.ctxStrip:hover { background: var(--surface-low); }
+
+.ctxTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ctxQuestion {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--on-surface);
+  line-height: 1.45;
+  flex: 1;
+}
+.ctxToggle {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--on-surface-variant);
+  opacity: 0.45;
+  white-space: nowrap;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+.ctxBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.ctxBadgeWrong {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: #FCEBEB;
+  color: #791F1F;
+  border-left: 2px solid #E24B4A;
+}
+.ctxBadgeCorrect {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: #EAF3DE;
+  color: #27500A;
+  border-left: 2px solid #639922;
+}
+
+/* Expanded options */
+.ctxOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  border-top: 0.5px solid var(--outline-variant);
+  padding-top: 8px;
+}
+.ctxOpt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  padding: 4px 6px;
+  line-height: 1.35;
+  border-radius: 3px;
+}
+.ctxOptLtr {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  width: 14px;
+  flex-shrink: 0;
+}
+.ctxOptTxt { flex: 1; color: var(--on-surface-variant); }
+.ctxOptMark { font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+.ctxOptCorrect { background: #EAF3DE; }
+.ctxOptCorrect .ctxOptLtr,
+.ctxOptCorrect .ctxOptTxt  { color: #27500A; }
+.ctxOptCorrect .ctxOptMark { color: #27500A; }
+.ctxOptWrong { background: #FCEBEB; }
+.ctxOptWrong .ctxOptLtr,
+.ctxOptWrong .ctxOptTxt  { color: #791F1F; }
+.ctxOptWrong .ctxOptMark { color: #791F1F; }
+
+.ctxExp {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  font-style: italic;
+  line-height: 1.45;
+  margin-top: 4px;
+  padding: 6px 8px;
+  background: var(--surface-low);
+  border-left: 2px solid var(--outline-variant);
+}
+.ctxExpLabel { font-weight: 600; font-style: normal; }
