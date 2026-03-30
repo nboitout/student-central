@@ -105,9 +105,23 @@ function LoginContent() {
               {/* Google */}
               <button
                 className={styles.googleBtn}
-                onClick={() => {
-                  const url = `/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-                  window.location.href = url;
+                onClick={async () => {
+                  const csrf = await getCsrfToken();
+                  const form = document.createElement("form");
+                  form.method = "POST";
+                  form.action = "/api/auth/signin/google";
+                  [
+                    { name: "csrfToken", value: csrf },
+                    { name: "callbackUrl", value: callbackUrl },
+                  ].forEach(({ name, value }) => {
+                    const input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = name;
+                    input.value = value;
+                    form.appendChild(input);
+                  });
+                  document.body.appendChild(form);
+                  form.submit();
                 }}
                 disabled={isPending}
               >
