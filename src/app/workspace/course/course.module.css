@@ -1,8 +1,8 @@
-/* ════════════════════════════════════════════════════════
+/* ========================================================
    COURSE READER — aligned to DESIGN.md editorial system
    Rules: 0px radius · no 1px dividers · surface-shift depth
    Full-viewport: header + sidebar + pdf pane
-════════════════════════════════════════════════════════ */
+======================================================== */
 
 /* ── Page shell: full-height flex column ─────────────────── */
 .page {
