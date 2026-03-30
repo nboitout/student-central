@@ -320,7 +320,7 @@ function MCQContent() {
         position: qIndex + 1,
         selectedIndex: selected,
         durationSec: dur,
-      }).catch(() => { /* non-fatal */ });
+      }, courseId).catch(() => { /* non-fatal */ });
     }
     if (mode === "tutoring") {
       setStudentExp("");
@@ -374,7 +374,7 @@ function MCQContent() {
         const res = await patchSessionExplanation(sessionIdRef.current, {
           position: qIndex + 1,
           studentExplanation: expText,
-        });
+        }, courseId);
         signal = {
           signal:          res.signal,
           confidence:      res.confidence,
@@ -422,7 +422,7 @@ function MCQContent() {
       });
       setChatMsgs([{ role: "ai", text: message }]);
       if (sessionIdRef.current) {
-        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: focusIdx + 1 }).catch(() => {});
+        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: focusIdx + 1 }, courseId).catch(() => {});
       }
     } catch {
       setChatMsgs([{ role: "ai", text: "Sorry, I couldn't connect. You can try again or return to the summary." }]);
@@ -451,7 +451,7 @@ function MCQContent() {
     setChatMsgs(updatedHistory);
     /* Persist student message */
     if (sessionIdRef.current) {
-      patchSessionChat(sessionIdRef.current, { role: "student", text: msg, questionPosition: debriefQIdx + 1 }).catch(() => {});
+      patchSessionChat(sessionIdRef.current, { role: "student", text: msg, questionPosition: debriefQIdx + 1 }, courseId).catch(() => {});
     }
     if (newTurns >= MAX_TURNS) return;
     setAiTyping(true);
@@ -471,7 +471,7 @@ function MCQContent() {
       setChatMsgs(prev => [...prev, { role: "ai", text: message }]);
       /* Persist AI reply */
       if (sessionIdRef.current) {
-        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: debriefQIdx + 1 }).catch(() => {});
+        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: debriefQIdx + 1 }, courseId).catch(() => {});
       }
     } catch {
       setChatMsgs(prev => [...prev, { role: "ai", text: "Sorry, I couldn't respond. Please try again." }]);
@@ -500,7 +500,7 @@ function MCQContent() {
       });
       setChatMsgs([{ role: "ai", text: message }]);
       if (sessionIdRef.current) {
-        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: idx + 1 }).catch(() => {});
+        patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: idx + 1 }, courseId).catch(() => {});
       }
     } catch {
       setChatMsgs([{ role: "ai", text: "Sorry, couldn't load this question. Try another." }]);
