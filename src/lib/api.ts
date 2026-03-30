@@ -1,15 +1,14 @@
-import { getSession as getNextAuthSession } from "next-auth/react";
-
 /* ── Auth helper ─────────────────────────────────────────
-   Resolves the real userId from the NextAuth session.
+   Components call setCurrentUser() after session resolves.
    Falls back to "nicolas" during local dev without auth.  */
+let _currentUserId = "nicolas";
+
+export function setCurrentUser(userId: string) {
+  _currentUserId = userId;
+}
+
 async function getCurrentUserId(): Promise<string> {
-  try {
-    const session = await getNextAuthSession();
-    return session?.user?.id ?? session?.user?.email ?? "nicolas";
-  } catch {
-    return "nicolas";
-  }
+  return _currentUserId;
 }
 
 const API_URL =
