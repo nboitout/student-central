@@ -323,3 +323,59 @@ export async function completeSession(sessionId: string): Promise<SessionSummary
     method: "POST",
   });
 }
+
+/* ── Session list ────────────────────────────────────────── */
+export interface StoredSessionQuestion {
+  position:           number;
+  mcqId:              string;
+  question:           string;
+  options:            string[] | MCQOption[];
+  correctIndex:       number;
+  correct_index?:     number;
+  pageNumber?:        number | null;
+  page_number?:       number | null;
+  selectedIndex?:     number | null;
+  selected_index?:    number | null;
+  isCorrect?:         boolean | null;
+  is_correct?:        boolean | null;
+  durationSec?:       number | null;
+  duration_sec?:      number | null;
+  studentExplanation?: string | null;
+  student_explanation?: string | null;
+  evaluationSignal?:  string | null;
+  evaluation_signal?: string | null;
+  evaluationConfidence?: string | null;
+  facultyInsight?:    string | null;
+  studentFeedback?:   string | null;
+}
+
+export interface StoredSession {
+  id:           string;
+  courseId:     string;
+  course_id?:   string;
+  userId:       string;
+  mode:         string;
+  language:     string;
+  status:       "started" | "answering" | "reviewing" | "chatting" | "completed";
+  startedAt?:   string;
+  started_at?:  string;
+  completedAt?: string;
+  completed_at?: string;
+  questions:    StoredSessionQuestion[];
+  summary?:     SessionSummary | null;
+}
+
+export async function listSessions(
+  courseId: string,
+  userId = "nicolas"
+): Promise<StoredSession[]> {
+  const params = new URLSearchParams({ courseId, userId });
+  const data = await request<StoredSession[] | { sessions: StoredSession[] }>(
+    `/api/sessions?${params}`
+  );
+  return Array.isArray(data) ? data : (data as { sessions: StoredSession[] }).sessions ?? [];
+}
+
+export async function getSession(sessionId: string): Promise<StoredSession> {
+  return request<StoredSession>(`/api/sessions/${sessionId}`);
+}
