@@ -1419,3 +1419,29 @@
 .chatNavBtnNext:hover {
   background: rgba(0, 72, 216, 0.08);
 }
+
+/* ── Summary row — clickable variant ────────────────────── */
+.summaryRowClickable {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: background 0.12s;
+}
+.summaryRowClickable:hover {
+  background: rgba(0, 72, 216, 0.04);
+}
+.summaryRowClickable:hover .summaryQNum { opacity: 1; }
+.summaryRowClickable:hover .summaryDiscussHint { opacity: 1; }
+
+.summaryDiscussHint {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--primary);
+  opacity: 0;
+  transition: opacity 0.12s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
