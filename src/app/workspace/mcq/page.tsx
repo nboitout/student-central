@@ -138,6 +138,7 @@ function MCQContent() {
 
   /* ── Toast state for copy feedback ── */
   const [copiedChip, setCopiedChip] = useState<string | null>(null);
+  const [ctxExpanded, setCtxExpanded] = useState(false);
   const copyChip = (word: string) => {
     navigator.clipboard.writeText(word).catch(() => {});
     setCopiedChip(word);
@@ -850,41 +851,60 @@ function MCQContent() {
               })}
             </div>
 
-            {/* Focused question card */}
+            {/* Compact context strip */}
             {focusR && (
-              <div className={styles.debriefQCard}>
-                <div className={styles.questionLabel}>{ui.questionLabel ?? "Question"} {debriefQIdx + 1}</div>
-                <div className={styles.questionText}>{focusR.question.question}</div>
-                <div className={styles.options} style={{ marginTop: 12 }}>
-                  {focusR.question.options.map((opt, i) => {
-                    const isCorr = i === focusR.question.correctIndex;
-                    const isSel  = i === focusR.selected;
-                    return (
-                      <div key={i} className={[
-                        styles.optionStatic,
-                        isCorr           ? styles.optCorrect : "",
-                        isSel && !isCorr ? styles.optWrong   : "",
-                        !isCorr && !isSel ? styles.optDimmed : "",
-                      ].join(" ")}>
-                        <span className={styles.optLetter}>{LETTERS[i]}</span>
-                        <span className={styles.optText}>{opt.text}</span>
-                        {isCorr && <span className={styles.optMark}>✓</span>}
-                        {isSel && !isCorr && <span className={styles.optMark}>✗</span>}
-                      </div>
-                    );
-                  })}
+              <div className={styles.ctxStrip} onClick={() => setCtxExpanded(x => !x)}>
+                <div className={styles.ctxTop}>
+                  <div className={styles.ctxQuestion}>{focusR.question.question}</div>
+                  <div className={styles.ctxToggle}>{ctxExpanded ? "hide ▴" : "show answers ▾"}</div>
                 </div>
-                {focusR.explanation && (
-                  <div className={styles.chatStudentExp}>
-                    <div className={styles.sectionLabel}>Your reasoning</div>
-                    <p className={styles.chatStudentExpText}>{focusR.explanation}</p>
+                <div className={styles.ctxBadges}>
+                  <span className={styles.ctxBadgeWrong}>
+                    Your answer: {LETTERS[focusR.selected]}
+                  </span>
+                  {focusR.selected !== focusR.question.correctIndex && (
+                    <span className={styles.ctxBadgeCorrect}>
+                      Correct: {LETTERS[focusR.question.correctIndex]}
+                    </span>
+                  )}
+                  {focusR.selected === focusR.question.correctIndex && (
+                    <span className={styles.ctxBadgeCorrect}>Correct ✓</span>
+                  )}
+                  {focusR.signal && (
+                    <span
+                      className={styles.signalBadge}
+                      style={{ background: signalStyle(focusR.signal.signal).bg, color: signalStyle(focusR.signal.signal).color }}
+                    >
+                      {focusR.signal.signal === "Partial misconception" ? "Partial" : focusR.signal.signal}
+                    </span>
+                  )}
+                </div>
+                {ctxExpanded && (
+                  <div className={styles.ctxOptions} onClick={e => e.stopPropagation()}>
+                    {focusR.question.options.map((opt, i) => {
+                      const isCorr = i === focusR.question.correctIndex;
+                      const isSel  = i === focusR.selected;
+                      return (
+                        <div key={i} className={[
+                          styles.ctxOpt,
+                          isCorr           ? styles.ctxOptCorrect : "",
+                          isSel && !isCorr ? styles.ctxOptWrong   : "",
+                          !isCorr && !isSel ? styles.optDimmed    : "",
+                        ].join(" ")}>
+                          <span className={styles.ctxOptLtr}>{LETTERS[i]}</span>
+                          <span className={styles.ctxOptTxt}>{opt.text}</span>
+                          {isCorr && <span className={styles.ctxOptMark}>✓</span>}
+                          {isSel && !isCorr && <span className={styles.ctxOptMark}>✗</span>}
+                        </div>
+                      );
+                    })}
+                    {focusR.explanation && (
+                      <div className={styles.ctxExp}>
+                        <span className={styles.ctxExpLabel}>Your reasoning: </span>
+                        {focusR.explanation}
+                      </div>
+                    )}
                   </div>
-                )}
-                {focusR.signal && (
-                  <span
-                    className={styles.signalBadge}
-                    style={{ background: signalStyle(focusR.signal.signal).bg, color: signalStyle(focusR.signal.signal).color, marginTop: 10, display: "inline-block" }}
-                  >{focusR.signal.signal}</span>
                 )}
               </div>
             )}
