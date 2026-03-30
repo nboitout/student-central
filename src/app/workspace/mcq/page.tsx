@@ -770,13 +770,37 @@ function MCQContent() {
             <div className={styles.summaryTime}>{fmtDur(totalSec)} total</div>
           </div>
 
-          {/* Question list */}
+          {/* Question list — each row clickable to start debrief from that Q */}
           <div className={styles.summaryList}>
             {results.map((r, i) => {
               const correct = r.selected === r.question.correctIndex;
               const sig     = r.signal;
+              const jumpToDebrief = () => {
+                setDebriefQIdx(i);
+                setChatMsgs([]); setChatInput(""); setChatTurns(0);
+                setScreen("chat");
+                setAiTyping(true);
+                tutorProbe({
+                  courseId,
+                  question:      r.question.question,
+                  options:       r.question.options.map(o => o.text),
+                  correctIndex:  r.question.correctIndex,
+                  selectedIndex: r.selected,
+                  isCorrect:     r.selected === r.question.correctIndex,
+                  explanation:   r.question.explanation,
+                  language:      tutorLang,
+                })
+                  .then(({ message }) => {
+                    setChatMsgs([{ role: "ai", text: message }]);
+                    if (sessionIdRef.current) {
+                      patchSessionChat(sessionIdRef.current, { role: "ai", text: message, questionPosition: i + 1 }, courseId).catch(() => {});
+                    }
+                  })
+                  .catch(() => setChatMsgs([{ role: "ai", text: "Sorry, I couldn't connect." }]))
+                  .finally(() => setAiTyping(false));
+              };
               return (
-                <div key={i} className={styles.summaryRow}>
+                <button key={i} className={`${styles.summaryRow} ${styles.summaryRowClickable}`} onClick={jumpToDebrief}>
                   <div className={`${styles.summaryQNum} ${correct ? styles.summaryCorrect : styles.summaryWrong}`}>
                     {correct ? "✓" : "✗"}
                   </div>
@@ -791,8 +815,9 @@ function MCQContent() {
                       </span>
                     )}
                     <span className={styles.summaryDur}>{fmtDur(r.durationSec)}</span>
+                    <span className={styles.summaryDiscussHint}>Discuss →</span>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -802,15 +827,9 @@ function MCQContent() {
             <button className={styles.ghostBtn} onClick={() => router.back()}>
               {ui.backToCourse ?? "Back to course"}
             </button>
-            {mode === "assessment" ? (
-              <button className={styles.submitBtn} onClick={startDebrief}>
-                {ui.discussWithAI ?? "Discuss with AI →"}
-              </button>
-            ) : (
-              <button className={styles.submitBtn} onClick={() => setScreen("chat")}>
-                Back to debrief →
-              </button>
-            )}
+            <button className={styles.submitBtn} onClick={mode === "assessment" ? startDebrief : () => setScreen("chat")}>
+              {mode === "assessment" ? (ui.discussWithAI ?? "Discuss all →") : "Back to debrief →"}
+            </button>
           </div>
         </div>
       </div>
