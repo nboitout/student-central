@@ -964,9 +964,30 @@ function MCQContent() {
             )}
 
             {chatTurns >= 1 && (
-              <button className={styles.ghostBtn} style={{ marginTop: 8, alignSelf: "flex-end" }} onClick={() => setScreen("summary")}>
-                ← {ui.backBtn ?? "Back to summary"}
-              </button>
+              <div className={styles.chatNavRow}>
+                <button className={styles.chatNavBtn} onClick={() => setScreen("summary")}>
+                  ← Results
+                </button>
+                {(() => {
+                  /* Find the next question index to discuss */
+                  const nextIdx = results.findIndex((_, i) => i > debriefQIdx);
+                  const prevIdx = debriefQIdx - 1;
+                  return (
+                    <>
+                      {prevIdx >= 0 && (
+                        <button className={styles.chatNavBtn} onClick={() => switchDebriefQ(prevIdx)}>
+                          ← Q{prevIdx + 1}
+                        </button>
+                      )}
+                      {nextIdx >= 0 && (
+                        <button className={`${styles.chatNavBtn} ${styles.chatNavBtnNext}`} onClick={() => switchDebriefQ(nextIdx)}>
+                          Discuss Q{nextIdx + 1} →
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
             )}
           </div>{/* end chatPane */}
 
