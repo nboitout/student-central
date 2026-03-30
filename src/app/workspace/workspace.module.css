@@ -1387,3 +1387,50 @@
   margin-top: 6px;
   border-top: 0.5px solid rgba(186, 117, 23, 0.2);
 }
+
+/* ── Session resume card ─────────────────────────────────── */
+.resumeCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #EEEDFE;
+  border: 0.5px solid #AFA9EC;
+  margin-bottom: 4px;
+  gap: 16px;
+}
+.resumeCardLeft { display: flex; flex-direction: column; gap: 2px; }
+.resumeCardLabel {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #534AB7;
+  opacity: 0.7;
+}
+.resumeCardDate {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #26215C;
+}
+.resumeCardStats {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: #534AB7;
+}
+.resumeBtn {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #fff;
+  background: #534AB7;
+  border: none;
+  padding: 9px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.resumeBtn:hover { opacity: 0.88; }
