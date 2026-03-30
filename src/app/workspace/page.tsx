@@ -13,7 +13,9 @@ import {
   uploadPdf,
   attachPdf,
   triggerMCQGeneration,
+  listSessions,
   type Course,
+  type StoredSession,
 } from "@/lib/api";
 
 /* ── Constants ──────────────────────────────────────────── */
@@ -265,13 +267,35 @@ function CourseDetailsModal({
   ui: ReturnType<typeof getT>["workspace"];
 }) {
   const router = useRouter();
+  const [recentSession, setRecentSession] = useState<StoredSession | null>(null);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
+
+  useEffect(() => {
+    listSessions(course.id)
+      .then(sessions => {
+        const completed = sessions.find(s => s.status === "completed");
+        setRecentSession(completed ?? null);
+      })
+      .catch(() => {})
+      .finally(() => setSessionsLoaded(true));
+  }, [course.id]);
+
   const statusKey = course.status.replace(" ", "") as "NotStarted" | "InProgress" | "Completed";
   const statusLabel: Record<string, string> = {
     NotStarted: ui.statusNotStarted,
     InProgress: ui.statusInProgress,
     Completed:  ui.statusCompleted,
   };
-  const progress = Math.round((course.exercisesDone / course.exercisesTotal) * 100);
+  const progress = Math.round((course.exercisesDone / (course.exercisesTotal || 1)) * 100);
+
+  const fmtDate = (iso?: string | null) => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  };
+
+  const resumeUrl = recentSession
+    ? `/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}&resumeSession=${recentSession.id}`
+    : null;
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -286,13 +310,36 @@ function CourseDetailsModal({
         <div className={styles.modalBody}>
           <div className={styles.detailsMeta}>
             <div className={styles.detailsRow}><span className={styles.detailsKey}>{ui.keyAuthor}</span><span className={styles.detailsVal}>{course.author}</span></div>
-            <div className={styles.detailsRow}><span className={styles.detailsKey}>{ui.keySource}</span><span className={styles.detailsVal}>{course.source}</span></div>
             <div className={styles.detailsRow}><span className={styles.detailsKey}>{ui.keyStatus}</span><span className={styles.detailsVal}>{statusLabel[statusKey]}</span></div>
             <div className={styles.detailsRow}><span className={styles.detailsKey}>{ui.keyProgress}</span><span className={styles.detailsVal}>{course.exercisesDone} / {course.exercisesTotal} — {progress}%</span></div>
           </div>
           <div className={styles.detailsProgressTrack}>
             <div className={styles.detailsProgressFill} style={{ width: `${progress}%` }} />
           </div>
+
+          {/* Recent session resume card */}
+          {sessionsLoaded && recentSession && (
+            <div className={styles.resumeCard}>
+              <div className={styles.resumeCardLeft}>
+                <div className={styles.resumeCardLabel}>Last session</div>
+                <div className={styles.resumeCardDate}>{fmtDate(recentSession.completedAt ?? recentSession.completed_at)}</div>
+                <div className={styles.resumeCardStats}>
+                  {recentSession.questions?.length ?? 0} questions · {
+                    recentSession.summary
+                      ? `${recentSession.summary.correctCount}/${recentSession.summary.totalQuestions} correct`
+                      : `${recentSession.questions?.filter(q => q.isCorrect ?? q.is_correct).length ?? 0} correct`
+                  }
+                </div>
+              </div>
+              <button
+                className={styles.resumeBtn}
+                onClick={() => { onClose(); router.push(resumeUrl!); }}
+              >
+                Resume debrief →
+              </button>
+            </div>
+          )}
+
           <div className={styles.actionCards}>
             <button
               className={`${styles.actionCard} ${styles.actionCardPrimary}`}
@@ -308,7 +355,7 @@ function CourseDetailsModal({
             >
               <div className={styles.actionCardIcon}>◎</div>
               <div className={styles.actionCardTitle}>{ui.startMCQ}</div>
-              <div className={styles.actionCardDesc}>{ui.startMCQDesc}</div>
+              <div className={styles.actionCardDesc}>Start a new session of 5 questions</div>
             </button>
           </div>
         </div>
