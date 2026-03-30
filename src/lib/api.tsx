@@ -1,3 +1,17 @@
+import { getSession as getNextAuthSession } from "next-auth/react";
+
+/* ── Auth helper ─────────────────────────────────────────
+   Resolves the real userId from the NextAuth session.
+   Falls back to "nicolas" during local dev without auth.  */
+async function getCurrentUserId(): Promise<string> {
+  try {
+    const session = await getNextAuthSession();
+    return session?.user?.id ?? session?.user?.email ?? "nicolas";
+  } catch {
+    return "nicolas";
+  }
+}
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
@@ -63,9 +77,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 /* ── Courses ────────────────────────────────────────────── */
-export async function listCourses(userId = "nicolas"): Promise<Course[]> {
+export async function listCourses(userId?: string): Promise<Course[]> {
+  const uid = userId ?? await getCurrentUserId();
   const data = await request<{ courses: Course[]; count: number }>(
-    `/api/courses?userId=${userId}`
+    `/api/courses?userId=${uid}`
   );
   return data.courses;
 }
@@ -89,9 +104,10 @@ export async function createCourse(payload: {
 export async function updateCourse(
   courseId: string,
   updates: { status?: string; exercisesDone?: number; learningPrefs?: Course["learningPrefs"] },
-  userId = "nicolas"
+  userId?: string
 ): Promise<Course> {
-  return request<Course>(`/api/courses/${courseId}?userId=${userId}`, {
+  const uid = userId ?? await getCurrentUserId();
+  return request<Course>(`/api/courses/${courseId}?userId=${uid}`, {
     method: "PATCH",
     body: JSON.stringify(updates),
   });
@@ -99,9 +115,10 @@ export async function updateCourse(
 
 export async function deleteCourse(
   courseId: string,
-  userId = "nicolas"
+  userId?: string
 ): Promise<void> {
-  await fetch(`${API_URL}/api/courses/${courseId}?userId=${userId}`, {
+  const uid = userId ?? await getCurrentUserId();
+  await fetch(`${API_URL}/api/courses/${courseId}?userId=${uid}`, {
     method: "DELETE",
   });
 }
@@ -109,10 +126,11 @@ export async function deleteCourse(
 export async function attachPdf(
   courseId: string,
   pdfUrl: string,
-  userId = "nicolas"
+  userId?: string
 ): Promise<Course> {
+  const uid = userId ?? await getCurrentUserId();
   return request<Course>(
-    `/api/courses/${courseId}/pdf?userId=${userId}&pdfUrl=${encodeURIComponent(pdfUrl)}`,
+    `/api/courses/${courseId}/pdf?userId=${uid}&pdfUrl=${encodeURIComponent(pdfUrl)}`,
     { method: "PATCH" }
   );
 }
@@ -271,9 +289,10 @@ export async function createSession(payload: {
   mode:      "assessment" | "tutoring";
   language:  string;
 }): Promise<SessionCreateResponse> {
+  const uid = payload.userId ?? await getCurrentUserId();
   return request<SessionCreateResponse>("/api/sessions", {
     method: "POST",
-    body: JSON.stringify({ userId: payload.userId ?? "nicolas", ...payload }),
+    body: JSON.stringify({ ...payload, userId: uid }),
   });
 }
 
@@ -281,9 +300,10 @@ export async function getSessionQuestion(
   sessionId: string,
   position: number,
   courseId?: string,
-  userId = "nicolas"
+  userId?: string
 ): Promise<SessionQuestion> {
-  const params = new URLSearchParams({ userId });
+  const uid = userId ?? await getCurrentUserId();
+  const params = new URLSearchParams({ userId: uid });
   if (courseId) params.set("courseId", courseId);
   return request<SessionQuestion>(`/api/sessions/${sessionId}/question/${position}?${params}`);
 }
@@ -292,10 +312,11 @@ export async function patchSessionAnswer(
   sessionId: string,
   payload: { position: number; selectedIndex: number; durationSec: number },
   courseId: string,
-  userId = "nicolas"
+  userId?: string
 ): Promise<SessionAnswerResponse> {
+  const uid = userId ?? await getCurrentUserId();
   return request<SessionAnswerResponse>(
-    `/api/sessions/${sessionId}/answer?courseId=${courseId}&userId=${userId}`, {
+    `/api/sessions/${sessionId}/answer?courseId=${courseId}&userId=${uid}`, {
     method: "PATCH",
     body: JSON.stringify({
       position:      payload.position,
@@ -309,10 +330,11 @@ export async function patchSessionExplanation(
   sessionId: string,
   payload: { position: number; studentExplanation: string },
   courseId: string,
-  userId = "nicolas"
+  userId?: string
 ): Promise<SessionExplanationResponse> {
+  const uid = userId ?? await getCurrentUserId();
   return request<SessionExplanationResponse>(
-    `/api/sessions/${sessionId}/explanation?courseId=${courseId}&userId=${userId}`, {
+    `/api/sessions/${sessionId}/explanation?courseId=${courseId}&userId=${uid}`, {
     method: "PATCH",
     body: JSON.stringify({
       position:          payload.position,
@@ -325,9 +347,10 @@ export async function patchSessionChat(
   sessionId: string,
   payload: { role: "ai" | "student"; text: string; questionPosition: number },
   courseId: string,
-  userId = "nicolas"
+  userId?: string
 ): Promise<void> {
-  await request<void>(`/api/sessions/${sessionId}/chat?courseId=${courseId}&userId=${userId}`, {
+  const uid = userId ?? await getCurrentUserId();
+  await request<void>(`/api/sessions/${sessionId}/chat?courseId=${courseId}&userId=${uid}`, {
     method: "PATCH",
     body: JSON.stringify({
       role:             payload.role,
@@ -337,8 +360,9 @@ export async function patchSessionChat(
   });
 }
 
-export async function completeSession(sessionId: string, courseId: string, userId = "nicolas"): Promise<SessionSummary> {
-  return request<SessionSummary>(`/api/sessions/${sessionId}/complete?courseId=${courseId}&userId=${userId}`, {
+export async function completeSession(sessionId: string, courseId: string, userId?: string): Promise<SessionSummary> {
+  const uid = userId ?? await getCurrentUserId();
+  return request<SessionSummary>(`/api/sessions/${sessionId}/complete?courseId=${courseId}&userId=${uid}`, {
     method: "POST",
   });
 }
@@ -386,15 +410,17 @@ export interface StoredSession {
 
 export async function listSessions(
   courseId: string,
-  userId = "nicolas"
+  userId?: string
 ): Promise<StoredSession[]> {
-  const params = new URLSearchParams({ courseId, userId });
+  const uid = userId ?? await getCurrentUserId();
+  const params = new URLSearchParams({ courseId, userId: uid });
   const data = await request<StoredSession[] | { sessions: StoredSession[] }>(
     `/api/sessions?${params}`
   );
   return Array.isArray(data) ? data : (data as { sessions: StoredSession[] }).sessions ?? [];
 }
 
-export async function getSession(sessionId: string, courseId: string, userId = "nicolas"): Promise<StoredSession> {
-  return request<StoredSession>(`/api/sessions/${sessionId}?courseId=${courseId}&userId=${userId}`);
+export async function getSession(sessionId: string, courseId: string, userId?: string): Promise<StoredSession> {
+  const uid = userId ?? await getCurrentUserId();
+  return request<StoredSession>(`/api/sessions/${sessionId}?courseId=${courseId}&userId=${uid}`);
 }
