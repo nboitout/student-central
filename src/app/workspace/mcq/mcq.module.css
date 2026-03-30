@@ -1383,3 +1383,39 @@
   border-left: 2px solid var(--outline-variant);
 }
 .ctxExpLabel { font-weight: 600; font-style: normal; }
+
+/* ── Chat nav row (debrief Q navigation) ─────────────────── */
+.chatNavRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px 10px;
+  flex-shrink: 0;
+}
+.chatNavBtn {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  background: none;
+  border: 0.5px solid var(--outline-variant);
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all 0.12s;
+  opacity: 0.6;
+}
+.chatNavBtn:hover {
+  opacity: 1;
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(0, 72, 216, 0.04);
+}
+.chatNavBtnNext {
+  margin-left: auto;
+  opacity: 1;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.chatNavBtnNext:hover {
+  background: rgba(0, 72, 216, 0.08);
+}
