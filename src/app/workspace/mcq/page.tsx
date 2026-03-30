@@ -850,25 +850,34 @@ function MCQContent() {
 
             {chatTurns < MAX_TURNS && (
               <div className={styles.chatInputWrap}>
-                <div className={styles.chatTurnCount}>{chatTurns}/{MAX_TURNS} {ui.turns ?? "exchanges"}</div>
-                <div className={styles.chatInputBar}>
+                <div className={styles.chatInputBox}>
                   <textarea
                     className={styles.chatInput}
                     value={chatInput}
-                    onChange={e => setChatInput(e.target.value)}
+                    onChange={e => {
+                      setChatInput(e.target.value);
+                      /* auto-grow */
+                      e.target.style.height = "auto";
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                    }}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && chatInput.trim()) { e.preventDefault(); sendChat(); }}}
-                    placeholder={`Reply… (↵ ${ui.send ?? "send"})`}
+                    placeholder="Reply to the AI tutor…"
                     rows={1}
                   />
                   <button
                     className={styles.chatSendBtn}
                     onClick={sendChat}
                     disabled={!chatInput.trim() || aiTyping}
+                    aria-label="Send"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                     </svg>
                   </button>
+                </div>
+                <div className={styles.chatMeta}>
+                  <span>{chatTurns}/{MAX_TURNS} exchanges</span>
+                  <span>↵ to send · Shift+↵ new line</span>
                 </div>
               </div>
             )}
