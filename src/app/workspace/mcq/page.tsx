@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import { createSession, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type TutorMessage } from "@/lib/api";
+import { createSession, getSession, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type StoredSession, type TutorMessage } from "@/lib/api";
 
 /* ─── Constants ──────────────────────────────────────────── */
 const MAX_QUESTIONS = 5;
@@ -32,7 +32,8 @@ function MCQContent() {
   const courseId    = params.get("id")    ?? "";
   const courseTitle = decodeURIComponent(params.get("title") ?? "Course");
   const pdfUrl      = decodeURIComponent(params.get("pdf")   ?? "");
-  const tutorLang   = params.get("lang")  ?? "en";
+  const tutorLang      = params.get("lang")         ?? "en";
+  const resumeSessionId = params.get("resumeSession") ?? null;
 
   /* ── Mode toggle ── */
   const [mode, setMode] = useState<Mode>(() => {
@@ -220,8 +221,68 @@ function MCQContent() {
   };
 
   /* ── Start session — called once on mount ── */
+  /* ── Rebuild QuestionResult[] from a stored session ── */
+  const hydrateResults = (storedSession: StoredSession): QuestionResult[] => {
+    return (storedSession.questions ?? []).map(sq => {
+      const selIdx = sq.selectedIndex ?? sq.selected_index ?? 0;
+      const corrIdx = sq.correctIndex ?? sq.correct_index ?? 0;
+      const signal = (sq.evaluationSignal ?? sq.evaluation_signal)
+        ? {
+            signal:          (sq.evaluationSignal ?? sq.evaluation_signal ?? "Fragile") as ReasoningSignal["signal"],
+            confidence:      (sq.evaluationConfidence ?? "Medium") as ReasoningSignal["confidence"],
+            facultyInsight:  sq.facultyInsight ?? "",
+            studentFeedback: sq.studentFeedback ?? "",
+          }
+        : null;
+      /* Rebuild a minimal MCQQuestion from stored data */
+      const question: MCQQuestion & { mcqId?: string; pageNumber?: number; courseId?: string } = {
+        question:     sq.question,
+        options:      normaliseOptions(sq.options),
+        correctIndex: corrIdx,
+        explanation:  "",
+        courseId:     courseId,
+        mcqId:        sq.mcqId,
+        pageNumber:   sq.pageNumber ?? sq.page_number ?? undefined,
+      };
+      return {
+        question,
+        selected:    selIdx,
+        durationSec: sq.durationSec ?? sq.duration_sec ?? 0,
+        explanation: sq.studentExplanation ?? sq.student_explanation ?? "",
+        signal,
+      };
+    });
+  };
+
   const startSession = useCallback(async () => {
     setScreen("loading"); setLoadError(null);
+
+    /* ── Resume path: load existing completed session ── */
+    if (resumeSessionId) {
+      try {
+        const stored = await getSession(resumeSessionId);
+        setSession(resumeSessionId);
+        const hydrated = hydrateResults(stored);
+        setResults(hydrated);
+        /* Populate questions array so slide pane works */
+        setQuestions(hydrated.map(r => r.question));
+        /* Focus on weakest signal or Q1 */
+        const worstIdx = hydrated.findIndex(r =>
+          r.signal?.signal === "Low mastery" || r.signal?.signal === "Partial misconception"
+        );
+        setDebriefQIdx(worstIdx >= 0 ? worstIdx : 0);
+        /* Launch debrief directly */
+        setQIndex(hydrated.length - 1);
+        startDebriefWithResults(hydrated);
+      } catch (err) {
+        /* If resume fails, fall through to a fresh session */
+        setLoadError("Could not load previous session — starting fresh.");
+        setTimeout(() => setLoadError(null), 3000);
+      }
+      return;
+    }
+
+    /* ── Normal path: create new session ── */
     try {
       const { sessionId: sid, question: firstQuestion } = await createSession({
         courseId, mode, language: tutorLang,
@@ -233,7 +294,7 @@ function MCQContent() {
       setLoadError(err instanceof Error ? err.message : "Failed to start session");
       setScreen("question");
     }
-  }, [courseId, mode, tutorLang]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [courseId, mode, tutorLang, resumeSessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (sessionStarted.current) return;
