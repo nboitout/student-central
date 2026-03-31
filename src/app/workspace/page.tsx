@@ -585,7 +585,7 @@ export default function WorkspacePage() {
                   headers: { "Content-Type": "application/x-www-form-urlencoded" },
                   body: new URLSearchParams({ csrfToken: await fetch("/api/auth/csrf").then(r=>r.json()).then(d=>d.csrfToken??'') }),
                 });
-                window.location.href = "/login";
+                window.location.href = "/";
               }}
             >Sign out</button>
             <a href="/" className={styles.backLink}>{ui.backToSite}</a>
