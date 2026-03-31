@@ -42,14 +42,18 @@ function CourseReaderContent() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
 
-  /* Fetch course + SAS URL from API — resolve session first */
+  /* Fetch course + SAS URL — resolve session first, then use real uid throughout */
   useEffect(() => {
     if (!courseId) { setError(ui.courseNotFound); setLoading(false); return; }
 
+    let uid = "";
     fetch("/api/auth/session")
       .then(r => r.json())
-      .then(s => { const id = s?.user?.email ?? s?.user?.id; if (id) setUserId(id); return id ?? userId; })
-      .then(uid => fetch(`${API_URL}/api/courses/${courseId}?userId=${uid}`))
+      .then(s => {
+        uid = s?.user?.email ?? s?.user?.id ?? "";
+        if (uid) setUserId(uid);
+        return fetch(`${API_URL}/api/courses/${courseId}?userId=${uid}`);
+      })
       .then(res => {
         if (!res.ok) throw new Error(`${ui.courseNotFound} (${res.status})`);
         return res.json();
@@ -60,13 +64,14 @@ function CourseReaderContent() {
         if (data.pdfUrl) {
           setPdfLoading(true);
           setPdfStatus("loading");
-          fetch(`${API_URL}/api/courses/${courseId}/pdf-url?userId=${userId}`)
+          fetch(`${API_URL}/api/courses/${courseId}/pdf-url?userId=${uid}`)
             .then(r => r.json())
-            .then(({ sasUrl }) => { setSasUrl(sasUrl); })
-            .catch(() => { setSasUrl(null); setPdfStatus("error"); })
+            .then(({ sasUrl }) => {
+              if (sasUrl) setSasUrl(sasUrl);
+              else setPdfStatus("error");
+            })
+            .catch(() => setPdfStatus("error"))
             .finally(() => setPdfLoading(false));
-        } else {
-          setLoading(false);
         }
       })
       .catch(err => { setError(err.message); setLoading(false); });
