@@ -94,9 +94,10 @@ export async function createCourse(payload: {
   tutorLanguage?: string;
   learningPrefs?: Course["learningPrefs"];
 }): Promise<Course> {
+  const uid = payload.userId ?? await getCurrentUserId();
   return request<Course>("/api/courses", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, userId: uid }),
   });
 }
 
