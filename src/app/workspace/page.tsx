@@ -471,16 +471,6 @@ export default function WorkspacePage() {
   /* userId is resolved from the session cookie via the server layout.
      Falls back to "nicolas" in local dev without auth.            */
   const [userId, setUserId] = useState("nicolas");
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then(r => r.json())
-      .then(s => {
-        const id = s?.user?.email ?? s?.user?.id;
-        if (id) { setUserId(id); setCurrentUser(id); }
-      })
-      .catch(() => {});
-  }, []);
-
   const [courses, setCourses]         = useState<Course[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modal, setModal]             = useState<Modal>(null);
@@ -494,9 +484,15 @@ export default function WorkspacePage() {
   const [sortOpen, setSortOpen]       = useState(false);
   const [viewMode, setViewMode]       = useState<"grid" | "list">("grid");
 
-  /* Load from API on mount */
+  /* Load from API on mount — wait for session first so real userId is set */
   useEffect(() => {
-    listCourses()
+    fetch("/api/auth/session")
+      .then(r => r.json())
+      .then(s => {
+        const id = s?.user?.email ?? s?.user?.id;
+        if (id) { setUserId(id); setCurrentUser(id); }
+        return listCourses(id ?? "nicolas");
+      })
       .then(setCourses)
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -579,7 +575,19 @@ export default function WorkspacePage() {
             <span className={styles.brandTag}>AI Tutor</span>
           </div>
           <div className={styles.topBarActions}>
-            <span className={styles.userGreet}>{ui.hello}</span>
+            <span className={styles.userGreet}>
+              {userId && userId !== "nicolas" ? userId : ui.hello}
+            </span>
+            <button
+              className={styles.signOutBtn}
+              onClick={async () => {
+                await fetch("/api/auth/signout", { method: "POST",
+                  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                  body: new URLSearchParams({ csrfToken: await fetch("/api/auth/csrf").then(r=>r.json()).then(d=>d.csrfToken??'') }),
+                });
+                window.location.href = "/login";
+              }}
+            >Sign out</button>
             <a href="/" className={styles.backLink}>{ui.backToSite}</a>
           </div>
         </div>
