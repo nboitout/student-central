@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import { createSession, getSession, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type StoredSession, type TutorMessage } from "@/lib/api";
+import { createSession, getSession, setCurrentUser, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type StoredSession, type TutorMessage } from "@/lib/api";
 
 /* ─── Constants ──────────────────────────────────────────── */
 const MAX_QUESTIONS = 5;
@@ -300,18 +300,25 @@ function MCQContent() {
   useEffect(() => {
     if (sessionStarted.current) return;
     sessionStarted.current = true;
-    startSession();
-    /* Fetch PDF SAS URL as fallback when no slide image exists */
-    if (courseId) {
-      fetch("/api/auth/session")
-        .then(r => r.json())
-        .then(s => s?.user?.email ?? s?.user?.id ?? "anonymous")
-        .catch(() => "anonymous")
-        .then(uid => fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io"}/api/courses/${courseId}/pdf-url?userId=${uid}`))
-        .then(r => r.json())
-        .then(({ sasUrl }) => { if (sasUrl) setPdfSasUrl(sasUrl); })
-        .catch(() => {});
-    }
+    /* Resolve real userId before starting session */
+    fetch("/api/auth/session")
+      .then(r => r.json())
+      .then(s => {
+        const uid = s?.user?.email ?? s?.user?.id ?? "";
+        if (uid) setCurrentUser(uid);
+        return uid;
+      })
+      .catch(() => "")
+      .then(uid => {
+        startSession();
+        /* Fetch PDF SAS URL */
+        if (courseId) {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io"}/api/courses/${courseId}/pdf-url?userId=${uid || "anonymous"}`)
+            .then(r => r.json())
+            .then(({ sasUrl }) => { if (sasUrl) setPdfSasUrl(sasUrl); })
+            .catch(() => {});
+        }
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Submit answer ── */
