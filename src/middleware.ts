@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  /* NextAuth v5 / Auth.js uses "authjs.session-token" (with __Secure- prefix on HTTPS) */
   const sessionToken =
     req.cookies.get("__Secure-authjs.session-token")?.value ||
     req.cookies.get("authjs.session-token")?.value ||
