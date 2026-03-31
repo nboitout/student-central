@@ -470,7 +470,7 @@ export default function WorkspacePage() {
   const ui        = getT(lang).workspace;
   /* userId is resolved from the session cookie via the server layout.
      Falls back to "nicolas" in local dev without auth.            */
-  const [userId, setUserId] = useState("nicolas");
+  const [userId, setUserId] = useState("");
   const [courses, setCourses]         = useState<Course[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modal, setModal]             = useState<Modal>(null);
@@ -484,17 +484,31 @@ export default function WorkspacePage() {
   const [sortOpen, setSortOpen]       = useState(false);
   const [viewMode, setViewMode]       = useState<"grid" | "list">("grid");
 
-  /* Load from API on mount — wait for session first so real userId is set */
+  /* Load from API on mount — redirect to /login if no valid session */
   useEffect(() => {
     fetch("/api/auth/session")
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error("auth_error");
+        return r.json();
+      })
       .then(s => {
         const id = s?.user?.email ?? s?.user?.id;
-        if (id) { setUserId(id); setCurrentUser(id); }
-        return listCourses(id ?? "nicolas");
+        if (!id) {
+          window.location.href = "/login";
+          return Promise.reject("no_session");
+        }
+        setUserId(id);
+        setCurrentUser(id);
+        return listCourses(id);
       })
       .then(setCourses)
-      .catch(console.error)
+      .catch(err => {
+        if (err === "auth_error" || err === "no_session") {
+          window.location.href = "/login";
+        } else {
+          console.error(err);
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
