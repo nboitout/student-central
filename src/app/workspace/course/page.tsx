@@ -29,6 +29,7 @@ function CourseReaderContent() {
   const ws       = getT(lang).workspace;
 
   const courseId = params.get("id") ?? "";
+  const [userId, setUserId] = useState("");
 
   const [course,     setCourse]     = useState<Course | null>(null);
   const [sasUrl,     setSasUrl]     = useState<string | null>(null);
@@ -41,11 +42,14 @@ function CourseReaderContent() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
 
-  /* Fetch course + SAS URL from API */
+  /* Fetch course + SAS URL from API — resolve session first */
   useEffect(() => {
     if (!courseId) { setError(ui.courseNotFound); setLoading(false); return; }
 
-    fetch(`${API_URL}/api/courses/${courseId}?userId=nicolas`)
+    fetch("/api/auth/session")
+      .then(r => r.json())
+      .then(s => { const id = s?.user?.email ?? s?.user?.id; if (id) setUserId(id); return id ?? userId; })
+      .then(uid => fetch(`${API_URL}/api/courses/${courseId}?userId=${uid}`))
       .then(res => {
         if (!res.ok) throw new Error(`${ui.courseNotFound} (${res.status})`);
         return res.json();
@@ -56,7 +60,7 @@ function CourseReaderContent() {
         if (data.pdfUrl) {
           setPdfLoading(true);
           setPdfStatus("loading");
-          fetch(`${API_URL}/api/courses/${courseId}/pdf-url?userId=nicolas`)
+          fetch(`${API_URL}/api/courses/${courseId}/pdf-url?userId=${userId}`)
             .then(r => r.json())
             .then(({ sasUrl }) => { setSasUrl(sasUrl); })
             .catch(() => { setSasUrl(null); setPdfStatus("error"); })
