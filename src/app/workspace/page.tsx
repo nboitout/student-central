@@ -581,11 +581,18 @@ export default function WorkspacePage() {
             <button
               className={styles.signOutBtn}
               onClick={async () => {
-                await fetch("/api/auth/signout", { method: "POST",
-                  headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                  body: new URLSearchParams({ csrfToken: await fetch("/api/auth/csrf").then(r=>r.json()).then(d=>d.csrfToken??'') }),
-                });
-                window.location.href = "/";
+                const csrf = await fetch("/api/auth/csrf").then(r => r.json()).then(d => d.csrfToken ?? "");
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = "/api/auth/signout";
+                const t = document.createElement("input");
+                t.type = "hidden"; t.name = "csrfToken"; t.value = csrf;
+                form.appendChild(t);
+                const cb = document.createElement("input");
+                cb.type = "hidden"; cb.name = "callbackUrl"; cb.value = "/";
+                form.appendChild(cb);
+                document.body.appendChild(form);
+                form.submit();
               }}
             >Sign out</button>
             <a href="/" className={styles.backLink}>{ui.backToSite}</a>
