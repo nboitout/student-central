@@ -297,7 +297,8 @@ function CourseDetailsModal({
     InProgress: ui.statusInProgress,
     Completed:  ui.statusCompleted,
   };
-  const progress = Math.round((course.exercisesDone / (course.exercisesTotal || 1)) * 100);
+  const total    = course.mcqCount ?? course.exercisesTotal ?? 0;
+  const progress = Math.round((course.exercisesDone / (total || 1)) * 100);
 
   const fmtDate = (iso?: string | null) => {
     if (!iso) return "";
@@ -322,7 +323,7 @@ function CourseDetailsModal({
           <div className={styles.detailsMeta}>
             <div className={styles.detailsRow}><span className={styles.detailsKey}>{ui.keyAuthor}</span><span className={styles.detailsVal}>{course.author}</span></div>
             <div className={styles.detailsRow}><span className={styles.detailsKey}>{ui.keyStatus}</span><span className={styles.detailsVal}>{statusLabel[statusKey]}</span></div>
-            <div className={styles.detailsRow}><span className={styles.detailsKey}>{ui.keyProgress}</span><span className={styles.detailsVal}>{course.exercisesDone} / {course.exercisesTotal} — {progress}%</span></div>
+            <div className={styles.detailsRow}><span className={styles.detailsKey}>{ui.keyProgress}</span><span className={styles.detailsVal}>{course.exercisesDone} / {total} — {progress}%</span></div>
           </div>
           <div className={styles.detailsProgressTrack}>
             <div className={styles.detailsProgressFill} style={{ width: `${progress}%` }} />
@@ -361,14 +362,14 @@ function CourseDetailsModal({
               <div className={styles.actionCardDesc}>{ui.accessCourseDesc}</div>
             </button>
             <button
-              className={`${styles.actionCard} ${(course.exercisesTotal ?? 0) === 0 ? styles.actionCardDisabled : ""}`}
-              disabled={(course.exercisesTotal ?? 0) === 0}
+              className={`${styles.actionCard} ${(course.mcqCount ?? course.exercisesTotal ?? 0) === 0 ? styles.actionCardDisabled : ""}`}
+              disabled={(course.mcqCount ?? course.exercisesTotal ?? 0) === 0}
               onClick={() => { onClose(); router.push(`/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}`); }}
             >
               <div className={styles.actionCardIcon}>◎</div>
               <div className={styles.actionCardTitle}>{ui.startMCQ}</div>
               <div className={styles.actionCardDesc}>
-                {(course.exercisesTotal ?? 0) === 0
+                {(course.mcqCount ?? course.exercisesTotal ?? 0) === 0
                   ? "Questions are being generated…"
                   : `Start a new session of 5 questions`}
               </div>
@@ -404,7 +405,7 @@ function CourseCard({
   const [editing,    setEditing]    = useState(false);
   const [editTitle,  setEditTitle]  = useState(course.title);
   const [editAuthor, setEditAuthor] = useState(course.author);
-  const total    = course.exercisesTotal || 0;
+  const total    = course.mcqCount ?? course.exercisesTotal ?? 0;  /* mcqCount = real generated count */
   const done     = course.exercisesDone  || 0;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
   const initials   = course.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();

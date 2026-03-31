@@ -35,6 +35,7 @@ export interface Course {
   status: "Not Started" | "In Progress" | "Completed";
   exercisesTotal: number;
   exercisesDone: number;
+  mcqCount?: number;           /* actual number of generated MCQs — updated after generation */
   createdAt: string;
   updatedAt: string;
 }
