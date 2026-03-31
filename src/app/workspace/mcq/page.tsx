@@ -427,7 +427,7 @@ function MCQContent() {
       if (sid) {
         completeSession(sid, courseId).catch(() => {});
         /* Update exercisesDone on the course */
-        updateCourse(courseId, { exercisesDone: MAX_QUESTIONS }, userId).catch(() => {});
+        updateCourse(courseId, { exercisesDone: MAX_QUESTIONS }).catch(() => {});
       }
       setScreen("summary");
       return;
@@ -525,7 +525,7 @@ function MCQContent() {
     /* Complete the session in the background before debrief */
     if (sessionIdRef.current) {
       completeSession(sessionIdRef.current, courseId).catch(() => {});
-      updateCourse(courseId, { exercisesDone: MAX_QUESTIONS }, userId).catch(() => {});
+      updateCourse(courseId, { exercisesDone: MAX_QUESTIONS }).catch(() => {});
     }
     runDebrief(allResults);
   };

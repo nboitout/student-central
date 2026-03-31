@@ -555,6 +555,17 @@ export default function WorkspacePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  /* Refresh courses when user returns to the tab (e.g. after finishing MCQ) */
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && userId) {
+        listCourses(userId).then(setCourses).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [userId]);
+
   /* Poll every 8 s while any course is generating */
   const hasProcessing = processingIds.size > 0;
   useEffect(() => {
