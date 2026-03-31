@@ -103,7 +103,7 @@ export async function createCourse(payload: {
 
 export async function updateCourse(
   courseId: string,
-  updates: { status?: string; exercisesDone?: number; learningPrefs?: Course["learningPrefs"] },
+  updates: { status?: string; exercisesDone?: number; learningPrefs?: Course["learningPrefs"]; title?: string; author?: string },
   userId?: string
 ): Promise<Course> {
   const uid = userId ?? await getCurrentUserId();
