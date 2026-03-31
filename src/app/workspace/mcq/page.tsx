@@ -327,7 +327,12 @@ function MCQContent() {
       })
       .catch(() => "")
       .then(uid => {
-        startSessionWithUser(uid);
+        /* If resuming a session, use the original startSession which handles the resume path */
+        if (resumeSessionId) {
+          startSession();
+        } else {
+          startSessionWithUser(uid);
+        }
         /* Fetch PDF SAS URL */
         if (courseId) {
           fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io"}/api/courses/${courseId}/pdf-url?userId=${uid || "anonymous"}`)
