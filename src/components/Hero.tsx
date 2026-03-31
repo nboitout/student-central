@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./Hero.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
@@ -8,6 +7,14 @@ import { tx as getT } from "@/i18n/translations";
 export default function Hero() {
   const { lang } = useLanguage();
   const tx = getT(lang).hero;
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then(r => r.ok ? r.json() : null)
+      .then(s => { if (s?.user?.email || s?.user?.id) setIsLoggedIn(true); })
+      .catch(() => {});
+  }, []);
   const [active, setActive] = useState(0);
 
   return (
@@ -22,7 +29,9 @@ export default function Hero() {
           </h1>
           <p className={styles.sub}>{tx.sub}</p>
           <div className={styles.actions}>
-            <a className="btn-p" href="/workspace">{tx.tryIt}</a>
+            <a className="btn-p" href={isLoggedIn ? "/workspace" : "/login"}>
+              {isLoggedIn ? (tx.myWorkspace ?? "My Workspace") : (tx.tryIt ?? "Try it")}
+            </a>
           </div>
           <div className={styles.trustStrip}>
             {tx.trust.map((t) => (
