@@ -260,7 +260,7 @@ function MCQContent() {
     setScreen("loading"); setLoadError(null);
     try {
       const { sessionId: sid, question: firstQuestion } = await createSession({
-        courseId, mode, language: tutorLang, userId: uid || undefined,
+        courseId, mode, language: tutorLang, userId: uid || "unknown",
       });
       setSession(sid);
       applyQuestion(firstQuestion, 0);
@@ -626,14 +626,19 @@ function MCQContent() {
       <div className={styles.page}>
         {headerEl}
         <div className={styles.loadingPane}>
-          <div className={styles.spinner} />
-          <div className={styles.loadingText}>
-            {screen === "waiting" ? (ui.preparingQuestions ?? "Preparing…") : (ui.generating ?? "Generating…")}
-          </div>
-          <div className={styles.loadingHint}>
-            {screen === "waiting" ? (ui.preparingHint ?? "Analysing document…") : (ui.generatingHint ?? "Reading with AI")}
-          </div>
-          {screen === "waiting" && <div className={styles.retryHint}>{ui.retryHint ?? "Checking again…"}</div>}
+          {loadError
+            ? <div className={styles.errorBanner} style={{ maxWidth: 480, wordBreak: "break-word" }}>{loadError}</div>
+            : <>
+                <div className={styles.spinner} />
+                <div className={styles.loadingText}>
+                  {screen === "waiting" ? (ui.preparingQuestions ?? "Preparing…") : (ui.generating ?? "Generating…")}
+                </div>
+                <div className={styles.loadingHint}>
+                  {screen === "waiting" ? (ui.preparingHint ?? "Analysing document…") : (ui.generatingHint ?? "Reading with AI")}
+                </div>
+                {screen === "waiting" && <div className={styles.retryHint}>{ui.retryHint ?? "Checking again…"}</div>}
+              </>
+          }
         </div>
       </div>
     );
