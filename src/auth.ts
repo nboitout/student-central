@@ -11,7 +11,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     Resend({
       apiKey: process.env.AUTH_RESEND_KEY!,
-      from:   "Student Central <noreply@studentcentral.ai>",
+      from:   "Student Central <nicolas.boitout@studentcentral.ai>",
       name:   "Email",
     }),
   ],
