@@ -140,6 +140,7 @@ function MCQContent() {
   /* ── Toast state for copy feedback ── */
   const [copiedChip, setCopiedChip] = useState<string | null>(null);
   const [ctxExpanded, setCtxExpanded] = useState(false);
+  const [ctxRevealed, setCtxRevealed] = useState(false);
   const copyChip = (word: string) => {
     navigator.clipboard.writeText(word).catch(() => {});
     setCopiedChip(word);
@@ -937,18 +938,26 @@ function MCQContent() {
                       return (
                         <div key={i} className={[
                           styles.ctxOpt,
-                          isCorr           ? styles.ctxOptCorrect : "",
-                          isSel && !isCorr ? styles.ctxOptWrong   : "",
-                          !isCorr && !isSel ? styles.optDimmed    : "",
+                          ctxRevealed && isCorr           ? styles.ctxOptCorrect : "",
+                          isSel && !isCorr                ? styles.ctxOptWrong   : "",
+                          (!isSel && !(ctxRevealed && isCorr)) ? styles.optDimmed : "",
                         ].join(" ")}>
                           <span className={styles.ctxOptLtr}>{LETTERS[i]}</span>
                           <span className={styles.ctxOptTxt}>{opt.text}</span>
-                          {isCorr && <span className={styles.ctxOptMark}>✓</span>}
+                          {ctxRevealed && isCorr && <span className={styles.ctxOptMark}>✓</span>}
                           {isSel && !isCorr && <span className={styles.ctxOptMark}>✗</span>}
                         </div>
                       );
                     })}
-                    {focusR.explanation && (
+                    {!ctxRevealed && (
+                      <button
+                        className={styles.ctxRevealBtn}
+                        onClick={e => { e.stopPropagation(); setCtxRevealed(true); }}
+                      >
+                        Reveal answer
+                      </button>
+                    )}
+                    {focusR.explanation && ctxRevealed && (
                       <div className={styles.ctxExp}>
                         <span className={styles.ctxExpLabel}>Your reasoning: </span>
                         {focusR.explanation}
