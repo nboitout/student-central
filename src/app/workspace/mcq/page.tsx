@@ -66,6 +66,9 @@ function MCQContent() {
   const [chatMsgs,     setChatMsgs]     = useState<TutorMessage[]>([]);
   const [chatInput,    setChatInput]    = useState("");
   const [chatTurns,    setChatTurns]    = useState(0);
+  const [voiceState,   setVoiceState]   = useState<"idle"|"recording"|"transcribing"|"ready">("idle");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef   = useRef<Blob[]>([]);
   const [aiTyping,     setAiTyping]     = useState(false);
 
 
@@ -263,6 +266,44 @@ function MCQContent() {
         signal,
       };
     });
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        setVoiceState("transcribing");
+        /* ── Placeholder: Web Speech API transcription ──────────
+           Replace this block with Azure STT call when ready.
+           Azure STT: POST audioBlob to /api/stt → returns { text }  */
+        setTimeout(() => {
+          /* Simulate transcription delay — swap for real API call */
+          setVoiceState("ready");
+        }, 800);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setVoiceState("recording");
+    } catch {
+      setVoiceState("idle");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+  };
+
+  const cancelVoice = () => {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    audioChunksRef.current = [];
+    setChatInput("");
+    setVoiceState("idle");
   };
 
   const startSessionWithUser = async (uid: string) => {
@@ -1004,34 +1045,85 @@ function MCQContent() {
 
             {chatTurns < MAX_TURNS && (
               <div className={styles.chatInputWrap}>
-                <div className={styles.chatInputBox}>
-                  <textarea
-                    className={styles.chatInput}
-                    value={chatInput}
-                    onChange={e => {
-                      setChatInput(e.target.value);
-                      /* auto-grow */
-                      e.target.style.height = "auto";
-                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-                    }}
-                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && chatInput.trim()) { e.preventDefault(); sendChat(); }}}
-                    placeholder="Reply to the AI tutor…"
-                    rows={1}
-                  />
-                  <button
-                    className={styles.chatSendBtn}
-                    onClick={sendChat}
-                    disabled={!chatInput.trim() || aiTyping}
-                    aria-label="Send"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                    </svg>
-                  </button>
-                </div>
+
+                {/* ── Recording state ── */}
+                {voiceState === "recording" && (
+                  <div className={styles.voiceRecording}>
+                    <div className={styles.voiceWaveform}>
+                      {[...Array(8)].map((_, i) => (
+                        <div key={i} className={styles.voiceBar} style={{ animationDelay: `${i * 0.07}s` }} />
+                      ))}
+                    </div>
+                    <span className={styles.voiceLabel}>Listening…</span>
+                    <button className={styles.voiceStopBtn} onClick={stopRecording} aria-label="Stop recording">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Transcribing state ── */}
+                {voiceState === "transcribing" && (
+                  <div className={styles.voiceTranscribing}>
+                    <div className={styles.voiceSpinner} />
+                    <span className={styles.voiceTranscribingText}>Transcribing…</span>
+                  </div>
+                )}
+
+                {/* ── Idle / ready: normal input box ── */}
+                {(voiceState === "idle" || voiceState === "ready") && (
+                  <div className={styles.chatInputBox}>
+                    <textarea
+                      className={styles.chatInput}
+                      value={chatInput}
+                      onChange={e => {
+                        setChatInput(e.target.value);
+                        e.target.style.height = "auto";
+                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && !e.shiftKey && chatInput.trim()) {
+                          e.preventDefault();
+                          setVoiceState("idle");
+                          sendChat();
+                        }
+                      }}
+                      placeholder={voiceState === "ready" ? "Edit transcript before sending…" : "Reply to the AI tutor…"}
+                      rows={1}
+                    />
+                    <div className={styles.chatBtnGroup}>
+                      {voiceState === "ready" ? (
+                        <button className={styles.voiceClearBtn} onClick={cancelVoice} aria-label="Clear transcript" title="Clear and re-record">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                      ) : (
+                        <button className={styles.voiceMicBtn} onClick={startRecording} aria-label="Speak your answer" title="Speak your answer">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+                            <path d="M19 10a7 7 0 0 1-14 0"/>
+                            <line x1="12" y1="19" x2="12" y2="22"/>
+                          </svg>
+                        </button>
+                      )}
+                      <button
+                        className={styles.chatSendBtn}
+                        onClick={() => { setVoiceState("idle"); sendChat(); }}
+                        disabled={!chatInput.trim() || aiTyping}
+                        aria-label="Send"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className={styles.chatMeta}>
                   <span>{chatTurns}/{MAX_TURNS} exchanges</span>
-                  <span>↵ to send · Shift+↵ new line</span>
+                  {voiceState === "ready"
+                    ? <span style={{ color: "#185FA5" }}>Edit transcript · ↵ to send</span>
+                    : <span>↵ to send · Shift+↵ new line</span>
+                  }
                 </div>
               </div>
             )}
