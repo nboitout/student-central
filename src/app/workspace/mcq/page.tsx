@@ -67,6 +67,8 @@ function MCQContent() {
   const [chatInput,    setChatInput]    = useState("");
   const [chatTurns,    setChatTurns]    = useState(0);
   const [aiTyping,     setAiTyping]     = useState(false);
+
+
   const [chatError,    setChatError]    = useState<string | null>(null);
   /* Which question the debrief is currently focused on */
   const [debriefQIdx,  setDebriefQIdx]  = useState(0);
@@ -157,7 +159,13 @@ function MCQContent() {
   const [slideWidth, setSlideWidth] = useState(55);
   const bodyRef    = useRef<HTMLDivElement>(null);
   const dragging   = useRef(false);
-  const dividerRef = useRef<HTMLDivElement>(null);
+  const dividerRef    = useRef<HTMLDivElement>(null);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  /* Auto-scroll chat to bottom whenever messages change */
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMsgs, aiTyping]);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault(); dragging.current = true;
@@ -991,6 +999,7 @@ function MCQContent() {
               {chatTurns >= MAX_TURNS && (
                 <div className={styles.chatEndWarning}>{ui.chatEnded ?? "End of discussion."}</div>
               )}
+              <div ref={chatBottomRef} />
             </div>
 
             {chatTurns < MAX_TURNS && (
