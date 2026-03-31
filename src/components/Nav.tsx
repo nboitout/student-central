@@ -91,7 +91,7 @@ export default function Nav() {
             {isLoggedIn ? (tx.myWorkspace ?? "My workspace") : (tx.logIn ?? "Log in")}
           </a>
           <a className={styles.navGetStarted} href={isLoggedIn ? "/workspace" : "/login"}>
-            {isLoggedIn ? (tx.myWorkspace ?? "My workspace") : (tx.getStarted ?? "Get started")}
+            {tx.getStarted ?? "Get started"}
           </a>
         </div>
       </div>
