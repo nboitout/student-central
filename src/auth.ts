@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
+const THIRTY_DAYS = 30 * 24 * 60 * 60;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
@@ -10,7 +12,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 
-  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, /* 30 days */
+  session: { strategy: "jwt", maxAge: THIRTY_DAYS },
+
+  cookies: {
+    sessionToken: {
+      name: "__Secure-authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+        maxAge: THIRTY_DAYS,   /* makes cookie persistent across browser restarts */
+      },
+    },
+  },
 
   pages: {
     signIn: "/login",
