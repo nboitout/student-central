@@ -496,7 +496,7 @@
 .chatRecapAnswer { font-family: var(--font-body); font-size: 0.8125rem; color: var(--on-surface-variant); line-height: 1.4; }
 .chatRecapCorrect { font-family: var(--font-body); font-size: 0.8125rem; color: #2d6a4f; line-height: 1.4; }
 
-.chatThread { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.chatThread { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; min-height: 0; padding: 12px 0; }
 
 /* AI bubble — warm off-white, clearly distinct from option rows */
 .chatAI {
