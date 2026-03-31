@@ -489,17 +489,15 @@ export default function WorkspacePage() {
   const [sortOpen, setSortOpen]       = useState(false);
   const [viewMode, setViewMode]       = useState<"grid" | "list">("grid");
 
-  /* Load from API on mount — redirect to /login if no valid session */
+  /* Load from API on mount */
   useEffect(() => {
     fetch("/api/auth/session")
-      .then(r => {
-        if (!r.ok) throw new Error("auth_error");
-        return r.json();
-      })
+      .then(r => r.ok ? r.json() : null)
       .then(s => {
         const id = s?.user?.email ?? s?.user?.id;
         if (!id) {
-          window.location.href = "/login";
+          /* Only redirect if we got a clear "no session" response, not on errors */
+          if (s !== null) window.location.href = "/login";
           return Promise.reject("no_session");
         }
         setUserId(id);
@@ -508,17 +506,10 @@ export default function WorkspacePage() {
       })
       .then(fresh => {
         setCourses(fresh);
-        /* Resume polling for any courses still generating */
         const generating = fresh.filter(co => co.mcqStatus === "generating").map(co => co.id);
         if (generating.length > 0) setProcessingIds(new Set(generating));
       })
-      .catch(err => {
-        if (err === "auth_error" || err === "no_session") {
-          window.location.href = "/login";
-        } else {
-          console.error(err);
-        }
-      })
+      .catch(err => { if (err !== "no_session") console.error(err); })
       .finally(() => setLoading(false));
   }, []);
 
