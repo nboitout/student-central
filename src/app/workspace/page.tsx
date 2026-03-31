@@ -186,7 +186,7 @@ function CreateModal({
         const { url } = await uploadPdf(file);
         const updated = await attachPdf(course.id, url, userId);
         /* Fire-and-forget: kick off MCQ generation in the background */
-        triggerMCQGeneration({ courseId: course.id, pdfUrl: url }).catch(() => {});
+        triggerMCQGeneration({ courseId: course.id, pdfUrl: url, userId }).catch(err => console.error("MCQ generation failed:", err));
         onCreate(updated, /* showPrefs */ true);
       } else if (driveUrl.trim()) {
         /* Drive URL also triggers questionnaire — MCQ will be generated later */
@@ -361,12 +361,17 @@ function CourseDetailsModal({
               <div className={styles.actionCardDesc}>{ui.accessCourseDesc}</div>
             </button>
             <button
-              className={styles.actionCard}
+              className={`${styles.actionCard} ${(course.exercisesTotal ?? 0) === 0 ? styles.actionCardDisabled : ""}`}
+              disabled={(course.exercisesTotal ?? 0) === 0}
               onClick={() => { onClose(); router.push(`/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}`); }}
             >
               <div className={styles.actionCardIcon}>◎</div>
               <div className={styles.actionCardTitle}>{ui.startMCQ}</div>
-              <div className={styles.actionCardDesc}>Start a new session of 5 questions</div>
+              <div className={styles.actionCardDesc}>
+                {(course.exercisesTotal ?? 0) === 0
+                  ? "Questions are being generated…"
+                  : `Start a new session of 5 questions`}
+              </div>
             </button>
           </div>
         </div>
@@ -501,7 +506,12 @@ export default function WorkspacePage() {
         setCurrentUser(id);
         return listCourses(id);
       })
-      .then(setCourses)
+      .then(fresh => {
+        setCourses(fresh);
+        /* Resume polling for any courses still generating */
+        const generating = fresh.filter(co => co.mcqStatus === "generating").map(co => co.id);
+        if (generating.length > 0) setProcessingIds(new Set(generating));
+      })
       .catch(err => {
         if (err === "auth_error" || err === "no_session") {
           window.location.href = "/login";
@@ -529,7 +539,7 @@ export default function WorkspacePage() {
             if (prev.size === 0) return prev;
             const next = new Set(prev);
             fresh.forEach(course => {
-              if ((course.exercisesTotal ?? 0) > 0) next.delete(course.id);
+              if (course.mcqStatus === "ready") next.delete(course.id);
             });
             return next;
           });
