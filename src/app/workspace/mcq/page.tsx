@@ -293,7 +293,7 @@ function MCQContent() {
       setScreen("question");
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to start session");
-      setScreen("question");
+      setScreen("loading"); /* stay on loading screen so error is visible */
     }
   }, [courseId, mode, tutorLang, resumeSessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -646,6 +646,19 @@ function MCQContent() {
   );
 
   /* ─── QUESTION screen ─────────────────────────────────── */
+  if (screen === "question" && !mcq) {
+    /* mcq null but screen=question means session created but question missing */
+    return (
+      <div className={styles.page}>
+        {headerEl}
+        <div className={styles.loadingPane}>
+          <div className={styles.spinner} />
+          <div className={styles.loadingText}>{loadError ?? (ui.generating ?? "Loading question…")}</div>
+        </div>
+      </div>
+    );
+  }
+
   if (screen === "question" && mcq) {
     return (
       <div className={styles.page}>
