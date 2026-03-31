@@ -182,9 +182,11 @@ export async function evaluateReasoning(payload: {
 export async function triggerMCQGeneration(payload: {
   courseId: string;
   pdfUrl: string;
+  userId?: string;
 }): Promise<{ status: string; message: string }> {
+  const uid = payload.userId ?? await getCurrentUserId();
   return request<{ status: string; message: string }>(
-    `/api/upload/trigger-mcq-generation?course_id=${payload.courseId}&pdf_url=${encodeURIComponent(payload.pdfUrl)}`,
+    `/api/upload/trigger-mcq-generation?course_id=${payload.courseId}&pdf_url=${encodeURIComponent(payload.pdfUrl)}&user_id=${encodeURIComponent(uid)}`,
     { method: "POST" }
   );
 }
