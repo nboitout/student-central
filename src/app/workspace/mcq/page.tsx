@@ -51,6 +51,7 @@ function MCQContent() {
 
   /* ── Question set state ── */
   const [screen,    setScreen]    = useState<Screen>("loading");
+  const [userId,    setUserId]    = useState<string>("");
   const [questions, setQuestions] = useState<MCQQuestion[]>([]);
   const [qIndex,    setQIndex]    = useState(0);
   const [answers,   setAnswers]   = useState<(number | null)[]>([]);
@@ -255,6 +256,21 @@ function MCQContent() {
     });
   };
 
+  const startSessionWithUser = async (uid: string) => {
+    setScreen("loading"); setLoadError(null);
+    try {
+      const { sessionId: sid, question: firstQuestion } = await createSession({
+        courseId, mode, language: tutorLang, userId: uid || undefined,
+      });
+      setSession(sid);
+      applyQuestion(firstQuestion, 0);
+      setScreen("question");
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to start session");
+      setScreen("loading");
+    }
+  };
+
   const startSession = useCallback(async () => {
     setScreen("loading"); setLoadError(null);
 
@@ -305,12 +321,12 @@ function MCQContent() {
       .then(r => r.json())
       .then(s => {
         const uid = s?.user?.email ?? s?.user?.id ?? "";
-        if (uid) setCurrentUser(uid);
+        if (uid) { setCurrentUser(uid); setUserId(uid); }
         return uid;
       })
       .catch(() => "")
       .then(uid => {
-        startSession();
+        startSessionWithUser(uid);
         /* Fetch PDF SAS URL */
         if (courseId) {
           fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io"}/api/courses/${courseId}/pdf-url?userId=${uid || "anonymous"}`)
