@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import { createSession, getSession, setCurrentUser, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type StoredSession, type TutorMessage } from "@/lib/api";
+import { createSession, getSession, setCurrentUser, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, updateCourse, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type StoredSession, type TutorMessage } from "@/lib/api";
 
 /* ─── Constants ──────────────────────────────────────────── */
 const MAX_QUESTIONS = 5;
@@ -424,7 +424,11 @@ function MCQContent() {
     if (nextIdx >= MAX_QUESTIONS) {
       /* Complete the session in the background */
       const sid = sessionIdRef.current;
-      if (sid) { completeSession(sid, courseId).catch(() => {}); }
+      if (sid) {
+        completeSession(sid, courseId).catch(() => {});
+        /* Update exercisesDone on the course */
+        updateCourse(courseId, { exercisesDone: MAX_QUESTIONS }, userId).catch(() => {});
+      }
       setScreen("summary");
       return;
     }
@@ -519,7 +523,10 @@ function MCQContent() {
   /* Called from handleReviewNext with fresh results before state update settles */
   const startDebriefWithResults = (allResults: QuestionResult[]) => {
     /* Complete the session in the background before debrief */
-    if (sessionIdRef.current) { completeSession(sessionIdRef.current, courseId).catch(() => {}); }
+    if (sessionIdRef.current) {
+      completeSession(sessionIdRef.current, courseId).catch(() => {});
+      updateCourse(courseId, { exercisesDone: MAX_QUESTIONS }, userId).catch(() => {});
+    }
     runDebrief(allResults);
   };
 
