@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./Nav.module.css";
 import { useLanguage, type Lang } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
@@ -31,6 +31,15 @@ const LANGUAGES: { code: Lang; label: string; flag: string }[] = [
 
 export default function Nav() {
   const { lang, setLang } = useLanguage();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  /* Check session once on mount — determines button destinations */
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then(r => r.ok ? r.json() : null)
+      .then(s => { if (s?.user?.email || s?.user?.id) setIsLoggedIn(true); })
+      .catch(() => {});
+  }, []);
   const tx = getT(lang).nav;
   const [open, setOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
@@ -78,8 +87,12 @@ export default function Nav() {
           )}
         </div>
         <div className={styles.navBtnPair}>
-          <a className={styles.navLogin} href="/login">{tx.logIn ?? "Log in"}</a>
-          <a className={styles.navGetStarted} href="/login">{tx.getStarted ?? "Get started"}</a>
+          <a className={styles.navLogin} href={isLoggedIn ? "/workspace" : "/login"}>
+            {isLoggedIn ? (tx.myWorkspace ?? "My workspace") : (tx.logIn ?? "Log in")}
+          </a>
+          <a className={styles.navGetStarted} href={isLoggedIn ? "/workspace" : "/login"}>
+            {isLoggedIn ? (tx.myWorkspace ?? "My workspace") : (tx.getStarted ?? "Get started")}
+          </a>
         </div>
       </div>
     </nav>
