@@ -1,32 +1,22 @@
-import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
+import { NextRequest, NextResponse } from "next/server";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
-    Google({
-      clientId:     process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-      authorization: { params: { prompt: "select_account" } },
-    }),
-  ],
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  session: { strategy: "jwt" },
+  /* NextAuth v5 / Auth.js uses "authjs.session-token" (with __Secure- prefix on HTTPS) */
+  const sessionToken =
+    req.cookies.get("__Secure-authjs.session-token")?.value ||
+    req.cookies.get("authjs.session-token")?.value ||
+    req.cookies.get("__Secure-next-auth.session-token")?.value ||
+    req.cookies.get("next-auth.session-token")?.value;
 
-  pages: {
-    signIn: "/login",
-    error:  "/login",
-  },
+  if (pathname.startsWith("/workspace") && !sessionToken) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+}
 
-  callbacks: {
-    async session({ session, token }) {
-      if (token.email && session.user) {
-        session.user.id = token.email;
-      }
-      return session;
-    },
-    async jwt({ token, user }) {
-      if (user?.email) token.email = user.email;
-      return token;
-    },
-  },
-});
+export const config = {
+  matcher: ["/workspace/:path*"],
+};
