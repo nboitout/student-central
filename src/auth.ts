@@ -9,11 +9,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorization: { params: { prompt: "select_account" } },
     }),
   ],
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login", error: "/login" },
+
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, /* 30 days */
+
+  pages: {
+    signIn: "/login",
+    error:  "/login",
+  },
+
   callbacks: {
     async session({ session, token }) {
-      if (token.email && session.user) session.user.id = token.email;
+      if (token.email && session.user) {
+        session.user.id = token.email;
+      }
       return session;
     },
     async jwt({ token, user }) {
