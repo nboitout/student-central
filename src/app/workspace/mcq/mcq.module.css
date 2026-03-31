@@ -3,7 +3,8 @@
 ======================================================== */
 
 .page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--surface-low);
   color: var(--on-surface);
   font-family: var(--font-body);
@@ -93,7 +94,8 @@
 .body {
   flex: 1;
   display: flex;
-  min-height: calc(100vh - 64px);
+  height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
   overflow: hidden;
   user-select: none;
 }
@@ -183,13 +185,14 @@
 
 /* ── RIGHT: question pane ────────────────────────────────── */
 .questionPane {
+  height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
+  overflow: hidden;
   background: var(--surface-lowest);
   display: flex;
   flex-direction: column;
   padding: 40px 40px 32px;
   gap: 24px;
-  overflow-y: auto;
-  min-height: calc(100vh - 64px);
   flex: 1;
   min-width: 300px;
 }
