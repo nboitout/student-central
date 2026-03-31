@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-import Resend from "next-auth/providers/resend";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -9,19 +8,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
       authorization: { params: { prompt: "select_account" } },
     }),
-    Resend({
-      apiKey: process.env.AUTH_RESEND_KEY!,
-      from:   "Student Central <nicolas.boitout@studentcentral.ai>",
-      name:   "Email",
-    }),
   ],
 
   session: { strategy: "jwt" },
 
   pages: {
-    signIn:        "/login",
-    error:         "/login",
-    verifyRequest: "/login?verify=1",
+    signIn: "/login",
+    error:  "/login",
   },
 
   callbacks: {
