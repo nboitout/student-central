@@ -489,27 +489,35 @@ export default function WorkspacePage() {
   const [sortOpen, setSortOpen]       = useState(false);
   const [viewMode, setViewMode]       = useState<"grid" | "list">("grid");
 
-  /* Load from API on mount */
+  /* Load from API on mount.
+     Middleware already guarantees only authenticated users reach this page.
+     We fetch the session only to get the real userId — never redirect on error. */
   useEffect(() => {
-    fetch("/api/auth/session")
-      .then(r => r.ok ? r.json() : null)
-      .then(s => {
-        const id = s?.user?.email ?? s?.user?.id;
-        if (!id) {
-          /* Only redirect if we got a clear "no session" response, not on errors */
-          if (s !== null) window.location.href = "/login";
-          return Promise.reject("no_session");
-        }
-        setUserId(id);
-        setCurrentUser(id);
-        return listCourses(id);
+    const loadSession = (retries = 1): Promise<string> =>
+      fetch("/api/auth/session")
+        .then(r => r.ok ? r.json() : null)
+        .then(s => {
+          const id = s?.user?.email ?? s?.user?.id;
+          if (id) return id;
+          if (retries > 0) return new Promise<string>(res => setTimeout(() => loadSession(0).then(res), 1500));
+          return "";
+        })
+        .catch(() => retries > 0
+          ? new Promise<string>(res => setTimeout(() => loadSession(0).then(res), 1500))
+          : ""
+        );
+
+    loadSession()
+      .then(id => {
+        if (id) { setUserId(id); setCurrentUser(id); }
+        return listCourses(id || undefined);
       })
       .then(fresh => {
         setCourses(fresh);
         const generating = fresh.filter(co => co.mcqStatus === "generating").map(co => co.id);
         if (generating.length > 0) setProcessingIds(new Set(generating));
       })
-      .catch(err => { if (err !== "no_session") console.error(err); })
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
