@@ -8,6 +8,8 @@ export const t = {
       forInstitutions: "For institutions",
       myWorkspace:     "My Workspace",
       tryIt:           "Try it",
+      logIn:           "Log in",
+      getStarted:      "Get started",
     },
     hero: {
       ribbon: "Assessment beyond the multiple-choice score",
@@ -15,6 +17,8 @@ export const t = {
       h1em:   "every answer",
       sub:    "Student Central helps educators go beyond MCQs by combining answer selection with short AI-guided discussion. The result: educators gain a deeper view of student reasoning, misconceptions, confidence, and true topic mastery.",
       tryIt:  "Try it",
+      logIn:  "Log in",
+      getStarted: "Get started",
       myWorkspace: "My Workspace",
       trust: [
         "Built for higher education",
@@ -349,6 +353,8 @@ export const t = {
       forInstitutions:   "Pour les établissements",
       myWorkspace:       "Mon espace",
       tryIt:             "Essayer",
+      logIn:             "Se connecter",
+      getStarted:        "Commencer",
     },
     hero: {
       ribbon: "L'évaluation au-delà du score QCM",
