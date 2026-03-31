@@ -1434,3 +1434,21 @@
   flex-shrink: 0;
 }
 .resumeBtn:hover { opacity: 0.88; }
+
+.signOutBtn {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  background: none;
+  border: 0.5px solid var(--outline-variant);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.12s;
+  opacity: 0.6;
+}
+.signOutBtn:hover {
+  opacity: 1;
+  border-color: var(--error);
+  color: var(--error);
+}
