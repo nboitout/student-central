@@ -923,25 +923,11 @@ function MCQContent() {
                   <div className={styles.ctxToggle}>{ctxExpanded ? "hide ▴" : "show answers ▾"}</div>
                 </div>
                 <div className={styles.ctxBadges}>
-                  <span className={styles.ctxBadgeWrong}>
-                    Your answer: {LETTERS[focusR.selected]}
+                  {/* Show letter + answer text, outcome mark only — correct answer hidden until conversation reveals it */}
+                  <span className={focusR.selected === focusR.question.correctIndex ? styles.ctxBadgeCorrect : styles.ctxBadgeWrong}>
+                    {LETTERS[focusR.selected]}. {focusR.question.options[focusR.selected]?.text}
+                    {" "}{focusR.selected === focusR.question.correctIndex ? "✓" : "✗"}
                   </span>
-                  {focusR.selected !== focusR.question.correctIndex && (
-                    <span className={styles.ctxBadgeCorrect}>
-                      Correct: {LETTERS[focusR.question.correctIndex]}
-                    </span>
-                  )}
-                  {focusR.selected === focusR.question.correctIndex && (
-                    <span className={styles.ctxBadgeCorrect}>Correct ✓</span>
-                  )}
-                  {focusR.signal && (
-                    <span
-                      className={styles.signalBadge}
-                      style={{ background: signalStyle(focusR.signal.signal).bg, color: signalStyle(focusR.signal.signal).color }}
-                    >
-                      {focusR.signal.signal === "Partial misconception" ? "Partial" : focusR.signal.signal}
-                    </span>
-                  )}
                 </div>
                 {ctxExpanded && (
                   <div className={styles.ctxOptions} onClick={e => e.stopPropagation()}>
