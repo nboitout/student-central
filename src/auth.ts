@@ -14,15 +14,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   session: { strategy: "jwt", maxAge: THIRTY_DAYS },
 
+  /* Persist cookies across browser restarts by adding maxAge to the cookie itself.
+     useSecureCookies=true in production so the prefix is __Secure-               */
   cookies: {
     sessionToken: {
       name: "__Secure-authjs.session-token",
       options: {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "lax" as const,
         path: "/",
         secure: true,
-        maxAge: THIRTY_DAYS,   /* makes cookie persistent across browser restarts */
+        maxAge: THIRTY_DAYS,
+      },
+    },
+    callbackUrl: {
+      name: "__Secure-authjs.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax" as const,
+        path: "/",
+        secure: true,
+        maxAge: THIRTY_DAYS,
       },
     },
   },
