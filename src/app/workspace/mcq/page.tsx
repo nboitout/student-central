@@ -272,13 +272,13 @@ function MCQContent() {
     }
   };
 
-  const startSession = useCallback(async () => {
+  const startSession = useCallback(async (uid?: string) => {
     setScreen("loading"); setLoadError(null);
 
     /* ── Resume path: load existing completed session ── */
     if (resumeSessionId) {
       try {
-        const stored = await getSession(resumeSessionId, courseId);
+        const stored = await getSession(resumeSessionId, courseId, uid);
         setSession(resumeSessionId);
         const hydrated = hydrateResults(stored);
         setResults(hydrated);
@@ -329,7 +329,7 @@ function MCQContent() {
       .then(uid => {
         /* If resuming a session, use the original startSession which handles the resume path */
         if (resumeSessionId) {
-          startSession();
+          startSession(uid);
         } else {
           startSessionWithUser(uid);
         }
