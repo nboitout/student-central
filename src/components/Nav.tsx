@@ -77,7 +77,10 @@ export default function Nav() {
             </div>
           )}
         </div>
-        <a className={styles.demo} href="/workspace">{tx.tryIt}</a>
+        <div className={styles.navBtnPair}>
+          <a className={styles.navLogin} href="/login">{tx.logIn ?? "Log in"}</a>
+          <a className={styles.navGetStarted} href="/login">{tx.getStarted ?? "Get started"}</a>
+        </div>
       </div>
     </nav>
   );
