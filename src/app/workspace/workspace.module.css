@@ -1452,3 +1452,52 @@
   border-color: var(--error);
   color: var(--error);
 }
+
+/* ── Inline card rename ────────────────────────────────── */
+.cardEditWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 2px 0 4px;
+}
+.cardEditInput {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  padding: 5px 8px;
+  width: 100%;
+  outline: none;
+}
+.cardEditInput:focus { box-shadow: 0 0 0 2px rgba(0,72,216,0.15); }
+.cardEditActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+.cardEditSave {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--primary);
+  border: none;
+  border-radius: 4px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.cardEditSave:hover { opacity: 0.88; }
+.cardEditCancel {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  background: none;
+  border: 1px solid var(--outline-variant);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.cardEditCancel:hover { border-color: var(--on-surface-variant); }
