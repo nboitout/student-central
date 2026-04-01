@@ -881,58 +881,58 @@ export default function WorkspacePage() {
             <div className={styles.grid}>
               {groupedSections.map(section => (
                 <div key={section.id} className={styles.groupSection}>
-                  <div className={styles.groupHeader}>
-                    <div className={styles.groupTitleWrap}>
-                      {editingGroupId === section.id ? (
-                        <>
-                          <input
-                            className={styles.groupNameInput}
-                            value={groupDraftName}
-                            onChange={e => setGroupDraftName(e.target.value)}
-                            autoFocus
-                          />
-                          <button className={styles.groupActionBtn} onClick={() => saveRenameGroup(section.id)}>Save</button>
-                          <button className={styles.groupActionBtn} onClick={() => setEditingGroupId(null)}>Cancel</button>
-                        </>
-                      ) : (
-                        <>
-                          <span className={styles.groupTitle}>{section.name}</span>
-                          <div className={styles.groupMenuWrap}>
-                            <button
-                              className={styles.groupMenuTrigger}
-                              onClick={() => setOpenGroupMenuId(prev => prev === section.id ? null : section.id)}
-                            >
-                              ⋯
-                            </button>
-                            {openGroupMenuId === section.id && (
-                              <div className={styles.groupMenuDropdown}>
-                                <button
-                                  className={styles.groupMenuItem}
-                                  onClick={() => {
-                                    beginRenameGroup(section.id);
-                                    setOpenGroupMenuId(null);
-                                  }}
-                                >
-                                  Rename
-                                </button>
-                                <button
-                                  className={styles.groupMenuItem}
-                                  onClick={() => {
-                                    ungroupAll(section.id);
-                                    setOpenGroupMenuId(null);
-                                  }}
-                                >
-                                  Ungroup all
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <span className={styles.groupCount}>{section.courses.length} courses</span>
-                  </div>
                   <div className={styles.groupGrid}>
+                    <div className={styles.groupCard}>
+                      <div className={styles.groupCardTop}>
+                        {editingGroupId === section.id ? (
+                          <div className={styles.groupTitleWrap}>
+                            <input
+                              className={styles.groupNameInput}
+                              value={groupDraftName}
+                              onChange={e => setGroupDraftName(e.target.value)}
+                              autoFocus
+                            />
+                            <button className={styles.groupActionBtn} onClick={() => saveRenameGroup(section.id)}>Save</button>
+                            <button className={styles.groupActionBtn} onClick={() => setEditingGroupId(null)}>Cancel</button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className={styles.groupTitle}>{section.name}</span>
+                            <div className={styles.groupMenuWrap}>
+                              <button
+                                className={styles.groupMenuTrigger}
+                                onClick={() => setOpenGroupMenuId(prev => prev === section.id ? null : section.id)}
+                              >
+                                ⋯
+                              </button>
+                              {openGroupMenuId === section.id && (
+                                <div className={styles.groupMenuDropdown}>
+                                  <button
+                                    className={styles.groupMenuItem}
+                                    onClick={() => {
+                                      beginRenameGroup(section.id);
+                                      setOpenGroupMenuId(null);
+                                    }}
+                                  >
+                                    Rename
+                                  </button>
+                                  <button
+                                    className={styles.groupMenuItem}
+                                    onClick={() => {
+                                      ungroupAll(section.id);
+                                      setOpenGroupMenuId(null);
+                                    }}
+                                  >
+                                    Ungroup all
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div className={styles.groupCount}>{section.courses.length} courses</div>
+                    </div>
                     {section.courses.map((c, i) => (
                       <CourseCard
                         key={c.id}
