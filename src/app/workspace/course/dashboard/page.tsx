@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./dashboard.module.css";
 import { useLanguage } from "@/context/LanguageContext";
+import { tx as getT } from "@/i18n/translations";
 
 /* ── Types ─────────────────────────────────────────────── */
 type Signal = "Strong" | "Fragile" | "Partial misconception" | "Low mastery";
@@ -109,6 +110,8 @@ function buildHeatmap(attempts: Attempt[]): number[] {
 
 /* ── Dashboard component ────────────────────────────────── */
 function DashboardContent() {
+  const { lang }    = useLanguage();
+  const courseUi    = getT(lang).course;
   const params      = useSearchParams();
   const router      = useRouter();
   const courseId    = params.get("id") ?? "";
@@ -155,6 +158,9 @@ function DashboardContent() {
 
   return (
     <div className={styles.page}>
+      <button className={styles.backWorkspaceLink} onClick={() => router.push("/workspace")}>
+        ← {courseUi.backBtn ?? "Workspace"}
+      </button>
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
