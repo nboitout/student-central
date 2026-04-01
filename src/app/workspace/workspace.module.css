@@ -518,6 +518,17 @@
   gap: 6px;
 }
 
+.cardFooterProgressLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
 /* Status badge: compact, pill-less label */
 .statusBadge {
   font-family: var(--font-display);
