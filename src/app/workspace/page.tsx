@@ -424,7 +424,6 @@ function CourseCard({
   const done     = course.exercisesDone  || 0;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
   const initials   = course.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
-  const sourceCount = course.source.split(",").length;
   const dateStr    = new Date(course.createdAt ?? Date.now()).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
   return (
@@ -493,9 +492,9 @@ function CourseCard({
         ) : (
           <h3 className={styles.cardTitle}>{course.title}</h3>
         )}
-        <div className={styles.cardMeta}>
+          <div className={styles.cardMeta}>
           {!editing && <div className={`${styles.cardMetaLine} ${styles.cardAuthor}`}>{course.author}</div>}
-          <div className={styles.cardMetaLine}>{dateStr} · {sourceCount} {sourceCount !== 1 ? ui.sources : ui.source1}</div>
+          <div className={styles.cardMetaLine}>{dateStr}</div>
           {groupName && <div className={styles.cardGroupTag}>{groupName}</div>}
         </div>
       </div>
@@ -544,6 +543,7 @@ function CourseCard({
    MAIN PAGE
 ======================================================== */
 export default function WorkspacePage() {
+  // No-op change to trigger a fresh Vercel build/deploy from this commit.
   const { lang }  = useLanguage();
   const ui        = getT(lang).workspace;
   /* userId is resolved from the session cookie via the server layout.
@@ -880,69 +880,88 @@ export default function WorkspacePage() {
           ) : viewMode === "grid" ? (
             <div className={styles.grid}>
               {groupedSections.map(section => (
-                <div key={section.id} className={styles.groupSection}>
-                  <div className={styles.groupGrid}>
-                    <div className={styles.groupCard}>
-                      <div className={styles.groupCardTop}>
-                        {editingGroupId === section.id ? (
-                          <div className={styles.groupTitleWrap}>
-                            <input
-                              className={styles.groupNameInput}
-                              value={groupDraftName}
-                              onChange={e => setGroupDraftName(e.target.value)}
-                              autoFocus
-                            />
-                            <button className={styles.groupActionBtn} onClick={() => saveRenameGroup(section.id)}>Save</button>
-                            <button className={styles.groupActionBtn} onClick={() => setEditingGroupId(null)}>Cancel</button>
-                          </div>
-                        ) : (
-                          <>
-                            <span className={styles.groupTitle}>{section.name}</span>
-                            <div className={styles.groupMenuWrap}>
+                <div key={section.id} className={styles.groupCard}>
+                  <div className={styles.groupCardTop}>
+                    {editingGroupId === section.id ? (
+                      <div className={styles.groupTitleWrap}>
+                        <input
+                          className={styles.groupNameInput}
+                          value={groupDraftName}
+                          onChange={e => setGroupDraftName(e.target.value)}
+                          autoFocus
+                        />
+                        <button className={styles.groupActionBtn} onClick={() => saveRenameGroup(section.id)}>Save</button>
+                        <button className={styles.groupActionBtn} onClick={() => setEditingGroupId(null)}>Cancel</button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className={styles.groupTitle}>{section.name}</span>
+                        <div className={styles.groupMenuWrap}>
+                          <button
+                            className={styles.groupMenuTrigger}
+                            onClick={() => setOpenGroupMenuId(prev => prev === section.id ? null : section.id)}
+                          >
+                            ⋯
+                          </button>
+                          {openGroupMenuId === section.id && (
+                            <div className={styles.groupMenuDropdown}>
                               <button
-                                className={styles.groupMenuTrigger}
-                                onClick={() => setOpenGroupMenuId(prev => prev === section.id ? null : section.id)}
+                                className={styles.groupMenuItem}
+                                onClick={() => {
+                                  beginRenameGroup(section.id);
+                                  setOpenGroupMenuId(null);
+                                }}
                               >
-                                ⋯
+                                Rename
                               </button>
-                              {openGroupMenuId === section.id && (
-                                <div className={styles.groupMenuDropdown}>
-                                  <button
-                                    className={styles.groupMenuItem}
-                                    onClick={() => {
-                                      beginRenameGroup(section.id);
-                                      setOpenGroupMenuId(null);
-                                    }}
-                                  >
-                                    Rename
-                                  </button>
-                                  <button
-                                    className={styles.groupMenuItem}
-                                    onClick={() => {
-                                      ungroupAll(section.id);
-                                      setOpenGroupMenuId(null);
-                                    }}
-                                  >
-                                    Ungroup all
-                                  </button>
-                                </div>
-                              )}
+                              <button
+                                className={styles.groupMenuItem}
+                                onClick={() => {
+                                  ungroupAll(section.id);
+                                  setOpenGroupMenuId(null);
+                                }}
+                              >
+                                Ungroup all
+                              </button>
                             </div>
-                          </>
-                        )}
-                      </div>
-                      <div className={styles.groupCourseList}>
-                        {section.courses.slice(0, 4).map(course => (
-                          <div key={course.id} className={styles.groupCourseItem}>{course.title}</div>
-                        ))}
-                        {section.courses.length > 4 && (
-                          <div className={styles.groupCourseItem}>+ {section.courses.length - 4} more</div>
-                        )}
-                      </div>
-                      <div className={styles.groupCount}>{section.courses.length} courses</div>
-                    </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
+                  <div className={styles.groupCourseList}>
+                    {section.courses.slice(0, 4).map(course => (
+                      <div key={course.id} className={styles.groupCourseItem}>{course.title}</div>
+                    ))}
+                    {section.courses.length > 4 && (
+                      <div className={styles.groupCourseItem}>+ {section.courses.length - 4} more</div>
+                    )}
+                  </div>
+                  <div className={styles.groupCount}>{section.courses.length} courses</div>
                 </div>
+              ))}
+              {ungroupedCourses.map((c, i) => (
+                <CourseCard
+                  key={c.id}
+                  course={c}
+                  index={i}
+                  onDelete={handleDelete}
+                  onDetails={openDetails}
+                  onRename={handleRename}
+                  onCardDragStart={(id) => setDragCourseId(id)}
+                  onCardDragOver={(id) => setDropTargetId(id)}
+                  onCardDragEnd={() => { setDragCourseId(null); setDropTargetId(null); }}
+                  onCardDrop={(sourceId, targetId) => {
+                    groupCourses(sourceId, targetId);
+                    setDragCourseId(null);
+                    setDropTargetId(null);
+                  }}
+                  onUngroup={undefined}
+                  isDropTarget={dropTargetId === c.id && dragCourseId !== c.id}
+                  groupName={undefined}
+                  isProcessing={processingIds.has(c.id)}
+                  ui={ui}
+                />
               ))}
               {ungroupedCourses.length > 0 && (
                 <div className={styles.ungroupedGrid}>
