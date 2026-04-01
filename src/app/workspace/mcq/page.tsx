@@ -146,6 +146,8 @@ function MCQContent() {
   const [copiedChip, setCopiedChip] = useState<string | null>(null);
   const [ctxExpanded, setCtxExpanded] = useState(false);
   const [ctxRevealed, setCtxRevealed] = useState(false);
+  const [mcqVotes, setMcqVotes] = useState<Record<number, "up" | "down" | null>>({});
+  const [reportedMistakes, setReportedMistakes] = useState<Record<number, boolean>>({});
   const copyChip = (word: string) => {
     navigator.clipboard.writeText(word).catch(() => {});
     setCopiedChip(word);
@@ -157,6 +159,56 @@ function MCQContent() {
     const s = (sec % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
+
+  const thumbIcon = (dir: "up" | "down") => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {dir === "up" ? (
+        <>
+          <path d="M14 10V5a3 3 0 0 0-3-3l-1 7" />
+          <path d="M7 22H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3" />
+          <path d="M7 21h9.4a2 2 0 0 0 2-1.7l1.1-7A2 2 0 0 0 17.5 10H14" />
+        </>
+      ) : (
+        <>
+          <path d="M10 14v5a3 3 0 0 0 3 3l1-7" />
+          <path d="M17 2h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3" />
+          <path d="M17 3H7.6a2 2 0 0 0-2 1.7l-1.1 7A2 2 0 0 0 6.5 14H10" />
+        </>
+      )}
+    </svg>
+  );
+
+  const feedbackBar = (
+    <div className={styles.mcqFeedbackBar}>
+      <div className={styles.voteGroup}>
+        <button
+          className={`${styles.voteBtn} ${mcqVotes[qIndex] === "up" ? styles.voteBtnActive : ""}`}
+          onClick={() => setMcqVotes(prev => ({ ...prev, [qIndex]: prev[qIndex] === "up" ? null : "up" }))}
+          aria-label="Thumbs up"
+          aria-pressed={mcqVotes[qIndex] === "up"}
+          type="button"
+        >
+          {thumbIcon("up")}
+        </button>
+        <button
+          className={`${styles.voteBtn} ${mcqVotes[qIndex] === "down" ? styles.voteBtnActive : ""}`}
+          onClick={() => setMcqVotes(prev => ({ ...prev, [qIndex]: prev[qIndex] === "down" ? null : "down" }))}
+          aria-label="Thumbs down"
+          aria-pressed={mcqVotes[qIndex] === "down"}
+          type="button"
+        >
+          {thumbIcon("down")}
+        </button>
+      </div>
+      <button
+        className={styles.reportMistakeBtn}
+        onClick={() => setReportedMistakes(prev => ({ ...prev, [qIndex]: !prev[qIndex] }))}
+        type="button"
+      >
+        {reportedMistakes[qIndex] ? "Mistake reported" : "Report a mistake"}
+      </button>
+    </div>
+  );
 
   /* ── Resizable split ── */
   const [slideWidth, setSlideWidth] = useState(55);
@@ -802,6 +854,7 @@ function MCQContent() {
                 disabled={selected === null}
               >{ui.submitAnswer}</button>
             </div>
+            {feedbackBar}
           </div>
         </div>
       </div>
@@ -852,6 +905,7 @@ function MCQContent() {
                 {evaluating ? "…" : (qIndex + 1 >= MAX_QUESTIONS ? "Start AI debrief →" : (ui.nextQuestion ?? "Next question →"))}
               </button>
             </div>
+            {feedbackBar}
           </div>
         </div>
       </div>
