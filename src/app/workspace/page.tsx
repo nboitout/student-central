@@ -425,7 +425,7 @@ function CourseCard({
           {menuOpen && (
             <div className={styles.menuDropdown}>
               <button className={styles.menuItem} onClick={() => { onDetails(course); setMenuOpen(false); }}>{ui.viewDetails}</button>
-              <button className={styles.menuItem} onClick={() => { setEditing(true); setMenuOpen(false); }}>Rename</button>
+              <button className={styles.menuItem} onClick={() => { setEditing(true); setMenuOpen(false); }}>{ui.renameLabel}</button>
               <button className={`${styles.menuItem} ${styles.menuItemDanger}`} onClick={() => { onDelete(course.id); setMenuOpen(false); }}>{ui.deleteLabel}</button>
             </div>
           )}
