@@ -27,6 +27,28 @@ interface QuestionResult {
   signal:      ReasoningSignal | null;
 }
 
+const LATEX_HINT = "\\\\(?:frac|sum|int|sqrt|beta|alpha|gamma|theta|mu|sigma|pi|lambda)";
+
+function normalizeMathMarkdown(raw: string): string {
+  let text = raw;
+  /* Standard LaTeX math delimiters -> markdown math delimiters */
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_m, expr) => `$$${expr}$$`);
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_m, expr) => `$${expr}$`);
+
+  /* Common model pattern: [ formula with LaTeX commands ] */
+  text = text.replace(
+    new RegExp(`^\\s*\\[\\s*([\\s\\S]*?${LATEX_HINT}[\\s\\S]*?)\\s*\\]\\s*$`, "m"),
+    (_m, expr) => `$$${expr}$$`
+  );
+
+  /* Inline parenthesized latex snippets inside prose */
+  text = text.replace(
+    new RegExp(`\\(\\s*([^()]*${LATEX_HINT}[^()]*)\\s*\\)`, "g"),
+    (_m, expr) => `($${expr}$)`
+  );
+  return text;
+}
+
 /* ─── MCQ page ───────────────────────────────────────────── */
 function MCQContent() {
   const params      = useSearchParams();
@@ -1095,7 +1117,7 @@ function MCQContent() {
                   <span className={styles.chatSender}>{msg.role === "ai" ? "AI Tutor" : (ui.you ?? "You")}</span>
                   <div className={styles.chatMarkdown}>
                     <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                      {msg.text}
+                      {normalizeMathMarkdown(msg.text)}
                     </ReactMarkdown>
                   </div>
                 </div>
