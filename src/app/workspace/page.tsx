@@ -401,6 +401,7 @@ function CourseCard({
   isProcessing: boolean;
   ui: ReturnType<typeof getT>["workspace"];
 }) {
+  const router = useRouter();
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [editing,    setEditing]    = useState(false);
   const [editTitle,  setEditTitle]  = useState(course.title);
@@ -483,10 +484,15 @@ function CourseCard({
         ) : (
           <>
             <div className={styles.cardFooterLeft}>
+            <button
+              className={styles.cardFooterProgressLink}
+              onClick={() => router.push(`/workspace/course/dashboard?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}`)}
+            >
               <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>
                 {{ "Not Started": ui.statusNotStarted, "In Progress": ui.statusInProgress, "Completed": ui.statusCompleted }[course.status]}
               </div>
               <div className={styles.exerciseBadge}>{done} {ui.exercisesOf} {total}</div>
+            </button>
             </div>
             <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>{ui.detailsBtn}</button>
           </>
