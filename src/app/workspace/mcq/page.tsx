@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import styles from "./mcq.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
@@ -1089,7 +1093,11 @@ function MCQContent() {
               {chatMsgs.map((msg, i) => (
                 <div key={i} className={msg.role === "ai" ? styles.chatAI : styles.chatStudent}>
                   <span className={styles.chatSender}>{msg.role === "ai" ? "AI Tutor" : (ui.you ?? "You")}</span>
-                  {msg.text}
+                  <div className={styles.chatMarkdown}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {msg.text}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               ))}
               {aiTyping && (

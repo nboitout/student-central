@@ -545,6 +545,27 @@
 }
 .chatStudent .chatSender { color: var(--on-surface-variant); opacity: 0.5; }
 
+.chatMarkdown :global(p) {
+  margin: 0;
+}
+.chatMarkdown :global(p + p) {
+  margin-top: 8px;
+}
+.chatMarkdown :global(strong) {
+  font-weight: 700;
+}
+.chatMarkdown :global(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85em;
+  background: rgba(13, 26, 56, 0.08);
+  padding: 1px 4px;
+}
+.chatMarkdown :global(.katex-display) {
+  margin: 8px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 /* ── Chatbot-style input bar ─────────────────────────────── */
 /* ── Chat input — Claude-style unified box ───────────────── */
 .chatInputWrap {

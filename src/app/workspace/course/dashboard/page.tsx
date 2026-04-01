@@ -171,7 +171,12 @@ function DashboardContent() {
           </div>
         </div>
         <div className={styles.headerRight}>
-          <button className={styles.btnBack} onClick={() => router.back()}>← Access course</button>
+          <button
+            className={styles.btnBack}
+            onClick={() => router.push(`/workspace/course?id=${courseId}&title=${encodeURIComponent(courseTitle)}&pdf=${encodeURIComponent(pdfUrl)}`)}
+          >
+            ← Access course
+          </button>
           <button
             className={styles.btnMcq}
             onClick={() => router.push(`/workspace/mcq?id=${courseId}&title=${encodeURIComponent(courseTitle)}&pdf=${encodeURIComponent(pdfUrl)}`)}
