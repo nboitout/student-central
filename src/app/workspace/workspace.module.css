@@ -319,6 +319,41 @@
 /* ── Course grid ──────────────────────────────────────────── */
 .grid {
   display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.groupSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--surface-highest);
+}
+
+.groupTitle {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.groupCount {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.groupGrid {
+  display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
