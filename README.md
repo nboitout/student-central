@@ -63,3 +63,4 @@ Required repository secrets:
 
 - Test
 - Secrets updated
+## sympa !
