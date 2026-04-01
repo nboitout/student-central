@@ -880,8 +880,8 @@ export default function WorkspacePage() {
           ) : viewMode === "grid" ? (
             <div className={styles.grid}>
               {groupedSections.map(section => (
-                <div key={section.id} className={styles.groupCard}>
-                  <div className={styles.groupCardTop}>
+                <div key={section.id} className={`${styles.card} ${styles.groupCard}`}>
+                  <div className={styles.cardBand}>
                     {editingGroupId === section.id ? (
                       <div className={styles.groupTitleWrap}>
                         <input
@@ -929,15 +929,22 @@ export default function WorkspacePage() {
                       </>
                     )}
                   </div>
-                  <div className={styles.groupCourseList}>
+                  <div className={`${styles.cardBody} ${styles.groupCardBody}`}>
+                    <div className={styles.groupTitleSub}>Grouped courses</div>
+                    <div className={styles.groupCourseList}>
                     {section.courses.slice(0, 4).map(course => (
                       <div key={course.id} className={styles.groupCourseItem}>{course.title}</div>
                     ))}
                     {section.courses.length > 4 && (
                       <div className={styles.groupCourseItem}>+ {section.courses.length - 4} more</div>
                     )}
+                    </div>
                   </div>
-                  <div className={styles.groupCount}>{section.courses.length} courses</div>
+                  <div className={styles.cardFooter}>
+                    <div className={styles.cardFooterLeft}>
+                      <span className={styles.groupCountBadge}>{section.courses.length} courses</span>
+                    </div>
+                  </div>
                 </div>
               ))}
               {ungroupedCourses.map((c, i) => (
