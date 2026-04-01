@@ -563,7 +563,8 @@
 .chatMarkdown :global(.katex-display) {
   margin: 8px 0;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
+  padding-top: 2px;
 }
 
 /* ── Chatbot-style input bar ─────────────────────────────── */
