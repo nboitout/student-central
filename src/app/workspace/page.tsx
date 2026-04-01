@@ -390,6 +390,13 @@ function CourseCard({
   onDelete,
   onDetails,
   onRename,
+  onCardDragStart,
+  onCardDragOver,
+  onCardDragEnd,
+  onCardDrop,
+  onUngroup,
+  isDropTarget,
+  groupName,
   isProcessing,
   ui,
 }: {
@@ -398,9 +405,17 @@ function CourseCard({
   onDelete: (id: string) => void;
   onDetails: (c: Course) => void;
   onRename: (id: string, title: string, author: string) => void;
+  onCardDragStart: (id: string) => void;
+  onCardDragOver: (id: string) => void;
+  onCardDragEnd: () => void;
+  onCardDrop: (sourceId: string, targetId: string) => void;
+  onUngroup?: (id: string) => void;
+  isDropTarget: boolean;
+  groupName?: string;
   isProcessing: boolean;
   ui: ReturnType<typeof getT>["workspace"];
 }) {
+  const router = useRouter();
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [editing,    setEditing]    = useState(false);
   const [editTitle,  setEditTitle]  = useState(course.title);
@@ -414,9 +429,24 @@ function CourseCard({
 
   return (
     <div
-      className={`${styles.card} ${isProcessing ? styles.cardProcessing : ""}`}
+      className={`${styles.card} ${isProcessing ? styles.cardProcessing : ""} ${isDropTarget ? styles.cardDropTarget : ""}`}
       onClick={() => !isProcessing && onDetails(course)}
       style={{ cursor: isProcessing ? "default" : "pointer" }}
+      draggable={!isProcessing}
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", course.id);
+        onCardDragStart(course.id);
+      }}
+      onDragEnd={onCardDragEnd}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onCardDragOver(course.id);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        const sourceId = e.dataTransfer.getData("text/plain");
+        if (sourceId) onCardDrop(sourceId, course.id);
+      }}
     >
       <div className={styles.cardBand}>
         <div className={styles.cardInitials}>{initials}</div>
@@ -425,7 +455,10 @@ function CourseCard({
           {menuOpen && (
             <div className={styles.menuDropdown}>
               <button className={styles.menuItem} onClick={() => { onDetails(course); setMenuOpen(false); }}>{ui.viewDetails}</button>
-              <button className={styles.menuItem} onClick={() => { setEditing(true); setMenuOpen(false); }}>Rename</button>
+              <button className={styles.menuItem} onClick={() => { setEditing(true); setMenuOpen(false); }}>{ui.renameLabel}</button>
+              {groupName && onUngroup && (
+                <button className={styles.menuItem} onClick={() => { onUngroup(course.id); setMenuOpen(false); }}>Ungroup</button>
+              )}
               <button className={`${styles.menuItem} ${styles.menuItemDanger}`} onClick={() => { onDelete(course.id); setMenuOpen(false); }}>{ui.deleteLabel}</button>
             </div>
           )}
@@ -463,6 +496,7 @@ function CourseCard({
         <div className={styles.cardMeta}>
           {!editing && <div className={`${styles.cardMetaLine} ${styles.cardAuthor}`}>{course.author}</div>}
           <div className={styles.cardMetaLine}>{dateStr} · {sourceCount} {sourceCount !== 1 ? ui.sources : ui.source1}</div>
+          {groupName && <div className={styles.cardGroupTag}>{groupName}</div>}
         </div>
       </div>
       <div className={styles.cardStatus}>
@@ -483,10 +517,15 @@ function CourseCard({
         ) : (
           <>
             <div className={styles.cardFooterLeft}>
+            <button
+              className={styles.cardFooterProgressLink}
+              onClick={() => router.push(`/workspace/course/dashboard?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}`)}
+            >
               <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>
                 {{ "Not Started": ui.statusNotStarted, "In Progress": ui.statusInProgress, "Completed": ui.statusCompleted }[course.status]}
               </div>
               <div className={styles.exerciseBadge}>{done} {ui.exercisesOf} {total}</div>
+            </button>
             </div>
             <button className={styles.courseDetailsBtn} onClick={() => onDetails(course)}>{ui.detailsBtn}</button>
           </>
@@ -522,6 +561,13 @@ export default function WorkspacePage() {
   const [sortKey, setSortKey]         = useState<SortKey>("recent");
   const [sortOpen, setSortOpen]       = useState(false);
   const [viewMode, setViewMode]       = useState<"grid" | "list">("grid");
+  const [courseGroups, setCourseGroups] = useState<Record<string, string>>({});
+  const [groupNames, setGroupNames] = useState<Record<string, string>>({});
+  const [dragCourseId, setDragCourseId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [groupDraftName, setGroupDraftName] = useState("");
+  const [openGroupMenuId, setOpenGroupMenuId] = useState<string | null>(null);
 
   /* Load from API on mount.
      Middleware already guarantees only authenticated users reach this page.
@@ -605,6 +651,94 @@ export default function WorkspacePage() {
         ? a.title.localeCompare(b.title)
         : new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
     );
+
+  const groupCourses = (sourceId: string, targetId: string) => {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    const sourceGroup = courseGroups[sourceId];
+    const targetGroup = courseGroups[targetId];
+
+    if (!sourceGroup && !targetGroup) {
+      const gid = `group-${Date.now()}`;
+      setGroupNames(prev => ({ ...prev, [gid]: "New group" }));
+      setCourseGroups(prev => ({ ...prev, [sourceId]: gid, [targetId]: gid }));
+      return;
+    }
+    if (sourceGroup && !targetGroup) {
+      setCourseGroups(prev => ({ ...prev, [targetId]: sourceGroup }));
+      return;
+    }
+    if (!sourceGroup && targetGroup) {
+      setCourseGroups(prev => ({ ...prev, [sourceId]: targetGroup }));
+      return;
+    }
+    if (sourceGroup && targetGroup && sourceGroup !== targetGroup) {
+      setCourseGroups(prev => {
+        const next = { ...prev };
+        Object.entries(next).forEach(([cid, gid]) => {
+          if (gid === sourceGroup) next[cid] = targetGroup;
+        });
+        return next;
+      });
+      setGroupNames(prev => {
+        const next = { ...prev };
+        delete next[sourceGroup];
+        return next;
+      });
+    }
+  };
+
+  const ungroupCourse = (courseId: string) => {
+    setCourseGroups(prev => {
+      const next = { ...prev };
+      const gid = next[courseId];
+      delete next[courseId];
+      if (gid) {
+        const stillInGroup = Object.values(next).some(v => v === gid);
+        if (!stillInGroup) {
+          setGroupNames(names => {
+            const copy = { ...names };
+            delete copy[gid];
+            return copy;
+          });
+        }
+      }
+      return next;
+    });
+  };
+
+  const ungroupAll = (groupId: string) => {
+    setCourseGroups(prev => {
+      const next = { ...prev };
+      Object.entries(next).forEach(([cid, gid]) => {
+        if (gid === groupId) delete next[cid];
+      });
+      return next;
+    });
+    setGroupNames(prev => {
+      const next = { ...prev };
+      delete next[groupId];
+      return next;
+    });
+  };
+
+  const beginRenameGroup = (groupId: string) => {
+    setEditingGroupId(groupId);
+    setGroupDraftName(groupNames[groupId] ?? "New group");
+  };
+
+  const saveRenameGroup = (groupId: string) => {
+    const clean = groupDraftName.trim();
+    if (clean) setGroupNames(prev => ({ ...prev, [groupId]: clean }));
+    setEditingGroupId(null);
+  };
+
+  const groupedIds = new Set(Object.values(courseGroups));
+  const groupedSections = Array.from(groupedIds).map(gid => ({
+    id: gid,
+    name: groupNames[gid] ?? "New group",
+    courses: filtered.filter(c => courseGroups[c.id] === gid),
+  })).filter(section => section.courses.length > 0);
+  const ungroupedCourses = filtered.filter(c => !courseGroups[c.id]);
 
   const closeModal = () => { setModal(null); setActiveCourse(null); };
 
@@ -745,9 +879,113 @@ export default function WorkspacePage() {
             </div>
           ) : viewMode === "grid" ? (
             <div className={styles.grid}>
-              {filtered.map((c, i) => (
-                <CourseCard key={c.id} course={c} index={i} onDelete={handleDelete} onDetails={openDetails} onRename={handleRename} isProcessing={processingIds.has(c.id)} ui={ui} />
+              {groupedSections.map(section => (
+                <div key={section.id} className={styles.groupSection}>
+                  <div className={styles.groupGrid}>
+                    <div className={styles.groupCard}>
+                      <div className={styles.groupCardTop}>
+                        {editingGroupId === section.id ? (
+                          <div className={styles.groupTitleWrap}>
+                            <input
+                              className={styles.groupNameInput}
+                              value={groupDraftName}
+                              onChange={e => setGroupDraftName(e.target.value)}
+                              autoFocus
+                            />
+                            <button className={styles.groupActionBtn} onClick={() => saveRenameGroup(section.id)}>Save</button>
+                            <button className={styles.groupActionBtn} onClick={() => setEditingGroupId(null)}>Cancel</button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className={styles.groupTitle}>{section.name}</span>
+                            <div className={styles.groupMenuWrap}>
+                              <button
+                                className={styles.groupMenuTrigger}
+                                onClick={() => setOpenGroupMenuId(prev => prev === section.id ? null : section.id)}
+                              >
+                                ⋯
+                              </button>
+                              {openGroupMenuId === section.id && (
+                                <div className={styles.groupMenuDropdown}>
+                                  <button
+                                    className={styles.groupMenuItem}
+                                    onClick={() => {
+                                      beginRenameGroup(section.id);
+                                      setOpenGroupMenuId(null);
+                                    }}
+                                  >
+                                    Rename
+                                  </button>
+                                  <button
+                                    className={styles.groupMenuItem}
+                                    onClick={() => {
+                                      ungroupAll(section.id);
+                                      setOpenGroupMenuId(null);
+                                    }}
+                                  >
+                                    Ungroup all
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div className={styles.groupCount}>{section.courses.length} courses</div>
+                    </div>
+                    {section.courses.map((c, i) => (
+                      <CourseCard
+                        key={c.id}
+                        course={c}
+                        index={i}
+                        onDelete={handleDelete}
+                        onDetails={openDetails}
+                        onRename={handleRename}
+                        onCardDragStart={(id) => setDragCourseId(id)}
+                        onCardDragOver={(id) => setDropTargetId(id)}
+                        onCardDragEnd={() => { setDragCourseId(null); setDropTargetId(null); }}
+                        onCardDrop={(sourceId, targetId) => {
+                          groupCourses(sourceId, targetId);
+                          setDragCourseId(null);
+                          setDropTargetId(null);
+                        }}
+                        onUngroup={ungroupCourse}
+                        isDropTarget={dropTargetId === c.id && dragCourseId !== c.id}
+                        groupName={section.name}
+                        isProcessing={processingIds.has(c.id)}
+                        ui={ui}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
+              {ungroupedCourses.length > 0 && (
+                <div className={styles.ungroupedGrid}>
+                  {ungroupedCourses.map((c, i) => (
+                    <CourseCard
+                      key={c.id}
+                      course={c}
+                      index={i}
+                      onDelete={handleDelete}
+                      onDetails={openDetails}
+                      onRename={handleRename}
+                      onCardDragStart={(id) => setDragCourseId(id)}
+                      onCardDragOver={(id) => setDropTargetId(id)}
+                      onCardDragEnd={() => { setDragCourseId(null); setDropTargetId(null); }}
+                      onCardDrop={(sourceId, targetId) => {
+                        groupCourses(sourceId, targetId);
+                        setDragCourseId(null);
+                        setDropTargetId(null);
+                      }}
+                      onUngroup={undefined}
+                      isDropTarget={dropTargetId === c.id && dragCourseId !== c.id}
+                      groupName={undefined}
+                      isProcessing={processingIds.has(c.id)}
+                      ui={ui}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className={styles.listView}>
