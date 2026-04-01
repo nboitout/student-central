@@ -545,6 +545,27 @@
 }
 .chatStudent .chatSender { color: var(--on-surface-variant); opacity: 0.5; }
 
+.chatMarkdown :global(p) {
+  margin: 0;
+}
+.chatMarkdown :global(p + p) {
+  margin-top: 8px;
+}
+.chatMarkdown :global(strong) {
+  font-weight: 700;
+}
+.chatMarkdown :global(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85em;
+  background: rgba(13, 26, 56, 0.08);
+  padding: 1px 4px;
+}
+.chatMarkdown :global(.katex-display) {
+  margin: 8px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 /* ── Chatbot-style input bar ─────────────────────────────── */
 /* ── Chat input — Claude-style unified box ───────────────── */
 .chatInputWrap {
@@ -1069,6 +1090,60 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 8px;
+}
+
+.mcqFeedbackBar {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.voteGroup {
+  display: inline-flex;
+  align-items: center;
+  background: #1f2126;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.voteBtn {
+  width: 36px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.voteBtn + .voteBtn {
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+.voteBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.voteBtnActive {
+  background: rgba(0, 72, 216, 0.42);
+  color: #fff;
+}
+
+.reportMistakeBtn {
+  border: none;
+  background: transparent;
+  color: var(--on-surface);
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0.72;
+  transition: opacity 0.15s, color 0.15s;
+}
+.reportMistakeBtn:hover {
+  opacity: 1;
 }
 
 .loadingPane {
