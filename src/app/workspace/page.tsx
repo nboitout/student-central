@@ -931,31 +931,16 @@ export default function WorkspacePage() {
                           </>
                         )}
                       </div>
+                      <div className={styles.groupCourseList}>
+                        {section.courses.slice(0, 4).map(course => (
+                          <div key={course.id} className={styles.groupCourseItem}>{course.title}</div>
+                        ))}
+                        {section.courses.length > 4 && (
+                          <div className={styles.groupCourseItem}>+ {section.courses.length - 4} more</div>
+                        )}
+                      </div>
                       <div className={styles.groupCount}>{section.courses.length} courses</div>
                     </div>
-                    {section.courses.map((c, i) => (
-                      <CourseCard
-                        key={c.id}
-                        course={c}
-                        index={i}
-                        onDelete={handleDelete}
-                        onDetails={openDetails}
-                        onRename={handleRename}
-                        onCardDragStart={(id) => setDragCourseId(id)}
-                        onCardDragOver={(id) => setDropTargetId(id)}
-                        onCardDragEnd={() => { setDragCourseId(null); setDropTargetId(null); }}
-                        onCardDrop={(sourceId, targetId) => {
-                          groupCourses(sourceId, targetId);
-                          setDragCourseId(null);
-                          setDropTargetId(null);
-                        }}
-                        onUngroup={ungroupCourse}
-                        isDropTarget={dropTargetId === c.id && dragCourseId !== c.id}
-                        groupName={section.name}
-                        isProcessing={processingIds.has(c.id)}
-                        ui={ui}
-                      />
-                    ))}
                   </div>
                 </div>
               ))}
