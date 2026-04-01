@@ -567,6 +567,7 @@ export default function WorkspacePage() {
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [groupDraftName, setGroupDraftName] = useState("");
+  const [openGroupMenuId, setOpenGroupMenuId] = useState<string | null>(null);
 
   /* Load from API on mount.
      Middleware already guarantees only authenticated users reach this page.
@@ -896,8 +897,36 @@ export default function WorkspacePage() {
                       ) : (
                         <>
                           <span className={styles.groupTitle}>{section.name}</span>
-                          <button className={styles.groupActionBtn} onClick={() => beginRenameGroup(section.id)}>Rename</button>
-                          <button className={styles.groupActionBtn} onClick={() => ungroupAll(section.id)}>Ungroup all</button>
+                          <div className={styles.groupMenuWrap}>
+                            <button
+                              className={styles.groupMenuTrigger}
+                              onClick={() => setOpenGroupMenuId(prev => prev === section.id ? null : section.id)}
+                            >
+                              ⋯
+                            </button>
+                            {openGroupMenuId === section.id && (
+                              <div className={styles.groupMenuDropdown}>
+                                <button
+                                  className={styles.groupMenuItem}
+                                  onClick={() => {
+                                    beginRenameGroup(section.id);
+                                    setOpenGroupMenuId(null);
+                                  }}
+                                >
+                                  Rename
+                                </button>
+                                <button
+                                  className={styles.groupMenuItem}
+                                  onClick={() => {
+                                    ungroupAll(section.id);
+                                    setOpenGroupMenuId(null);
+                                  }}
+                                >
+                                  Ungroup all
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
