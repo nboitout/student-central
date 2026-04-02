@@ -321,6 +321,172 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  align-items: start;
+}
+
+.grid > * {
+  grid-column: auto / span 1 !important;
+  min-width: 0;
+}
+
+.groupSection {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.groupTitle {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.groupTitleWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.groupActionBtn {
+  border: none;
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.groupMenuWrap {
+  position: relative;
+  margin-left: 2px;
+}
+
+.groupMenuTrigger {
+  border: none;
+  background: transparent;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.groupMenuDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--surface-lowest);
+  box-shadow: var(--shadow-float);
+  min-width: 132px;
+  z-index: 40;
+  padding: 4px;
+}
+
+.groupMenuItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--on-surface-variant);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.groupMenuItem:hover {
+  background: var(--surface-low);
+  color: var(--on-surface);
+}
+
+.groupNameInput {
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-lowest);
+  padding: 4px 8px;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  min-width: 150px;
+}
+
+.groupCount {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(13, 26, 56, 0.65);
+}
+
+.groupGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.groupCard {
+  min-height: 0;
+}
+
+.groupCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.groupCourseList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.groupCourseItem {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.groupCardBody {
+  padding-top: 6px;
+  flex: 0 0 auto;
+}
+
+.groupTitleSub {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(13, 26, 56, 0.65);
+}
+
+.groupCountBadge {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  background: rgba(0, 60, 194, 0.08);
+  color: var(--primary);
+}
+
+.ungroupedGrid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 /* ── Course card ──────────────────────────────────────────── */
@@ -337,11 +503,16 @@
   position: relative;
   overflow: hidden;
   cursor: pointer;
+  align-self: start;
 }
 .card:hover {
   box-shadow: 0 8px 28px rgba(26, 28, 46, 0.13),
               0 0 0 1px rgba(26, 28, 46, 0.08);
   transform: translateY(-2px);
+}
+
+.cardDropTarget {
+  box-shadow: 0 0 0 2px var(--primary), 0 10px 26px rgba(0, 72, 216, 0.2) !important;
 }
 
 /* 4px top accent strip — cycles through brand palette */
@@ -468,6 +639,20 @@
 
 .cardAuthor { color: var(--on-surface-variant); font-weight: 500; }
 
+.cardGroupTag {
+  display: inline-flex;
+  margin-top: 6px;
+  width: fit-content;
+  background: var(--tertiary-fixed);
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+}
+
 /* ── Progress row ────────────────────────────────────────── */
 .cardStatus {
   padding: 0 22px 12px;
@@ -516,6 +701,17 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.cardFooterProgressLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
 }
 
 /* Status badge: compact, pill-less label */
@@ -882,10 +1078,10 @@
 .createDisabled:hover { opacity: 0.35; }
 
 /* ── Responsive ─────────────────────────────────────────── */
-@media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 900px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 1200px) { .grid, .groupGrid, .ungroupedGrid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px)  { .grid, .groupGrid, .ungroupedGrid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 600px) {
-  .grid { grid-template-columns: 1fr; }
+  .grid, .groupGrid, .ungroupedGrid { grid-template-columns: repeat(3, 1fr); }
   .mainInner { padding: 0 20px; }
   .topBarInner { padding: 0 20px; }
   .statsRibbon { padding: 16px 20px; flex-wrap: wrap; gap: 16px; }
