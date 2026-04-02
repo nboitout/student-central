@@ -777,7 +777,7 @@ export default function WorkspacePage() {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-build-marker="workspace-grid-3col-2026-04-02">
       <header className={styles.topBar}>
         <div className={styles.topBarInner}>
           <div className={styles.topBarBrand}>
