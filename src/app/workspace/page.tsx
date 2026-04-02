@@ -543,6 +543,7 @@ function CourseCard({
    MAIN PAGE
 ======================================================== */
 export default function WorkspacePage() {
+  // No-op change to trigger a fresh Vercel build/deploy from this commit.
   const { lang }  = useLanguage();
   const ui        = getT(lang).workspace;
   /* userId is resolved from the session cookie via the server layout.
@@ -969,6 +970,56 @@ export default function WorkspacePage() {
                   ui={ui}
                 />
               ))}
+              {ungroupedCourses.map((c, i) => (
+                <CourseCard
+                  key={c.id}
+                  course={c}
+                  index={i}
+                  onDelete={handleDelete}
+                  onDetails={openDetails}
+                  onRename={handleRename}
+                  onCardDragStart={(id) => setDragCourseId(id)}
+                  onCardDragOver={(id) => setDropTargetId(id)}
+                  onCardDragEnd={() => { setDragCourseId(null); setDropTargetId(null); }}
+                  onCardDrop={(sourceId, targetId) => {
+                    groupCourses(sourceId, targetId);
+                    setDragCourseId(null);
+                    setDropTargetId(null);
+                  }}
+                  onUngroup={undefined}
+                  isDropTarget={dropTargetId === c.id && dragCourseId !== c.id}
+                  groupName={undefined}
+                  isProcessing={processingIds.has(c.id)}
+                  ui={ui}
+                />
+              ))}
+              {ungroupedCourses.length > 0 && (
+                <div className={styles.ungroupedGrid}>
+                  {ungroupedCourses.map((c, i) => (
+                    <CourseCard
+                      key={c.id}
+                      course={c}
+                      index={i}
+                      onDelete={handleDelete}
+                      onDetails={openDetails}
+                      onRename={handleRename}
+                      onCardDragStart={(id) => setDragCourseId(id)}
+                      onCardDragOver={(id) => setDropTargetId(id)}
+                      onCardDragEnd={() => { setDragCourseId(null); setDropTargetId(null); }}
+                      onCardDrop={(sourceId, targetId) => {
+                        groupCourses(sourceId, targetId);
+                        setDragCourseId(null);
+                        setDropTargetId(null);
+                      }}
+                      onUngroup={undefined}
+                      isDropTarget={dropTargetId === c.id && dragCourseId !== c.id}
+                      groupName={undefined}
+                      isProcessing={processingIds.has(c.id)}
+                      ui={ui}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className={styles.listView}>
