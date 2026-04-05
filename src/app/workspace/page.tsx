@@ -592,16 +592,17 @@ export default function WorkspacePage() {
         );
 
     loadSession()
-      .then(async (id) => {
+      .then(id => {
         if (id) { setUserId(id); setCurrentUser(id); }
-        const [fresh, gs] = await Promise.all([
-          listCourses(id || undefined),
-          id ? listGroups(id) : Promise.resolve<Group[]>([]),
-        ]);
+        /* Groups load is fire-and-forget — a missing/failing endpoint
+           must never block courses from displaying.               */
+        if (id) listGroups(id).then(setGroups).catch(() => {});
+        return listCourses(id || undefined);
+      })
+      .then(fresh => {
         setCourses(fresh);
         const generating = fresh.filter(co => co.mcqStatus === "generating").map(co => co.id);
         if (generating.length > 0) setProcessingIds(new Set(generating));
-        setGroups(gs);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
