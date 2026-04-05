@@ -709,14 +709,14 @@
 }
 
 .groupCard {
-  background: #e8f5e9;
+  background: #eef2fd;
   border-radius: 14px;
   padding: 14px 16px;
   min-height: 120px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 0 0 1px rgba(20, 111, 67, 0.12) inset;
+  box-shadow: 0 0 0 1px rgba(0, 60, 194, 0.14) inset;
 }
 
 .groupCardTop {
@@ -836,14 +836,14 @@
 }
 
 .groupCard {
-  background: #e8f5e9;
+  background: #eef2fd;
   border-radius: 14px;
   padding: 14px 16px;
   min-height: 190px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 0 0 1px rgba(20, 111, 67, 0.12) inset;
+  box-shadow: 0 0 0 1px rgba(0, 60, 194, 0.14) inset;
 }
 
 .groupCardTop {
@@ -979,14 +979,14 @@
 }
 
 .groupCard {
-  background: #e8f5e9;
+  background: #eef2fd;
   border-radius: 14px;
   padding: 14px 16px;
   min-height: 190px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 0 0 1px rgba(20, 111, 67, 0.12) inset;
+  box-shadow: 0 0 0 1px rgba(0, 60, 194, 0.14) inset;
 }
 
 .groupCardTop {
@@ -1122,7 +1122,7 @@
 }
 
 .groupCard {
-  background: #e8f5e9;
+  background: #eef2fd;
   border-radius: 0;
   padding: 14px 16px;
   min-height: 280px;
@@ -1266,14 +1266,14 @@
 }
 
 .groupCard {
-  background: #e8f5e9;
+  background: #eef2fd;
   border-radius: 14px;
   padding: 14px 16px;
   min-height: 190px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 0 0 1px rgba(20, 111, 67, 0.12) inset;
+  box-shadow: 0 0 0 1px rgba(0, 60, 194, 0.14) inset;
 }
 
 .groupCardTop {
