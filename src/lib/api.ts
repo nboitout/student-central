@@ -409,6 +409,12 @@ export interface StoredSession {
   completed_at?: string;
   questions:    StoredSessionQuestion[];
   summary?:     SessionSummary | null;
+  chatHistory?: {
+    role:              "ai" | "student";
+    text:              string;
+    questionPosition:  number;
+    timestamp?:        string;
+  }[];
 }
 
 export async function listSessions(
