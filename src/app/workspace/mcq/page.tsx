@@ -409,11 +409,8 @@ function MCQContent() {
         const stored = await getSession(resumeSessionId, courseId, uid);
         setSession(resumeSessionId);
         const hydrated = hydrateResults(stored);
-        setResults(hydrated);
-        setQuestions(hydrated.map(r => r.question));
-        setQIndex(hydrated.length - 1);
 
-        /* ── Restore chat history from stored session ── */
+        /* ── Restore chat history ── */
         const history = stored.chatHistory ?? [];
 
         /* Derive which question the learner was on last */
@@ -421,29 +418,40 @@ function MCQContent() {
           ? (history[history.length - 1].questionPosition ?? 1)
           : 1;
         const resumeQIdx = Math.max(0, lastPos - 1);
-        setDebriefQIdx(resumeQIdx);
 
-        /* Restore messages for the active question.
-           Backend may store student role as "user" — normalise to "student". */
+        /* Normalise role: backend may store student messages as "user" */
         const activeMsgs = history
           .filter(m => m.questionPosition === lastPos)
           .map(m => ({
             role: (m.role === "user" ? "student" : m.role) as "ai" | "student",
             text: m.text,
           }));
-        setChatMsgs(activeMsgs);
 
-        /* Restore turn count (number of student messages for this question) */
         const turns = activeMsgs.filter(m => m.role === "student").length;
-        setChatTurns(turns);
 
-        /* Go straight to chat screen — skip tutorProbe if history exists */
         if (activeMsgs.length > 0) {
+          /* Set the restored flag BEFORE any state updates so runDebrief
+             cannot fire between state flushes */
           chatRestoredRef.current = true;
+
+          /* Batch all state in one synchronous pass */
+          setResults(hydrated);
+          setQuestions(hydrated.map(r => r.question));
+          setDebriefQIdx(resumeQIdx);
+          setChatMsgs(activeMsgs);
+          setChatTurns(turns);
+          setChatInput("");
+          setChatError(null);
           setScreen("chat");
-          /* Clear the flag after a tick so switchDebriefQ knows restore is done */
-          setTimeout(() => { chatRestoredRef.current = false; }, 300);
+
+          /* Release the guard after React has flushed and rendered */
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => { chatRestoredRef.current = false; });
+          });
         } else {
+          /* No chat history — start a fresh debrief probe */
+          setResults(hydrated);
+          setQuestions(hydrated.map(r => r.question));
           startDebriefWithResults(hydrated);
         }
       } catch (err) {
