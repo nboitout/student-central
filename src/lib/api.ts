@@ -433,3 +433,52 @@ export async function getSession(sessionId: string, courseId: string, userId?: s
   const uid = userId ?? await getCurrentUserId();
   return request<StoredSession>(`/api/sessions/${sessionId}?courseId=${courseId}&userId=${uid}`);
 }
+
+/* ── Groups ─────────────────────────────────────────────── */
+export type Group = {
+  id: string;
+  userId: string;
+  name: string;
+  courseIds: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listGroups(userId: string): Promise<Group[]> {
+  const data = await request<{ groups: Group[]; count: number }>(
+    `/api/groups?userId=${encodeURIComponent(userId)}`
+  );
+  return data.groups ?? [];
+}
+
+export async function createGroup(
+  name: string,
+  userId: string,
+  courseIds: string[]
+): Promise<Group> {
+  return request<Group>("/api/groups", {
+    method: "POST",
+    body: JSON.stringify({ name, userId, courseIds }),
+  });
+}
+
+export async function updateGroup(
+  id: string,
+  userId: string,
+  patch: { name?: string; courseIds?: string[] }
+): Promise<Group> {
+  return request<Group>(
+    `/api/groups/${id}?userId=${encodeURIComponent(userId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }
+  );
+}
+
+export async function deleteGroup(id: string, userId: string): Promise<void> {
+  await fetch(
+    `${API_URL}/api/groups/${id}?userId=${encodeURIComponent(userId)}`,
+    { method: "DELETE" }
+  );
+}

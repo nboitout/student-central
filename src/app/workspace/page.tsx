@@ -15,8 +15,13 @@ import {
   attachPdf,
   triggerMCQGeneration,
   listSessions,
+  createGroup,
+  listGroups,
+  updateGroup as updateGroupApi,
+  deleteGroup,
   type Course,
   type StoredSession,
+  type Group,
 } from "@/lib/api";
 
 /* ── Constants ──────────────────────────────────────────── */
@@ -561,8 +566,7 @@ export default function WorkspacePage() {
   const [sortKey, setSortKey]         = useState<SortKey>("recent");
   const [sortOpen, setSortOpen]       = useState(false);
   const [viewMode, setViewMode]       = useState<"grid" | "list">("grid");
-  const [courseGroups, setCourseGroups] = useState<Record<string, string>>({});
-  const [groupNames, setGroupNames] = useState<Record<string, string>>({});
+  const [groups, setGroups] = useState<Group[]>([]);
   const [dragCourseId, setDragCourseId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -588,14 +592,16 @@ export default function WorkspacePage() {
         );
 
     loadSession()
-      .then(id => {
+      .then(async (id) => {
         if (id) { setUserId(id); setCurrentUser(id); }
-        return listCourses(id || undefined);
-      })
-      .then(fresh => {
+        const [fresh, gs] = await Promise.all([
+          listCourses(id || undefined),
+          id ? listGroups(id) : Promise.resolve<Group[]>([]),
+        ]);
         setCourses(fresh);
         const generating = fresh.filter(co => co.mcqStatus === "generating").map(co => co.id);
         if (generating.length > 0) setProcessingIds(new Set(generating));
+        setGroups(gs);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -652,93 +658,79 @@ export default function WorkspacePage() {
         : new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
     );
 
-  const groupCourses = (sourceId: string, targetId: string) => {
+  const groupCourses = async (sourceId: string, targetId: string) => {
     if (!sourceId || !targetId || sourceId === targetId) return;
-    const sourceGroup = courseGroups[sourceId];
-    const targetGroup = courseGroups[targetId];
-
-    if (!sourceGroup && !targetGroup) {
-      const gid = `group-${Date.now()}`;
-      setGroupNames(prev => ({ ...prev, [gid]: "New group" }));
-      setCourseGroups(prev => ({ ...prev, [sourceId]: gid, [targetId]: gid }));
-      return;
-    }
-    if (sourceGroup && !targetGroup) {
-      setCourseGroups(prev => ({ ...prev, [targetId]: sourceGroup }));
-      return;
-    }
-    if (!sourceGroup && targetGroup) {
-      setCourseGroups(prev => ({ ...prev, [sourceId]: targetGroup }));
-      return;
-    }
-    if (sourceGroup && targetGroup && sourceGroup !== targetGroup) {
-      setCourseGroups(prev => {
-        const next = { ...prev };
-        Object.entries(next).forEach(([cid, gid]) => {
-          if (gid === sourceGroup) next[cid] = targetGroup;
+    const sourceGroup = groups.find(g => g.courseIds.includes(sourceId));
+    const targetGroup = groups.find(g => g.courseIds.includes(targetId));
+    try {
+      if (!sourceGroup && !targetGroup) {
+        const g = await createGroup("New group", userId, [sourceId, targetId]);
+        setGroups(prev => [...prev, g]);
+      } else if (sourceGroup && !targetGroup) {
+        const updated = await updateGroupApi(sourceGroup.id, userId, {
+          courseIds: [...sourceGroup.courseIds, targetId],
         });
-        return next;
-      });
-      setGroupNames(prev => {
-        const next = { ...prev };
-        delete next[sourceGroup];
-        return next;
-      });
-    }
-  };
-
-  const ungroupCourse = (courseId: string) => {
-    setCourseGroups(prev => {
-      const next = { ...prev };
-      const gid = next[courseId];
-      delete next[courseId];
-      if (gid) {
-        const stillInGroup = Object.values(next).some(v => v === gid);
-        if (!stillInGroup) {
-          setGroupNames(names => {
-            const copy = { ...names };
-            delete copy[gid];
-            return copy;
-          });
-        }
+        setGroups(prev => prev.map(g => g.id === sourceGroup.id ? updated : g));
+      } else if (!sourceGroup && targetGroup) {
+        const updated = await updateGroupApi(targetGroup.id, userId, {
+          courseIds: [...targetGroup.courseIds, sourceId],
+        });
+        setGroups(prev => prev.map(g => g.id === targetGroup.id ? updated : g));
+      } else if (sourceGroup && targetGroup && sourceGroup.id !== targetGroup.id) {
+        const mergedIds = Array.from(new Set([...targetGroup.courseIds, ...sourceGroup.courseIds]));
+        const updated = await updateGroupApi(targetGroup.id, userId, { courseIds: mergedIds });
+        await deleteGroup(sourceGroup.id, userId);
+        setGroups(prev => prev
+          .filter(g => g.id !== sourceGroup.id)
+          .map(g => g.id === targetGroup.id ? updated : g)
+        );
       }
-      return next;
-    });
+    } catch (err) { console.error("groupCourses failed:", err); }
   };
 
-  const ungroupAll = (groupId: string) => {
-    setCourseGroups(prev => {
-      const next = { ...prev };
-      Object.entries(next).forEach(([cid, gid]) => {
-        if (gid === groupId) delete next[cid];
-      });
-      return next;
-    });
-    setGroupNames(prev => {
-      const next = { ...prev };
-      delete next[groupId];
-      return next;
-    });
+  const ungroupCourse = async (courseId: string) => {
+    const group = groups.find(g => g.courseIds.includes(courseId));
+    if (!group) return;
+    try {
+      const newIds = group.courseIds.filter(id => id !== courseId);
+      if (newIds.length === 0) {
+        await deleteGroup(group.id, userId);
+        setGroups(prev => prev.filter(g => g.id !== group.id));
+      } else {
+        const updated = await updateGroupApi(group.id, userId, { courseIds: newIds });
+        setGroups(prev => prev.map(g => g.id === group.id ? updated : g));
+      }
+    } catch (err) { console.error("ungroupCourse failed:", err); }
+  };
+
+  const ungroupAll = async (groupId: string) => {
+    try {
+      await deleteGroup(groupId, userId);
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+    } catch (err) { console.error("ungroupAll failed:", err); }
   };
 
   const beginRenameGroup = (groupId: string) => {
     setEditingGroupId(groupId);
-    setGroupDraftName(groupNames[groupId] ?? "New group");
+    setGroupDraftName(groups.find(g => g.id === groupId)?.name ?? "New group");
   };
 
-  const saveRenameGroup = (groupId: string) => {
+  const saveRenameGroup = async (groupId: string) => {
     const clean = groupDraftName.trim();
-    if (clean) setGroupNames(prev => ({ ...prev, [groupId]: clean }));
     setEditingGroupId(null);
+    if (!clean) return;
+    try {
+      const updated = await updateGroupApi(groupId, userId, { name: clean });
+      setGroups(prev => prev.map(g => g.id === groupId ? updated : g));
+    } catch (err) { console.error("renameGroup failed:", err); }
   };
 
-  const groupedIds = new Set(Object.values(courseGroups));
-  const groupedSections = Array.from(groupedIds).map(gid => ({
-    id: gid,
-    name: groupNames[gid] ?? "New group",
-    courses: filtered.filter(c => courseGroups[c.id] === gid),
-  })).filter(section => section.courses.length > 0);
-  const ungroupedCourses = filtered.filter(c => !courseGroups[c.id]);
+  const groupedSections = groups.map(g => ({
+    id: g.id,
+    name: g.name,
+    courses: filtered.filter(c => g.courseIds.includes(c.id)),
+  })).filter(s => s.courses.length > 0);
+  const ungroupedCourses = filtered.filter(c => !groups.some(g => g.courseIds.includes(c.id)));
 
   const closeModal = () => { setModal(null); setActiveCourse(null); };
 
