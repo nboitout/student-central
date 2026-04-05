@@ -422,10 +422,14 @@ function MCQContent() {
         const resumeQIdx = Math.max(0, lastPos - 1);
         setDebriefQIdx(resumeQIdx);
 
-        /* Restore messages for the active question */
+        /* Restore messages for the active question.
+           Backend may store student role as "user" — normalise to "student". */
         const activeMsgs = history
           .filter(m => m.questionPosition === lastPos)
-          .map(m => ({ role: m.role, text: m.text }));
+          .map(m => ({
+            role: (m.role === "user" ? "student" : m.role) as "ai" | "student",
+            text: m.text,
+          }));
         setChatMsgs(activeMsgs);
 
         /* Restore turn count (number of student messages for this question) */

@@ -410,7 +410,7 @@ export interface StoredSession {
   questions:    StoredSessionQuestion[];
   summary?:     SessionSummary | null;
   chatHistory?: {
-    role:              "ai" | "student";
+    role:              "ai" | "student" | "user";  /* backend may use "user" for student */
     text:              string;
     questionPosition:  number;
     timestamp?:        string;
