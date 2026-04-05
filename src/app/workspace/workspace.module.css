@@ -709,14 +709,14 @@
 }
 
 .groupCard {
-  background: #eef2fd;
+  background: #e8f5e9;
   border-radius: 14px;
   padding: 14px 16px;
   min-height: 120px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 0 0 1px rgba(0, 60, 194, 0.14) inset;
+  box-shadow: 0 0 0 1px rgba(20, 111, 67, 0.12) inset;
 }
 
 .groupCardTop {
@@ -836,14 +836,14 @@
 }
 
 .groupCard {
-  background: #eef2fd;
+  background: #e8f5e9;
   border-radius: 14px;
   padding: 14px 16px;
   min-height: 190px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 0 0 1px rgba(0, 60, 194, 0.14) inset;
+  box-shadow: 0 0 0 1px rgba(20, 111, 67, 0.12) inset;
 }
 
 .groupCardTop {
@@ -979,14 +979,14 @@
 }
 
 .groupCard {
-  background: #eef2fd;
+  background: #e8f5e9;
   border-radius: 14px;
   padding: 14px 16px;
   min-height: 190px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 0 0 1px rgba(0, 60, 194, 0.14) inset;
+  box-shadow: 0 0 0 1px rgba(20, 111, 67, 0.12) inset;
 }
 
 .groupCardTop {
@@ -1122,7 +1122,7 @@
 }
 
 .groupCard {
-  background: #eef2fd;
+  background: #e8f5e9;
   border-radius: 0;
   padding: 14px 16px;
   min-height: 280px;
@@ -1266,14 +1266,14 @@
 }
 
 .groupCard {
-  background: #eef2fd;
+  background: #e8f5e9;
   border-radius: 14px;
   padding: 14px 16px;
   min-height: 190px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 0 0 1px rgba(0, 60, 194, 0.14) inset;
+  box-shadow: 0 0 0 1px rgba(20, 111, 67, 0.12) inset;
 }
 
 .groupCardTop {
@@ -1972,6 +1972,19 @@
   box-shadow: 0 8px 28px rgba(26, 28, 46, 0.13),
               0 0 0 1px rgba(26, 28, 46, 0.08);
   transform: translateY(-2px);
+}
+
+/* Group card: compound selector overrides .card background regardless of source order */
+.card.groupCard {
+  background: #eef2fd;
+  box-shadow: 0 2px 8px rgba(26, 28, 46, 0.06),
+              0 0 0 1px rgba(0, 60, 194, 0.14);
+  cursor: default;
+}
+.card.groupCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 60, 194, 0.12),
+              0 0 0 1px rgba(0, 60, 194, 0.22);
 }
 
 .cardDropTarget {
