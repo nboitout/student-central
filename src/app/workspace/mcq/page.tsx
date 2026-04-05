@@ -241,7 +241,8 @@ function MCQContent() {
   const bodyRef    = useRef<HTMLDivElement>(null);
   const dragging   = useRef(false);
   const dividerRef    = useRef<HTMLDivElement>(null);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const chatBottomRef   = useRef<HTMLDivElement>(null);
+  const chatRestoredRef = useRef(false);  /* true while restoring history — suppresses probe */
 
   /* Auto-scroll chat to bottom whenever messages change */
   useEffect(() => {
@@ -438,7 +439,10 @@ function MCQContent() {
 
         /* Go straight to chat screen — skip tutorProbe if history exists */
         if (activeMsgs.length > 0) {
+          chatRestoredRef.current = true;
           setScreen("chat");
+          /* Clear the flag after a tick so switchDebriefQ knows restore is done */
+          setTimeout(() => { chatRestoredRef.current = false; }, 300);
         } else {
           startDebriefWithResults(hydrated);
         }
@@ -588,6 +592,7 @@ function MCQContent() {
 
   /* ── Start AI debrief (shared logic) ── */
   const runDebrief = async (allResults: QuestionResult[]) => {
+    if (chatRestoredRef.current) return;  /* restored session — don't overwrite chat */
     setChatMsgs([]); setChatInput(""); setChatTurns(0); setChatError(null);
     const worstIdx = allResults.findIndex(r =>
       r.signal?.signal === "Low mastery" || r.signal?.signal === "Partial misconception"
@@ -673,6 +678,7 @@ function MCQContent() {
   /* ── Switch debrief question ── */
   const switchDebriefQ = async (idx: number) => {
     if (idx === debriefQIdx) return;
+    if (chatRestoredRef.current) return;  /* don't fire probe while restoring */
     setDebriefQIdx(idx);
     setChatMsgs([]); setChatInput(""); setChatTurns(0);
     setAiTyping(true);
