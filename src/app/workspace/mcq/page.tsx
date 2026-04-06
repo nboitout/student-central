@@ -68,7 +68,8 @@ function MCQContent() {
     sv: "sv-SE", da: "da-DK", fi: "fi-FI", ro: "ro-RO",
     el: "el-GR",
   };
-  const sttLang = STT_LANG_MAP[tutorLang] ?? "en-US";
+  /* Use UI lang (always current) — tutorLang URL param may not be set */
+  const sttLang = STT_LANG_MAP[lang] ?? STT_LANG_MAP[tutorLang] ?? "en-US";
   const resumeSessionId = params.get("resumeSession") ?? null;
 
   /* ── Mode toggle ── */
