@@ -350,17 +350,29 @@ function MCQContent() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      /* Prefer WAV (uncompressed, unambiguous for Azure STT).
+         Fall back to webm if WAV is not supported by this browser. */
+      const mimeType = MediaRecorder.isTypeSupported("audio/wav") ? "audio/wav" : "audio/webm";
+      console.log("[STT] using mimeType:", mimeType);
+      const recorder = new MediaRecorder(stream, { mimeType });
       audioChunksRef.current = [];
       recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       recorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         setVoiceState("transcribing");
         try {
-          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-          console.log("[STT] blob size:", audioBlob.size, "chunks:", audioChunksRef.current.length);
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          console.log("[STT] blob type:", audioBlob.type);
+          console.log("[STT] blob size:", audioBlob.size);
+
+          /* ── Playback test: hear what was recorded before sending ── */
+          const playbackUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(playbackUrl);
+          audio.play().catch(() => {});   /* non-blocking — just for diagnosis */
+
           const formData = new FormData();
-          formData.append("file", audioBlob, "recording.webm");
+          const ext = mimeType === "audio/wav" ? "recording.wav" : "recording.webm";
+          formData.append("file", audioBlob, ext);
           const res = await fetch(
             `https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io/api/stt?language=${tutorLang}`,
             { method: "POST", body: formData }
@@ -370,7 +382,6 @@ function MCQContent() {
           const raw = await res.text();
           console.log("[STT] response raw:", raw);
           if (!res.ok) {
-            /* Backend 500: STT service error — let user know and fall back */
             setChatError("Voice transcription failed — please type your answer.");
             setTimeout(() => setChatError(null), 4000);
             setVoiceState("idle");
@@ -382,7 +393,6 @@ function MCQContent() {
             setChatInput(text.trim());
             setVoiceState("ready");
           } else {
-            /* Empty transcription — let user retry or type */
             setVoiceState("idle");
           }
         } catch (err) {
@@ -390,7 +400,7 @@ function MCQContent() {
           setVoiceState("idle");
         }
       };
-      recorder.start(250);  /* timeslice: chunks accumulate during recording, not after onstop */
+      recorder.start(250);  /* timeslice: chunks accumulate during recording */
       mediaRecorderRef.current = recorder;
       setVoiceState("recording");
     } catch {
