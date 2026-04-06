@@ -365,11 +365,6 @@ function MCQContent() {
           console.log("[STT] blob type:", audioBlob.type);
           console.log("[STT] blob size:", audioBlob.size);
 
-          /* ── Playback test: hear what was recorded before sending ── */
-          const playbackUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(playbackUrl);
-          audio.play().catch(() => {});   /* non-blocking — just for diagnosis */
-
           const formData = new FormData();
           const ext = mimeType === "audio/wav" ? "recording.wav" : "recording.webm";
           formData.append("file", audioBlob, ext);
