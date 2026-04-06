@@ -59,6 +59,16 @@ function MCQContent() {
   const courseTitle = decodeURIComponent(params.get("title") ?? "Course");
   const pdfUrl      = decodeURIComponent(params.get("pdf")   ?? "");
   const tutorLang      = params.get("lang")         ?? "en";
+  /* Map short tutorLang code → full BCP-47 for Azure STT */
+  const STT_LANG_MAP: Record<string, string> = {
+    en: "en-US", fr: "fr-FR", de: "de-DE", es: "es-ES",
+    it: "it-IT", nl: "nl-NL", pt: "pt-PT", pl: "pl-PL",
+    ru: "ru-RU", uk: "uk-UA", hu: "hu-HU", hr: "hr-HR",
+    bg: "bg-BG", cs: "cs-CZ", sr: "sr-RS", tr: "tr-TR",
+    sv: "sv-SE", da: "da-DK", fi: "fi-FI", ro: "ro-RO",
+    el: "el-GR",
+  };
+  const sttLang = STT_LANG_MAP[tutorLang] ?? "en-US";
   const resumeSessionId = params.get("resumeSession") ?? null;
 
   /* ── Mode toggle ── */
@@ -365,11 +375,16 @@ function MCQContent() {
           console.log("[STT] blob type:", audioBlob.type);
           console.log("[STT] blob size:", audioBlob.size);
 
+          /* ── Playback test: hear what was recorded before sending ── */
+          const playbackUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(playbackUrl);
+          audio.play().catch(() => {});   /* non-blocking — just for diagnosis */
+
           const formData = new FormData();
           const ext = mimeType === "audio/wav" ? "recording.wav" : "recording.webm";
           formData.append("file", audioBlob, ext);
           const res = await fetch(
-            `https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io/api/stt?language=auto`,
+            `https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io/api/stt?language=${sttLang}`,
             { method: "POST", body: formData }
           );
           console.log("[STT] response status:", res.status);
