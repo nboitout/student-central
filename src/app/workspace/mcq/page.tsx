@@ -431,7 +431,7 @@ function MCQContent() {
     setScreen("loading"); setLoadError(null);
     try {
       const { sessionId: sid, question: firstQuestion } = await createSession({
-        courseId, mode, language: tutorLang, userId: uid || "unknown",
+        courseId, mode, language: lang, userId: uid || "unknown",
       });
       setSession(sid);
       applyQuestion(firstQuestion, 0);
@@ -506,7 +506,7 @@ function MCQContent() {
     /* ── Normal path: create new session ── */
     try {
       const { sessionId: sid, question: firstQuestion } = await createSession({
-        courseId, mode, language: tutorLang,
+        courseId, mode, language: lang,
       });
       setSession(sid);
       applyQuestion(firstQuestion, 0);
@@ -660,7 +660,7 @@ function MCQContent() {
         selectedIndex: allResults[focusIdx].selected,
         isCorrect:     allResults[focusIdx].selected === allResults[focusIdx].question.correctIndex,
         explanation:   allResults[focusIdx].question.explanation,
-        language:      tutorLang,
+        language:      lang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
       if (sessionIdRef.current) {
@@ -710,7 +710,7 @@ function MCQContent() {
         selectedIndex: focusR.selected,
         isCorrect:     focusR.selected === focusR.question.correctIndex,
         explanation:   focusR.question.explanation,
-        language:      tutorLang,
+        language:      lang,
         history:       updatedHistory,
       });
       setChatMsgs(prev => [...prev, { role: "ai", text: message }]);
@@ -742,7 +742,7 @@ function MCQContent() {
         selectedIndex: r.selected,
         isCorrect:     r.selected === r.question.correctIndex,
         explanation:   r.question.explanation,
-        language:      tutorLang,
+        language:      lang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
       if (sessionIdRef.current) {
@@ -1053,7 +1053,7 @@ function MCQContent() {
                   selectedIndex: r.selected,
                   isCorrect:     r.selected === r.question.correctIndex,
                   explanation:   r.question.explanation,
-                  language:      tutorLang,
+                  language:      lang,
                 })
                   .then(({ message }) => {
                     setChatMsgs([{ role: "ai", text: message }]);
