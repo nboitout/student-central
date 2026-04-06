@@ -356,13 +356,26 @@ function MCQContent() {
       recorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         setVoiceState("transcribing");
-        /* ── Placeholder: Web Speech API transcription ──────────
-           Replace this block with Azure STT call when ready.
-           Azure STT: POST audioBlob to /api/stt → returns { text }  */
-        setTimeout(() => {
-          /* Simulate transcription delay — swap for real API call */
-          setVoiceState("ready");
-        }, 800);
+        try {
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const formData = new FormData();
+          formData.append("file", audioBlob, "recording.webm");
+          const res = await fetch(
+            `https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io/api/stt?language=${tutorLang}`,
+            { method: "POST", body: formData }
+          );
+          if (!res.ok) throw new Error(`STT ${res.status}`);
+          const { text } = await res.json();
+          if (text?.trim()) {
+            setChatInput(text.trim());
+            setVoiceState("ready");
+          } else {
+            /* Empty transcription — let student re-record or type */
+            setVoiceState("idle");
+          }
+        } catch {
+          setVoiceState("idle");
+        }
       };
       recorder.start();
       mediaRecorderRef.current = recorder;
