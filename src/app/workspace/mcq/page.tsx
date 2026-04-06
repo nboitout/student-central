@@ -365,11 +365,16 @@ function MCQContent() {
           console.log("[STT] blob type:", audioBlob.type);
           console.log("[STT] blob size:", audioBlob.size);
 
+          /* ── Playback test: hear what was recorded before sending ── */
+          const playbackUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(playbackUrl);
+          audio.play().catch(() => {});   /* non-blocking — just for diagnosis */
+
           const formData = new FormData();
           const ext = mimeType === "audio/wav" ? "recording.wav" : "recording.webm";
           formData.append("file", audioBlob, ext);
           const res = await fetch(
-            `https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io/api/stt?language=${tutorLang}`,
+            `https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io/api/stt?language=auto`,
             { method: "POST", body: formData }
           );
           console.log("[STT] response status:", res.status);
