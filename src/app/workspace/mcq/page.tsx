@@ -366,15 +366,23 @@ function MCQContent() {
             { method: "POST", body: formData }
           );
           console.log("[STT] response status:", res.status);
-          const json = await res.json();
-          console.log("[STT] response body:", json);
-          if (!res.ok) throw new Error(`STT ${res.status}`);
+          /* Read as text first — backend may return plain text on 500 */
+          const raw = await res.text();
+          console.log("[STT] response raw:", raw);
+          if (!res.ok) {
+            /* Backend 500: STT service error — let user know and fall back */
+            setChatError("Voice transcription failed — please type your answer.");
+            setTimeout(() => setChatError(null), 4000);
+            setVoiceState("idle");
+            return;
+          }
+          const json = JSON.parse(raw);
           const text: string = json.text ?? "";
           if (text.trim()) {
             setChatInput(text.trim());
             setVoiceState("ready");
           } else {
-            console.warn("[STT] empty transcription — letting user retry or type");
+            /* Empty transcription — let user retry or type */
             setVoiceState("idle");
           }
         } catch (err) {
