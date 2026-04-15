@@ -108,6 +108,13 @@ function MCQContent() {
   const audioChunksRef   = useRef<Blob[]>([]);
   const [aiTyping,     setAiTyping]     = useState(false);
 
+  /* ── Voice conversation mode ─────────────────────────────── */
+  type ConvState = "idle" | "listening" | "transcribing" | "thinking" | "speaking";
+  const [convState,    setConvState]    = useState<ConvState>("idle");
+  const convActiveRef  = useRef(false);                        /* loop guard         */
+  const convAudioRef   = useRef<HTMLAudioElement | null>(null);/* current TTS audio  */
+  const chatMsgsRef    = useRef<TutorMessage[]>([]);           /* ref mirror — async loop reads fresh values */
+  const chatTurnsRef   = useRef(0);
 
   const [chatError,    setChatError]    = useState<string | null>(null);
   /* Which question the debrief is currently focused on */
@@ -259,6 +266,10 @@ function MCQContent() {
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMsgs, aiTyping]);
+
+  /* Keep ref mirrors in sync so the async voice-conv loop always reads fresh state */
+  useEffect(() => { chatMsgsRef.current  = chatMsgs;  }, [chatMsgs]);
+  useEffect(() => { chatTurnsRef.current = chatTurns; }, [chatTurns]);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault(); dragging.current = true;
@@ -427,6 +438,179 @@ function MCQContent() {
     setVoiceState("idle");
   };
 
+  /* ═══════════════════════════════════════════════════════════
+     VOICE CONVERSATION MODE
+  ═══════════════════════════════════════════════════════════ */
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ||
+    "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+
+  /** Record audio and resolve with blob when stopConvRecording() is called. */
+  const recordAudioForConv = (): Promise<Blob | null> =>
+    new Promise(async resolve => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported("audio/wav") ? "audio/wav" : "audio/webm";
+        const recorder = new MediaRecorder(stream, { mimeType });
+        audioChunksRef.current = [];
+        recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+        recorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          audioChunksRef.current = [];
+          resolve(blob.size > 0 ? blob : null);
+        };
+        recorder.start(250);
+        mediaRecorderRef.current = recorder;
+      } catch { resolve(null); }
+    });
+
+  /** Stop the conv recorder — called by the ■ button during LISTENING state. */
+  const stopConvRecording = () => {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+  };
+
+  /** STT helper shared by voice conv loop. Returns trimmed text or "" on failure. */
+  const callSTT = async (audioBlob: Blob): Promise<string> => {
+    try {
+      const ext  = audioBlob.type.includes("wav") ? "recording.wav" : "recording.webm";
+      const form = new FormData();
+      form.append("file", audioBlob, ext);
+      const res = await fetch(`${API_URL}/api/stt?language=${sttLang}`, { method: "POST", body: form });
+      const raw = await res.text();
+      if (!res.ok) return "";
+      return (JSON.parse(raw).text ?? "").trim();
+    } catch { return ""; }
+  };
+
+  /**
+   * TTS call — resolves when audio finishes playing (or on any error).
+   * Endpoint pending backend work; returns audio/mpeg binary when live.
+   * Until then, the call fails silently and the loop continues.
+   */
+  const playTTS = (text: string): Promise<void> =>
+    new Promise(async resolve => {
+      try {
+        const res = await fetch(`${API_URL}/api/tutor/tts`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ text, language: lang }),
+        });
+        if (!res.ok) { resolve(); return; }
+        const blob  = await res.blob();
+        const url   = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        convAudioRef.current = audio;
+        const cleanup = () => { URL.revokeObjectURL(url); convAudioRef.current = null; resolve(); };
+        audio.onended = cleanup;
+        audio.onerror = cleanup;
+        audio.play().catch(cleanup);
+      } catch { resolve(); }
+    });
+
+  /**
+   * One full voice conversation turn.
+   * Recurses after TTS playback ends until stopped or MAX_TURNS reached.
+   * Reads chatMsgsRef / chatTurnsRef to avoid stale React state in the async closure.
+   */
+  const doVoiceConvTurn = async () => {
+    if (!convActiveRef.current || chatTurnsRef.current >= MAX_TURNS) {
+      stopVoiceConv(); return;
+    }
+
+    /* LISTENING */
+    setConvState("listening");
+    const audioBlob = await recordAudioForConv();
+    if (!convActiveRef.current) return;
+    if (!audioBlob) { doVoiceConvTurn(); return; }   /* empty recording → re-listen */
+
+    /* TRANSCRIBING */
+    setConvState("transcribing");
+    const text = await callSTT(audioBlob);
+    if (!convActiveRef.current) return;
+    if (!text) { doVoiceConvTurn(); return; }         /* nothing heard → re-listen */
+
+    /* Add student message (mirrors sendChat) */
+    const newTurns = chatTurnsRef.current + 1;
+    chatTurnsRef.current = newTurns;
+    setChatTurns(newTurns);
+    const updatedHistory: TutorMessage[] = [
+      ...chatMsgsRef.current,
+      { role: "student", text },
+    ];
+    chatMsgsRef.current = updatedHistory;
+    setChatMsgs(updatedHistory);
+    if (sessionIdRef.current) {
+      patchSessionChat(
+        sessionIdRef.current,
+        { role: "student", text, questionPosition: debriefQIdx + 1 },
+        courseId
+      ).catch(() => {});
+    }
+    if (newTurns >= MAX_TURNS) { stopVoiceConv(); return; }
+
+    /* THINKING */
+    setConvState("thinking");
+    const focusR = results[debriefQIdx];
+    let aiMessage = "";
+    try {
+      const { message } = await tutorReply({
+        courseId,
+        question:      focusR.question.question,
+        options:       focusR.question.options.map(o => o.text),
+        correctIndex:  focusR.question.correctIndex,
+        selectedIndex: focusR.selected,
+        isCorrect:     focusR.selected === focusR.question.correctIndex,
+        explanation:   focusR.question.explanation,
+        language:      lang,
+        history:       updatedHistory,
+      });
+      aiMessage = message;
+      const withAI: TutorMessage[] = [...updatedHistory, { role: "ai", text: message }];
+      chatMsgsRef.current = withAI;
+      setChatMsgs(withAI);
+      if (sessionIdRef.current) {
+        patchSessionChat(
+          sessionIdRef.current,
+          { role: "ai", text: message, questionPosition: debriefQIdx + 1 },
+          courseId
+        ).catch(() => {});
+      }
+    } catch {
+      setChatError("Voice reply failed — switching back to text.");
+      setTimeout(() => setChatError(null), 4000);
+      stopVoiceConv(); return;
+    }
+    if (!convActiveRef.current) return;
+
+    /* SPEAKING */
+    setConvState("speaking");
+    await playTTS(aiMessage);
+    if (!convActiveRef.current) return;
+
+    /* Loop */
+    doVoiceConvTurn();
+  };
+
+  /** Enter voice conversation mode. Double-tap guard via convActiveRef. */
+  const startVoiceConv = () => {
+    if (convActiveRef.current) return;
+    convActiveRef.current = true;
+    doVoiceConvTurn();
+  };
+
+  /** Exit voice conversation mode — stops recording and any active TTS playback. */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stopVoiceConv = useCallback(() => {
+    convActiveRef.current = false;
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    convAudioRef.current?.pause();
+    convAudioRef.current = null;
+    setConvState("idle");
+  }, []);
+
   const startSessionWithUser = async (uid: string) => {
     setScreen("loading"); setLoadError(null);
     try {
@@ -545,6 +729,9 @@ function MCQContent() {
         }
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Stop voice conv if the student navigates away mid-recording */
+  useEffect(() => { return () => { stopVoiceConv(); }; }, [stopVoiceConv]);
 
   /* ── Submit answer ── */
   const handleSubmit = () => {
@@ -1215,7 +1402,104 @@ function MCQContent() {
             {chatTurns < MAX_TURNS && (
               <div className={styles.chatInputWrap}>
 
-                {/* ── Recording state ── */}
+                {/* ══ VOICE CONVERSATION OVERLAY (all 4 active states) ══
+                    Sits above the dimmed input box — textarea stays visible for context. */}
+                {convState !== "idle" && (
+                  <>
+                    <div className={styles.voiceConvOverlay}>
+                      <div className={styles.voiceConvIndicator}>
+
+                        {convState === "listening" && (
+                          <>
+                            <div className={styles.voiceWaveform}>
+                              {[...Array(8)].map((_, i) => (
+                                <div key={i} className={styles.voiceBar}
+                                     style={{ animationDelay: `${i * 0.07}s` }} />
+                              ))}
+                            </div>
+                            <span className={styles.voiceConvLabel}>Listening…</span>
+                            <button className={styles.voiceConvStopBtn}
+                                    onClick={stopConvRecording}
+                                    aria-label="Stop speaking">
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="white">
+                                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                              </svg>
+                            </button>
+                          </>
+                        )}
+
+                        {(convState === "transcribing" || convState === "thinking") && (
+                          <>
+                            <div className={styles.voiceSpinner} />
+                            <span className={styles.voiceConvLabel}>
+                              {convState === "transcribing" ? "Transcribing…" : "Thinking…"}
+                            </span>
+                          </>
+                        )}
+
+                        {convState === "speaking" && (
+                          <>
+                            <div className={styles.voiceWaveform}>
+                              {[...Array(8)].map((_, i) => (
+                                <div key={i}
+                                     className={`${styles.voiceBar} ${styles.voiceBarSpeaking}`}
+                                     style={{ animationDelay: `${i * 0.07}s` }} />
+                              ))}
+                            </div>
+                            <span className={styles.voiceConvLabel}>AI Tutor speaking…</span>
+                          </>
+                        )}
+                      </div>
+
+                      <button className={styles.voiceConvExitBtn}
+                              onClick={stopVoiceConv}
+                              aria-label="Exit voice conversation">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        Exit
+                      </button>
+                    </div>
+
+                    {/* Dimmed input box — disabled but visible for spatial context */}
+                    <div className={styles.chatInputBox} style={{ opacity: 0.35, pointerEvents: "none" }}>
+                      <textarea
+                        className={styles.chatInput}
+                        placeholder="Reply to the AI tutor…"
+                        rows={1}
+                        disabled
+                      />
+                      <div className={styles.chatBtnGroup}>
+                        <button className={styles.voiceMicBtn} disabled aria-hidden="true">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+                            <path d="M19 10a7 7 0 0 1-14 0"/>
+                            <line x1="12" y1="19" x2="12" y2="22"/>
+                          </svg>
+                        </button>
+                        <button className={styles.voiceConvBtn} disabled aria-hidden="true">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <line x1="2"  y1="12" x2="2"  y2="12" strokeWidth="3"/>
+                            <line x1="6"  y1="8"  x2="6"  y2="16"/>
+                            <line x1="10" y1="5"  x2="10" y2="19"/>
+                            <line x1="14" y1="8"  x2="14" y2="16"/>
+                            <line x1="18" y1="10" x2="18" y2="14"/>
+                            <line x1="22" y1="12" x2="22" y2="12" strokeWidth="3"/>
+                          </svg>
+                        </button>
+                        <button className={styles.chatSendBtn} disabled aria-hidden="true">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ── Dictate: recording ── */}
                 {voiceState === "recording" && (
                   <div className={styles.voiceRecording}>
                     <div className={styles.voiceWaveform}>
@@ -1230,7 +1514,7 @@ function MCQContent() {
                   </div>
                 )}
 
-                {/* ── Transcribing state ── */}
+                {/* ── Dictate: transcribing ── */}
                 {voiceState === "transcribing" && (
                   <div className={styles.voiceTranscribing}>
                     <div className={styles.voiceSpinner} />
@@ -1238,8 +1522,13 @@ function MCQContent() {
                   </div>
                 )}
 
-                {/* ── Idle / ready: normal input box ── */}
-                {(voiceState === "idle" || voiceState === "ready") && (
+                {/* ── Normal input (idle / ready) ─────────────────────────
+                    Hidden while voice conv overlay is active.
+                    Three sub-states following ChatGPT input bar pattern:
+                      ready     → clear button + send
+                      idle+text → mic + send  (waveform replaced by send)
+                      idle+empty → mic + waveform + send(disabled)           */}
+                {convState === "idle" && (voiceState === "idle" || voiceState === "ready") && (
                   <div className={styles.chatInputBox}>
                     <textarea
                       className={styles.chatInput}
@@ -1261,17 +1550,51 @@ function MCQContent() {
                     />
                     <div className={styles.chatBtnGroup}>
                       {voiceState === "ready" ? (
-                        <button className={styles.voiceClearBtn} onClick={cancelVoice} aria-label="Clear transcript" title="Clear and re-record">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        /* Transcript ready: clear button */
+                        <button className={styles.voiceClearBtn} onClick={cancelVoice}
+                                aria-label="Clear transcript" title="Clear and re-record">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                               stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
                         </button>
-                      ) : (
-                        <button className={styles.voiceMicBtn} onClick={startRecording} aria-label="Speak your answer" title="Speak your answer">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      ) : chatInput.trim() ? (
+                        /* Has text: mic stays, waveform replaced by send — show mic only */
+                        <button className={styles.voiceMicBtn} onClick={startRecording}
+                                aria-label="Dictate" title="Dictate your answer">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
                             <path d="M19 10a7 7 0 0 1-14 0"/>
                             <line x1="12" y1="19" x2="12" y2="22"/>
                           </svg>
                         </button>
+                      ) : (
+                        /* Empty field: mic (dictate) + waveform (voice conv) */
+                        <>
+                          <button className={styles.voiceMicBtn} onClick={startRecording}
+                                  aria-label="Dictate" title="Dictate your answer">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+                              <path d="M19 10a7 7 0 0 1-14 0"/>
+                              <line x1="12" y1="19" x2="12" y2="22"/>
+                            </svg>
+                          </button>
+                          <button className={styles.voiceConvBtn} onClick={startVoiceConv}
+                                  aria-label="Voice conversation" title="Voice conversation mode">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                              <line x1="2"  y1="12" x2="2"  y2="12" strokeWidth="3"/>
+                              <line x1="6"  y1="8"  x2="6"  y2="16"/>
+                              <line x1="10" y1="5"  x2="10" y2="19"/>
+                              <line x1="14" y1="8"  x2="14" y2="16"/>
+                              <line x1="18" y1="10" x2="18" y2="14"/>
+                              <line x1="22" y1="12" x2="22" y2="12" strokeWidth="3"/>
+                            </svg>
+                          </button>
+                        </>
                       )}
                       <button
                         className={styles.chatSendBtn}
@@ -1279,8 +1602,10 @@ function MCQContent() {
                         disabled={!chatInput.trim() || aiTyping}
                         aria-label="Send"
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="22" y1="2" x2="11" y2="13"/>
+                          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                         </svg>
                       </button>
                     </div>
@@ -1289,8 +1614,10 @@ function MCQContent() {
 
                 <div className={styles.chatMeta}>
                   <span>{chatTurns}/{MAX_TURNS} exchanges</span>
-                  {voiceState === "ready"
-                    ? <span style={{ color: "#185FA5" }}>Edit transcript · ↵ to send</span>
+                  {convState !== "idle"
+                    ? <span style={{ color: "var(--primary)" }}>Voice conversation active</span>
+                    : voiceState === "ready"
+                    ? <span style={{ color: "var(--primary)" }}>Edit transcript · ↵ to send</span>
                     : <span>↵ to send · Shift+↵ new line</span>
                   }
                 </div>
