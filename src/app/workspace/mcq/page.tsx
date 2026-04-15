@@ -1550,28 +1550,56 @@ function MCQContent() {
                     />
                     <div className={styles.chatBtnGroup}>
                       {voiceState === "ready" ? (
-                        /* Transcript ready: clear button */
-                        <button className={styles.voiceClearBtn} onClick={cancelVoice}
-                                aria-label="Clear transcript" title="Clear and re-record">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                               stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18"/>
-                            <line x1="6" y1="6" x2="18" y2="18"/>
-                          </svg>
-                        </button>
+                        /* Transcript ready: clear + send */
+                        <>
+                          <button className={styles.voiceClearBtn} onClick={cancelVoice}
+                                  aria-label="Clear transcript" title="Clear and re-record">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                              <line x1="18" y1="6" x2="6" y2="18"/>
+                              <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                          <button
+                            className={styles.chatSendBtn}
+                            onClick={() => { setVoiceState("idle"); sendChat(); }}
+                            disabled={!chatInput.trim() || aiTyping}
+                            aria-label="Send"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="22" y1="2" x2="11" y2="13"/>
+                              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                          </button>
+                        </>
                       ) : chatInput.trim() ? (
-                        /* Has text: mic stays, waveform replaced by send — show mic only */
-                        <button className={styles.voiceMicBtn} onClick={startRecording}
-                                aria-label="Dictate" title="Dictate your answer">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
-                            <path d="M19 10a7 7 0 0 1-14 0"/>
-                            <line x1="12" y1="19" x2="12" y2="22"/>
-                          </svg>
-                        </button>
+                        /* Has text: mic + send. Waveform gone — ChatGPT pattern. */
+                        <>
+                          <button className={styles.voiceMicBtn} onClick={startRecording}
+                                  aria-label="Dictate" title="Dictate your answer">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+                              <path d="M19 10a7 7 0 0 1-14 0"/>
+                              <line x1="12" y1="19" x2="12" y2="22"/>
+                            </svg>
+                          </button>
+                          <button
+                            className={styles.chatSendBtn}
+                            onClick={() => { setVoiceState("idle"); sendChat(); }}
+                            disabled={aiTyping}
+                            aria-label="Send"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="22" y1="2" x2="11" y2="13"/>
+                              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                          </button>
+                        </>
                       ) : (
-                        /* Empty field: mic (dictate) + waveform (voice conv) */
+                        /* Empty field: mic + waveform. No send — ChatGPT pattern. */
                         <>
                           <button className={styles.voiceMicBtn} onClick={startRecording}
                                   aria-label="Dictate" title="Dictate your answer">
@@ -1596,18 +1624,6 @@ function MCQContent() {
                           </button>
                         </>
                       )}
-                      <button
-                        className={styles.chatSendBtn}
-                        onClick={() => { setVoiceState("idle"); sendChat(); }}
-                        disabled={!chatInput.trim() || aiTyping}
-                        aria-label="Send"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="22" y1="2" x2="11" y2="13"/>
-                          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                        </svg>
-                      </button>
                     </div>
                   </div>
                 )}
