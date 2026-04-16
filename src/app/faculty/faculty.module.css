@@ -1,0 +1,713 @@
+/*
+ * faculty.module.css
+ * Signal colors live here as local CSS vars on .shell
+ * 0px border-radius throughout (workspace convention)
+ * All design tokens via var(--token) from globals.css
+ */
+
+.shell {
+  /* Signal palette — local to this module */
+  --sig-strong:  #22c55e;
+  --sig-fragile: #f59e0b;
+  --sig-partial: #f97316;
+  --sig-low:     #ef4444;
+  --sig-none:    var(--on-surface-variant);
+
+  display: grid;
+  grid-template-columns: 220px 340px 1fr;
+  height: calc(100vh - 56px); /* nav offset — adjust to match var(--nav-height) */
+  overflow: hidden;
+  background: var(--surface-lowest);
+}
+
+/* ─── Pane shells ─────────────────────────────────────────────────────────── */
+
+.paneLeft,
+.paneMiddle,
+.paneRight {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--outline-variant);
+}
+
+.paneRight {
+  border-right: none;
+}
+
+/* ─── Pane header ─────────────────────────────────────────────────────────── */
+
+.paneHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--outline-variant);
+  flex-shrink: 0;
+  background: var(--surface-lowest);
+}
+
+.headerMeta {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  color: var(--on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+/* ─── Eyebrow label ───────────────────────────────────────────────────────── */
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  color: var(--on-surface);
+  white-space: nowrap;
+}
+
+/* ─── Empty / utility states ──────────────────────────────────────────────── */
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.emptyState p {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  max-width: 200px;
+  line-height: 1.55;
+}
+
+.hint {
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  color: var(--on-surface-variant);
+  padding: 8px 16px;
+}
+
+.errorMsg {
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  color: var(--error);
+  padding: 8px 16px;
+}
+
+/* ─── LEFT: Course list ───────────────────────────────────────────────────── */
+
+.courseList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.courseItem {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--outline-variant);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.courseItem:hover {
+  background: var(--surface-low);
+}
+
+.courseItemActive {
+  background: var(--surface-low);
+  border-left: 2px solid var(--primary);
+  padding-left: 14px;
+}
+
+.courseTitle {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  line-height: 1.35;
+  margin-bottom: 5px;
+}
+
+.courseMeta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status_ready      { background: #22c55e; }
+.status_generating { background: #f59e0b; }
+.status_none       { background: var(--outline-variant); }
+.status_failed     { background: #ef4444; }
+
+.statusLabel {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.mcqCount {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  color: var(--on-surface-variant);
+  margin-left: auto;
+  opacity: 0.55;
+}
+
+/* ─── MIDDLE: Student selector + session list ─────────────────────────────── */
+
+.paneMiddle {
+  overflow-y: auto;
+}
+
+/* Synthesis strip */
+.synthesisStrip {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+  flex-shrink: 0;
+}
+
+.synthesisThesis {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface);
+  line-height: 1.5;
+  margin: 4px 0 8px;
+}
+
+.conceptRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.conceptChip {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+}
+
+/* Student input */
+.studentBlock {
+  padding: 12px 16px 4px;
+  border-bottom: 1px solid var(--outline-variant);
+  flex-shrink: 0;
+}
+
+.studentInputRow {
+  display: flex;
+}
+
+.studentInput {
+  flex: 1;
+  padding: 7px 10px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  border-right: none;
+  color: var(--on-surface);
+  outline: none;
+}
+
+.studentInput::placeholder {
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+}
+
+.studentInput:focus {
+  border-color: var(--primary);
+}
+
+.loadBtn {
+  padding: 7px 14px;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--primary-gradient);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.loadBtn:hover {
+  opacity: 0.88;
+}
+
+.apiNote {
+  font-family: var(--font-body);
+  font-size: 0.5625rem;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  margin: 5px 0 0;
+}
+
+/* Session list */
+.sessionList {
+  list-style: none;
+  margin: 0;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sessionCard {
+  padding: 10px 12px;
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-lowest);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.sessionCard:hover {
+  background: var(--surface-low);
+}
+
+.sessionCardActive {
+  border-color: var(--primary);
+  background: var(--surface-low);
+}
+
+.sessionCardTop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.sessionIndex {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  min-width: 20px;
+}
+
+.sessionDate {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  color: var(--on-surface);
+  flex: 1;
+}
+
+.sessionLang {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.55;
+}
+
+.sessionMode {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+}
+
+.mode_tutoring   { color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.25); }
+.mode_assessment { color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.25); }
+
+.scoreRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.scoreBar {
+  flex: 1;
+  height: 3px;
+  background: var(--outline-variant);
+  overflow: hidden;
+}
+
+.scoreBarFill {
+  height: 100%;
+  background: var(--primary-gradient);
+  transition: width 0.4s ease;
+}
+
+.scoreLabel {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  color: var(--on-surface-variant);
+}
+
+.scorePct {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  min-width: 32px;
+  text-align: right;
+}
+
+.duration {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  color: var(--on-surface-variant);
+  opacity: 0.55;
+}
+
+.signalRow {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.signalChip {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  color: var(--chip-color, var(--on-surface-variant));
+  border: 1px solid var(--chip-color, var(--outline-variant));
+  opacity: 0.9;
+}
+
+/* ─── RIGHT: Session detail ───────────────────────────────────────────────── */
+
+.paneRight {
+  overflow-y: auto;
+}
+
+.statusBadge {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+}
+
+.statusBadge[data-status="completed"] {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* Summary bar */
+.summaryBar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+  flex-shrink: 0;
+}
+
+.summaryScore {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 52px;
+}
+
+.summaryScoreBig {
+  font-family: var(--font-display);
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  line-height: 1;
+}
+
+.summaryScoreSub {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--on-surface-variant);
+  margin-top: 2px;
+}
+
+.summarySignals {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+}
+
+.summarySignalItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.summarySignalN {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.summarySignalLabel {
+  font-family: var(--font-display);
+  font-size: 0.4375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--on-surface-variant);
+}
+
+.summaryDur {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+}
+
+/* Question list */
+.qList {
+  list-style: none;
+  margin: 0;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qCard {
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-lowest);
+}
+
+.qHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s;
+}
+
+.qHeader:hover {
+  background: var(--surface-low);
+}
+
+.qPos {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  opacity: 0.45;
+  min-width: 20px;
+}
+
+.qFn {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  min-width: 76px;
+}
+
+.qCorrect {
+  font-size: 0.875rem;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
+}
+
+.correct   { color: #22c55e; }
+.incorrect { color: #ef4444; }
+
+.qSignal {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.qDur {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  color: var(--on-surface-variant);
+  opacity: 0.45;
+}
+
+.qChevron {
+  font-size: 0.4375rem;
+  color: var(--on-surface-variant);
+  opacity: 0.35;
+}
+
+/* Q body */
+.qBody {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.qText {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  line-height: 1.55;
+  padding: 10px 0 8px;
+}
+
+.optionList {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 8px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface);
+  background: var(--surface-low);
+  line-height: 1.4;
+}
+
+.optionCorrect {
+  background: rgba(34, 197, 94, 0.08);
+  color: #22c55e;
+}
+
+.optionWrong {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
+
+.optionLetter {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  opacity: 0.45;
+  min-width: 12px;
+  padding-top: 1px;
+}
+
+/* Explanation + insight blocks */
+.explanationBlock,
+.insightBlock {
+  padding: 8px 10px;
+  border: 1px solid var(--outline-variant);
+  margin-bottom: 8px;
+  background: var(--surface-low);
+}
+
+.explanationText,
+.insightText {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface);
+  line-height: 1.55;
+  margin: 4px 0 0;
+}
+
+/* Chat section */
+.chatSection {
+  margin-top: 8px;
+}
+
+.chatToggleBtn {
+  background: none;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.02em;
+}
+
+.chatToggleBtn:hover {
+  opacity: 0.75;
+}
+
+.chatReplay {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chatMsg {
+  padding: 7px 10px;
+}
+
+.chatMsgAi {
+  background: var(--surface-low);
+  border-left: 2px solid var(--primary);
+}
+
+.chatMsgStudent {
+  background: var(--surface-lowest);
+  border-left: 2px solid var(--outline-variant);
+}
+
+.chatRole {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.4375rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  color: var(--on-surface);
+  margin-bottom: 3px;
+}
+
+.chatText {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface);
+  line-height: 1.55;
+  margin: 0;
+}
