@@ -15,10 +15,10 @@ import { createSession, getSession, setCurrentUser, getSessionQuestion, patchSes
 const MAX_QUESTIONS      = 5;
 const MAX_TURNS          = 10;
 const LETTERS            = ["A", "B", "C", "D"];
-/* Voice conv silence detection — tune these two values if needed */
-const SILENCE_THRESHOLD  = 10;   /* RMS level (0–128) below which audio counts as silent */
+/* Voice conv silence detection — tune these values if needed */
+const SILENCE_THRESHOLD  = 0.02; /* Float RMS (0–1) below which audio counts as silent   */
 const SILENCE_DURATION   = 1500; /* ms of continuous silence before auto-stop             */
-const SILENCE_GRACE      = 800;  /* ms at start before silence detection activates        */
+const SILENCE_GRACE      = 600;  /* ms before detection activates (lets AudioCtx warm up) */
 /* ─── Types ──────────────────────────────────────────────── */
 type Mode   = "assessment" | "tutoring";
 type Screen = "loading" | "waiting" | "question" | "review" | "summary" | "chat";
@@ -451,7 +451,7 @@ function MCQContent() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL ||
     "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
-  /** Record audio and resolve with blob when stopConvRecording() is called. */
+  /** Record audio — auto-stops after SILENCE_DURATION ms of quiet post-speech. */
   const recordAudioForConv = (): Promise<Blob | null> =>
     new Promise(async resolve => {
       try {
@@ -460,58 +460,44 @@ function MCQContent() {
         const recorder = new MediaRecorder(stream, { mimeType });
         audioChunksRef.current = [];
 
-        /* ── Silence detection via Web Audio API ── */
-        const audioCtx  = new AudioContext();
-        const source    = audioCtx.createMediaStreamSource(stream);
-        const analyser  = audioCtx.createAnalyser();
-        analyser.fftSize = 512;
+        /* ── Web Audio analysis ───────────────────────────────────
+           Key fixes vs previous version:
+           1. audioCtx.resume() — browsers auto-suspend AudioContext
+              created outside a synchronous user gesture (we're async
+              after getUserMedia). Without resume() getFloatTimeDomainData
+              returns all-zero data and detection never works.
+           2. silentGain → destination — keeps the graph active in all
+              browsers; an analyser with no downstream may not process.
+           3. speechDetected flag — only count silence after the student
+              has actually started speaking, preventing premature cutoff.
+           4. setInterval not rAF — rAF throttles in some browser states;
+              50ms interval is plenty for voice activity detection.      */
+        const audioCtx   = new AudioContext();
+        await audioCtx.resume();                      /* fix #1 */
+        const source     = audioCtx.createMediaStreamSource(stream);
+        const analyser   = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        const silentGain = audioCtx.createGain();     /* fix #2 */
+        silentGain.gain.value = 0;
         source.connect(analyser);
-        const pcmData   = new Uint8Array(analyser.frequencyBinCount);
-        let silenceStart: number | null = null;
-        let rafId: number | null = null;
-        let autoStopped = false;
+        analyser.connect(silentGain);
+        silentGain.connect(audioCtx.destination);
+
+        const pcmData = new Float32Array(analyser.fftSize);
+        const getRMS  = (): number => {
+          analyser.getFloatTimeDomainData(pcmData);
+          let sum = 0;
+          for (let i = 0; i < pcmData.length; i++) sum += pcmData[i] * pcmData[i];
+          return Math.sqrt(sum / pcmData.length);
+        };
+
+        let silenceStart:   number | null = null;
+        let speechDetected  = false;          /* fix #3 */
+        let intervalId:     ReturnType<typeof setInterval> | null = null;
 
         const stopAll = () => {
-          if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+          if (intervalId !== null) { clearInterval(intervalId); intervalId = null; }
           audioCtx.close().catch(() => {});
-        };
-
-        /* ── Noise floor calibration during grace period ──────────
-           Sample RMS for SILENCE_GRACE ms, then set the effective
-           threshold as noisFloor × 1.5 so it adapts to the room.      */
-        const getRMS = (): number => {
-          analyser.getByteTimeDomainData(pcmData);
-          let sum = 0;
-          for (let i = 0; i < pcmData.length; i++) {
-            const v = (pcmData[i] - 128) / 128;
-            sum += v * v;
-          }
-          return Math.sqrt(sum / pcmData.length) * 128;
-        };
-
-        let noiseSamples: number[] = [];
-        const calibRafId = { id: 0 };
-        const sampleNoise = () => {
-          noiseSamples.push(getRMS());
-          calibRafId.id = requestAnimationFrame(sampleNoise);
-        };
-        calibRafId.id = requestAnimationFrame(sampleNoise);
-
-        const checkSilence = (effectiveThreshold: number) => () => {
-          if (autoStopped) return;
-          const rms = getRMS();
-          if (rms < effectiveThreshold) {
-            if (silenceStart === null) silenceStart = Date.now();
-            else if (Date.now() - silenceStart >= SILENCE_DURATION) {
-              autoStopped = true;
-              stopAll();
-              recorder.stop();
-              return;
-            }
-          } else {
-            silenceStart = null;
-          }
-          rafId = requestAnimationFrame(checkSilence(effectiveThreshold));
         };
 
         recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
@@ -525,17 +511,32 @@ function MCQContent() {
         recorder.start(250);
         mediaRecorderRef.current = recorder;
 
-        /* After grace period: stop calibration, compute noise floor,
-           set adaptive threshold = max(SILENCE_THRESHOLD, noiseFloor × 1.5) */
-        setTimeout(() => {
-          cancelAnimationFrame(calibRafId.id);
-          if (autoStopped) return;
-          const noiseFloor = noiseSamples.length > 0
-            ? noiseSamples.reduce((a, b) => a + b, 0) / noiseSamples.length
-            : 0;
-          const effectiveThreshold = Math.max(SILENCE_THRESHOLD, noiseFloor * 1.5);
-          rafId = requestAnimationFrame(checkSilence(effectiveThreshold));
-        }, SILENCE_GRACE);
+        /* Grace period — let AudioContext and mic hardware warm up */
+        await new Promise<void>(r => setTimeout(r, SILENCE_GRACE));
+        if (!convActiveRef.current) { recorder.stop(); return; }
+
+        /* Main detection loop — fix #4 */
+        intervalId = setInterval(() => {
+          if (!convActiveRef.current) {
+            clearInterval(intervalId!); intervalId = null;
+            recorder.stop(); return;
+          }
+          const rms = getRMS();
+          if (rms > SILENCE_THRESHOLD) {
+            /* Student is speaking */
+            speechDetected = true;
+            silenceStart   = null;
+          } else if (speechDetected) {
+            /* Silence after speech — start or continue countdown */
+            if (silenceStart === null) silenceStart = Date.now();
+            else if (Date.now() - silenceStart >= SILENCE_DURATION) {
+              clearInterval(intervalId!); intervalId = null;
+              recorder.stop();
+            }
+          }
+          /* If !speechDetected and rms < threshold → student hasn't spoken yet,
+             keep waiting indefinitely — ■ button remains as manual override.  */
+        }, 50); /* fix #4 — 50ms interval, 20 checks/sec */
 
       } catch { resolve(null); }
     });
