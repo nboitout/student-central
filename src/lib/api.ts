@@ -396,6 +396,8 @@ export interface StoredSessionQuestion {
   evaluationConfidence?: string | null;
   facultyInsight?:    string | null;
   studentFeedback?:   string | null;
+  hasVisual?:         boolean;         /* camelCase — question grounded in diagram/chart */
+  has_visual?:        boolean;         /* snake_case fallback */
 }
 
 export interface StoredSession {
