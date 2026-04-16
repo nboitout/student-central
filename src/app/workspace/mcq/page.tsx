@@ -15,10 +15,13 @@ import { createSession, getSession, setCurrentUser, getSessionQuestion, patchSes
 const MAX_QUESTIONS      = 5;
 const MAX_TURNS          = 10;
 const LETTERS            = ["A", "B", "C", "D"];
-/* Voice conv silence detection — tune these values if needed */
+/* Voice conv silence detection & barge-in — tune these values if needed */
 const SILENCE_THRESHOLD  = 0.02; /* Float RMS (0–1) below which audio counts as silent   */
-const SILENCE_DURATION   = 1500; /* ms of continuous silence before auto-stop             */
+const SILENCE_DURATION   = 2000; /* ms of continuous silence before auto-stop             */
 const SILENCE_GRACE      = 600;  /* ms before detection activates (lets AudioCtx warm up) */
+const BARGE_IN_THRESHOLD = 0.05; /* RMS level that triggers barge-in during TTS           */
+const BARGE_IN_GRACE     = 500;  /* ms after TTS starts before barge-in monitoring begins */
+const BARGE_IN_HOLD      = 300;  /* ms of sustained speech required to confirm barge-in   */
 /* ─── Types ──────────────────────────────────────────────── */
 type Mode   = "assessment" | "tutoring";
 type Screen = "loading" | "waiting" | "question" | "review" | "summary" | "chat";
@@ -117,6 +120,7 @@ function MCQContent() {
   const [convState,    setConvState]    = useState<ConvState>("idle");
   const convActiveRef  = useRef(false);                        /* loop guard         */
   const convAudioRef   = useRef<HTMLAudioElement | null>(null);/* current TTS audio  */
+  const convAudioCtxRef = useRef<AudioContext | null>(null);   /* shared AudioContext — created on user gesture */
   const chatMsgsRef    = useRef<TutorMessage[]>([]);           /* ref mirror — async loop reads fresh values */
   const chatTurnsRef   = useRef(0);
 
@@ -451,33 +455,28 @@ function MCQContent() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL ||
     "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
-  /** Record audio — auto-stops after SILENCE_DURATION ms of quiet post-speech. */
+  /** Record audio — auto-stops after SILENCE_DURATION ms of quiet post-speech.
+   *  Uses the shared AudioContext created in startVoiceConv (user-gesture context)
+   *  so it is never auto-suspended on turns 2+.                                   */
   const recordAudioForConv = (): Promise<Blob | null> =>
     new Promise(async resolve => {
       try {
+        const audioCtx = convAudioCtxRef.current;
+        if (!audioCtx || audioCtx.state === "closed") { resolve(null); return; }
+
         const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mimeType = MediaRecorder.isTypeSupported("audio/wav") ? "audio/wav" : "audio/webm";
         const recorder = new MediaRecorder(stream, { mimeType });
         audioChunksRef.current = [];
 
-        /* ── Web Audio analysis ───────────────────────────────────
-           Key fixes vs previous version:
-           1. audioCtx.resume() — browsers auto-suspend AudioContext
-              created outside a synchronous user gesture (we're async
-              after getUserMedia). Without resume() getFloatTimeDomainData
-              returns all-zero data and detection never works.
-           2. silentGain → destination — keeps the graph active in all
-              browsers; an analyser with no downstream may not process.
-           3. speechDetected flag — only count silence after the student
-              has actually started speaking, preventing premature cutoff.
-           4. setInterval not rAF — rAF throttles in some browser states;
-              50ms interval is plenty for voice activity detection.      */
-        const audioCtx   = new AudioContext();
-        await audioCtx.resume();                      /* fix #1 */
+        /* Resume in case the browser suspended it between turns */
+        if (audioCtx.state === "suspended") await audioCtx.resume();
+
         const source     = audioCtx.createMediaStreamSource(stream);
         const analyser   = audioCtx.createAnalyser();
         analyser.fftSize = 2048;
-        const silentGain = audioCtx.createGain();     /* fix #2 */
+        /* Silent gain node keeps the graph active in all browsers */
+        const silentGain = audioCtx.createGain();
         silentGain.gain.value = 0;
         source.connect(analyser);
         analyser.connect(silentGain);
@@ -491,13 +490,14 @@ function MCQContent() {
           return Math.sqrt(sum / pcmData.length);
         };
 
-        let silenceStart:   number | null = null;
-        let speechDetected  = false;          /* fix #3 */
-        let intervalId:     ReturnType<typeof setInterval> | null = null;
+        let silenceStart:  number | null = null;
+        let speechDetected = false;
+        let intervalId:    ReturnType<typeof setInterval> | null = null;
 
         const stopAll = () => {
           if (intervalId !== null) { clearInterval(intervalId); intervalId = null; }
-          audioCtx.close().catch(() => {});
+          source.disconnect();
+          silentGain.disconnect();
         };
 
         recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
@@ -511,11 +511,10 @@ function MCQContent() {
         recorder.start(250);
         mediaRecorderRef.current = recorder;
 
-        /* Grace period — let AudioContext and mic hardware warm up */
+        /* Grace period — let mic hardware warm up before sampling */
         await new Promise<void>(r => setTimeout(r, SILENCE_GRACE));
         if (!convActiveRef.current) { recorder.stop(); return; }
 
-        /* Main detection loop — fix #4 */
         intervalId = setInterval(() => {
           if (!convActiveRef.current) {
             clearInterval(intervalId!); intervalId = null;
@@ -523,20 +522,17 @@ function MCQContent() {
           }
           const rms = getRMS();
           if (rms > SILENCE_THRESHOLD) {
-            /* Student is speaking */
             speechDetected = true;
             silenceStart   = null;
           } else if (speechDetected) {
-            /* Silence after speech — start or continue countdown */
             if (silenceStart === null) silenceStart = Date.now();
             else if (Date.now() - silenceStart >= SILENCE_DURATION) {
               clearInterval(intervalId!); intervalId = null;
               recorder.stop();
             }
           }
-          /* If !speechDetected and rms < threshold → student hasn't spoken yet,
-             keep waiting indefinitely — ■ button remains as manual override.  */
-        }, 50); /* fix #4 — 50ms interval, 20 checks/sec */
+          /* Student hasn't spoken yet — wait indefinitely, ■ remains as override */
+        }, 50);
 
       } catch { resolve(null); }
     });
@@ -561,8 +557,10 @@ function MCQContent() {
   };
 
   /**
-   * TTS call — resolves true on successful playback, false on any failure.
-   * Returns false immediately on 404/500 so the caller can exit voice conv cleanly.
+   * TTS call — resolves true on completion or barge-in, false on endpoint failure.
+   * Monitors mic via the shared AudioContext during playback. If the student speaks
+   * above BARGE_IN_THRESHOLD for BARGE_IN_HOLD ms, audio is stopped immediately
+   * and the loop returns to LISTENING — no button press needed.
    */
   const playTTS = (text: string): Promise<boolean> =>
     new Promise(async resolve => {
@@ -573,15 +571,70 @@ function MCQContent() {
           body:    JSON.stringify({ text, language: lang }),
         });
         if (!res.ok) { resolve(false); return; }
-        const blob  = await res.blob();
-        const url   = URL.createObjectURL(blob);
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
         const audio = new Audio(url);
         convAudioRef.current = audio;
-        const onDone  = () => { URL.revokeObjectURL(url); convAudioRef.current = null; resolve(true); };
-        const onError = () => { URL.revokeObjectURL(url); convAudioRef.current = null; resolve(false); };
-        audio.onended = onDone;
-        audio.onerror = onError;
-        audio.play().catch(onError);
+
+        let bargeInStream:   MediaStream | null = null;
+        let bargeInInterval: ReturnType<typeof setInterval> | null = null;
+        let settled = false;
+
+        const done = (ok: boolean) => {
+          if (settled) return;
+          settled = true;
+          if (bargeInInterval) { clearInterval(bargeInInterval); bargeInInterval = null; }
+          if (bargeInStream)   { bargeInStream.getTracks().forEach(t => t.stop()); bargeInStream = null; }
+          URL.revokeObjectURL(url);
+          convAudioRef.current = null;
+          resolve(ok);
+        };
+
+        audio.onended = () => done(true);
+        audio.onerror = () => done(false);
+        audio.play().catch(() => done(false));
+
+        /* Barge-in: open mic BARGE_IN_GRACE ms after playback starts.
+           Delay avoids picking up TTS transients at audio onset.
+           Note: users on speakers may experience false triggers from
+           TTS bleed-through; headphone users get clean barge-in.       */
+        setTimeout(async () => {
+          if (settled) return;
+          const audioCtx = convAudioCtxRef.current;
+          if (!audioCtx || audioCtx.state === "closed") return;
+          try {
+            bargeInStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if (settled) { bargeInStream.getTracks().forEach(t => t.stop()); bargeInStream = null; return; }
+
+            const source   = audioCtx.createMediaStreamSource(bargeInStream);
+            const analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 2048;
+            source.connect(analyser);
+            const pcmData = new Float32Array(analyser.fftSize);
+            let speechStart: number | null = null;
+
+            bargeInInterval = setInterval(() => {
+              if (settled) return;
+              analyser.getFloatTimeDomainData(pcmData);
+              let sum = 0;
+              for (let i = 0; i < pcmData.length; i++) sum += pcmData[i] * pcmData[i];
+              const rms = Math.sqrt(sum / pcmData.length);
+
+              if (rms > BARGE_IN_THRESHOLD) {
+                if (speechStart === null) speechStart = Date.now();
+                else if (Date.now() - speechStart >= BARGE_IN_HOLD) {
+                  /* Student is speaking — interrupt TTS, return to LISTENING */
+                  source.disconnect();
+                  audio.pause();
+                  done(true);
+                }
+              } else {
+                speechStart = null;
+              }
+            }, 50);
+          } catch { /* mic unavailable during SPEAKING — play to end without barge-in */ }
+        }, BARGE_IN_GRACE);
+
       } catch { resolve(false); }
     });
 
@@ -678,14 +731,17 @@ function MCQContent() {
     doVoiceConvTurn();
   };
 
-  /** Enter voice conversation mode. Double-tap guard via convActiveRef. */
+  /** Enter voice conversation mode. Double-tap guard via convActiveRef.
+   *  AudioContext created HERE — synchronously inside the click handler
+   *  (user-gesture context) so it is never auto-suspended.             */
   const startVoiceConv = () => {
     if (convActiveRef.current) return;
     convActiveRef.current = true;
+    convAudioCtxRef.current = new AudioContext();
     doVoiceConvTurn();
   };
 
-  /** Exit voice conversation mode — stops recording and any active TTS playback. */
+  /** Exit voice conversation mode — stops recording, audio, and shared AudioContext. */
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stopVoiceConv = useCallback(() => {
     convActiveRef.current = false;
@@ -693,6 +749,8 @@ function MCQContent() {
     mediaRecorderRef.current = null;
     convAudioRef.current?.pause();
     convAudioRef.current = null;
+    convAudioCtxRef.current?.close().catch(() => {});
+    convAudioCtxRef.current = null;
     setConvState("idle");
   }, []);
 
