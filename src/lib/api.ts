@@ -16,6 +16,18 @@ const API_URL =
   "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
 /* ── Types ─────────────────────────────────────────────── */
+
+/* GPT-generated macro summary — present on courses with mcqStatus = "ready" */
+export interface CourseSynthesis {
+  title:        string;
+  domain:       string;
+  purpose:      string;   /* one sentence: what the document tries to do */
+  thesis:       string;   /* central claim in one sentence */
+  key_concepts: string[]; /* 5 concepts */
+  structure:    string;   /* 2-3 sentences on document organisation */
+  audience:     string;   /* e.g. "master's students in AI" */
+}
+
 export interface Course {
   id: string;
   userId: string;
@@ -36,6 +48,7 @@ export interface Course {
   exercisesTotal: number;
   exercisesDone: number;
   mcqCount?: number;           /* actual number of generated MCQs — updated after generation */
+  synthesis?: CourseSynthesis; /* available once mcqStatus = "ready" */
   createdAt: string;
   updatedAt: string;
 }
@@ -377,6 +390,7 @@ export async function completeSession(sessionId: string, courseId: string, userI
 export interface StoredSessionQuestion {
   position:           number;
   mcqId:              string;
+  function?:          "orient" | "understand" | "recognize" | "connect" | "evaluate";
   question:           string;
   options:            string[] | MCQOption[];
   correctIndex:       number;
