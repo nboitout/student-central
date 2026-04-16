@@ -12,9 +12,13 @@ import { tx as getT } from "@/i18n/translations";
 import { createSession, getSession, setCurrentUser, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, updateCourse, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type StoredSession, type TutorMessage } from "@/lib/api";
 
 /* ─── Constants ──────────────────────────────────────────── */
-const MAX_QUESTIONS = 5;
-const MAX_TURNS     = 10;
-const LETTERS       = ["A", "B", "C", "D"];
+const MAX_QUESTIONS      = 5;
+const MAX_TURNS          = 10;
+const LETTERS            = ["A", "B", "C", "D"];
+/* Voice conv silence detection — tune these two values if needed */
+const SILENCE_THRESHOLD  = 10;   /* RMS level (0–128) below which audio counts as silent */
+const SILENCE_DURATION   = 1500; /* ms of continuous silence before auto-stop             */
+const SILENCE_GRACE      = 800;  /* ms at start before silence detection activates        */
 /* ─── Types ──────────────────────────────────────────────── */
 type Mode   = "assessment" | "tutoring";
 type Screen = "loading" | "waiting" | "question" | "review" | "summary" | "chat";
@@ -451,12 +455,55 @@ function MCQContent() {
   const recordAudioForConv = (): Promise<Blob | null> =>
     new Promise(async resolve => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mimeType = MediaRecorder.isTypeSupported("audio/wav") ? "audio/wav" : "audio/webm";
         const recorder = new MediaRecorder(stream, { mimeType });
         audioChunksRef.current = [];
+
+        /* ── Silence detection via Web Audio API ── */
+        const audioCtx  = new AudioContext();
+        const source    = audioCtx.createMediaStreamSource(stream);
+        const analyser  = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
+        const pcmData   = new Uint8Array(analyser.frequencyBinCount);
+        let silenceStart: number | null = null;
+        let rafId: number | null = null;
+        let autoStopped = false;
+
+        const stopAll = () => {
+          if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+          audioCtx.close().catch(() => {});
+        };
+
+        const checkSilence = () => {
+          if (autoStopped) return;
+          analyser.getByteTimeDomainData(pcmData);
+          /* RMS of deviation from centre (128) — range 0–128 */
+          let sum = 0;
+          for (let i = 0; i < pcmData.length; i++) {
+            const v = (pcmData[i] - 128) / 128;
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / pcmData.length) * 128;
+
+          if (rms < SILENCE_THRESHOLD) {
+            if (silenceStart === null) silenceStart = Date.now();
+            else if (Date.now() - silenceStart >= SILENCE_DURATION) {
+              autoStopped = true;
+              stopAll();
+              recorder.stop();
+              return;
+            }
+          } else {
+            silenceStart = null;
+          }
+          rafId = requestAnimationFrame(checkSilence);
+        };
+
         recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
         recorder.onstop = () => {
+          stopAll();
           stream.getTracks().forEach(t => t.stop());
           const blob = new Blob(audioChunksRef.current, { type: mimeType });
           audioChunksRef.current = [];
@@ -464,6 +511,11 @@ function MCQContent() {
         };
         recorder.start(250);
         mediaRecorderRef.current = recorder;
+
+        /* Grace period before silence detection activates — gives student
+           time to start speaking without background noise triggering early stop */
+        setTimeout(() => { if (!autoStopped) rafId = requestAnimationFrame(checkSilence); }, SILENCE_GRACE);
+
       } catch { resolve(null); }
     });
 
@@ -487,11 +539,10 @@ function MCQContent() {
   };
 
   /**
-   * TTS call — resolves when audio finishes playing (or on any error).
-   * Endpoint pending backend work; returns audio/mpeg binary when live.
-   * Until then, the call fails silently and the loop continues.
+   * TTS call — resolves true on successful playback, false on any failure.
+   * Returns false immediately on 404/500 so the caller can exit voice conv cleanly.
    */
-  const playTTS = (text: string): Promise<void> =>
+  const playTTS = (text: string): Promise<boolean> =>
     new Promise(async resolve => {
       try {
         const res = await fetch(`${API_URL}/api/tutor/tts`, {
@@ -499,16 +550,17 @@ function MCQContent() {
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({ text, language: lang }),
         });
-        if (!res.ok) { resolve(); return; }
+        if (!res.ok) { resolve(false); return; }
         const blob  = await res.blob();
         const url   = URL.createObjectURL(blob);
         const audio = new Audio(url);
         convAudioRef.current = audio;
-        const cleanup = () => { URL.revokeObjectURL(url); convAudioRef.current = null; resolve(); };
-        audio.onended = cleanup;
-        audio.onerror = cleanup;
-        audio.play().catch(cleanup);
-      } catch { resolve(); }
+        const onDone  = () => { URL.revokeObjectURL(url); convAudioRef.current = null; resolve(true); };
+        const onError = () => { URL.revokeObjectURL(url); convAudioRef.current = null; resolve(false); };
+        audio.onended = onDone;
+        audio.onerror = onError;
+        audio.play().catch(onError);
+      } catch { resolve(false); }
     });
 
   /**
@@ -589,8 +641,16 @@ function MCQContent() {
 
     /* SPEAKING */
     setConvState("speaking");
-    await playTTS(aiMessage);
+    const ttsOk = await playTTS(aiMessage);
     if (!convActiveRef.current) return;
+
+    if (!ttsOk) {
+      /* TTS failed (endpoint 404 / 500 / network) — exit voice conv.
+         The AI reply is already visible in the chat thread above. */
+      setChatError("Audio playback unavailable — AI reply shown in chat.");
+      setTimeout(() => setChatError(null), 5000);
+      stopVoiceConv(); return;
+    }
 
     /* Loop */
     doVoiceConvTurn();
