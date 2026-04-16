@@ -119,8 +119,7 @@ function MCQContent() {
   type ConvState = "idle" | "listening" | "transcribing" | "thinking" | "speaking";
   const [convState,    setConvState]    = useState<ConvState>("idle");
   const convActiveRef  = useRef(false);                        /* loop guard         */
-  const convAudioRef   = useRef<HTMLAudioElement | null>(null);/* current TTS audio  */
-  const convAudioCtxRef = useRef<AudioContext | null>(null);   /* shared AudioContext — created on user gesture */
+  const convAudioRef   = useRef<{ pause: () => void } | null>(null); /* stop fn for current TTS */
   const chatMsgsRef    = useRef<TutorMessage[]>([]);           /* ref mirror — async loop reads fresh values */
   const chatTurnsRef   = useRef(0);
 
@@ -456,31 +455,27 @@ function MCQContent() {
     "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
   /** Record audio — auto-stops after SILENCE_DURATION ms of quiet post-speech.
-   *  Uses the shared AudioContext created in startVoiceConv (user-gesture context)
-   *  so it is never auto-suspended on turns 2+.                                   */
+   *  Fresh AudioContext per call so there is no shared state between turns.       */
   const recordAudioForConv = (): Promise<Blob | null> =>
     new Promise(async resolve => {
       try {
-        const audioCtx = convAudioCtxRef.current;
-        if (!audioCtx || audioCtx.state === "closed") { resolve(null); return; }
-
         const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mimeType = MediaRecorder.isTypeSupported("audio/wav") ? "audio/wav" : "audio/webm";
         const recorder = new MediaRecorder(stream, { mimeType });
         audioChunksRef.current = [];
 
-        /* Resume in case the browser suspended it between turns */
-        if (audioCtx.state === "suspended") await audioCtx.resume();
+        /* Fresh AudioContext — close after recording to avoid node accumulation */
+        const audioCtx = new AudioContext();
+        await audioCtx.resume();
 
         const source     = audioCtx.createMediaStreamSource(stream);
         const analyser   = audioCtx.createAnalyser();
         analyser.fftSize = 2048;
-        /* Silent gain node keeps the graph active in all browsers */
-        const silentGain = audioCtx.createGain();
-        silentGain.gain.value = 0;
+        const gain       = audioCtx.createGain();
+        gain.gain.value  = 0;   /* silent — keeps graph active without playing mic back */
         source.connect(analyser);
-        analyser.connect(silentGain);
-        silentGain.connect(audioCtx.destination);
+        analyser.connect(gain);
+        gain.connect(audioCtx.destination);
 
         const pcmData = new Float32Array(analyser.fftSize);
         const getRMS  = (): number => {
@@ -494,15 +489,16 @@ function MCQContent() {
         let speechDetected = false;
         let intervalId:    ReturnType<typeof setInterval> | null = null;
 
-        const stopAll = () => {
+        const cleanup = () => {
           if (intervalId !== null) { clearInterval(intervalId); intervalId = null; }
           source.disconnect();
-          silentGain.disconnect();
+          gain.disconnect();
+          audioCtx.close().catch(() => {});
         };
 
         recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
         recorder.onstop = () => {
-          stopAll();
+          cleanup();
           stream.getTracks().forEach(t => t.stop());
           const blob = new Blob(audioChunksRef.current, { type: mimeType });
           audioChunksRef.current = [];
@@ -511,7 +507,7 @@ function MCQContent() {
         recorder.start(250);
         mediaRecorderRef.current = recorder;
 
-        /* Grace period — let mic hardware warm up before sampling */
+        /* Let AudioContext and mic hardware initialise before sampling */
         await new Promise<void>(r => setTimeout(r, SILENCE_GRACE));
         if (!convActiveRef.current) { recorder.stop(); return; }
 
@@ -531,7 +527,6 @@ function MCQContent() {
               recorder.stop();
             }
           }
-          /* Student hasn't spoken yet — wait indefinitely, ■ remains as override */
         }, 50);
 
       } catch { resolve(null); }
@@ -557,10 +552,9 @@ function MCQContent() {
   };
 
   /**
-   * TTS call — resolves true on completion or barge-in, false on endpoint failure.
-   * Monitors mic via the shared AudioContext during playback. If the student speaks
-   * above BARGE_IN_THRESHOLD for BARGE_IN_HOLD ms, audio is stopped immediately
-   * and the loop returns to LISTENING — no button press needed.
+   * TTS playback via AudioBufferSourceNode — avoids blob URL range request errors.
+   * Barge-in monitoring via a separate fresh AudioContext + mic stream.
+   * On barge-in: audio stops immediately, loop returns to LISTENING.
    */
   const playTTS = (text: string): Promise<boolean> =>
     new Promise(async resolve => {
@@ -571,12 +565,27 @@ function MCQContent() {
           body:    JSON.stringify({ text, language: lang }),
         });
         if (!res.ok) { resolve(false); return; }
-        const blob = await res.blob();
-        const url  = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        convAudioRef.current = audio;
+
+        const arrayBuffer = await res.arrayBuffer();
+
+        /* Dedicated AudioContext for TTS playback — closed when done */
+        const playCtx = new AudioContext();
+        await playCtx.resume();
+
+        let audioBuffer: AudioBuffer;
+        try {
+          audioBuffer = await playCtx.decodeAudioData(arrayBuffer);
+        } catch {
+          playCtx.close().catch(() => {});
+          resolve(false); return;
+        }
+
+        const bufSource = playCtx.createBufferSource();
+        bufSource.buffer = audioBuffer;
+        bufSource.connect(playCtx.destination);
 
         let bargeInStream:   MediaStream | null = null;
+        let bargeInCtx:      AudioContext | null = null;
         let bargeInInterval: ReturnType<typeof setInterval> | null = null;
         let settled = false;
 
@@ -585,31 +594,33 @@ function MCQContent() {
           settled = true;
           if (bargeInInterval) { clearInterval(bargeInInterval); bargeInInterval = null; }
           if (bargeInStream)   { bargeInStream.getTracks().forEach(t => t.stop()); bargeInStream = null; }
-          URL.revokeObjectURL(url);
+          if (bargeInCtx)      { bargeInCtx.close().catch(() => {}); bargeInCtx = null; }
+          try { bufSource.stop(); } catch { /* already ended */ }
+          playCtx.close().catch(() => {});
           convAudioRef.current = null;
           resolve(ok);
         };
 
-        audio.onended = () => done(true);
-        audio.onerror = () => done(false);
-        audio.play().catch(() => done(false));
+        convAudioRef.current = { pause: () => done(true) };
+        bufSource.onended = () => done(true);
+        bufSource.start();
 
-        /* Barge-in: open mic BARGE_IN_GRACE ms after playback starts.
-           Delay avoids picking up TTS transients at audio onset.
-           Note: users on speakers may experience false triggers from
-           TTS bleed-through; headphone users get clean barge-in.       */
+        /* Barge-in: separate AudioContext + mic stream after BARGE_IN_GRACE ms.
+           Separate context avoids interference with the playback graph.
+           Headphone users get clean detection; speaker users may need a higher
+           BARGE_IN_THRESHOLD if TTS bleed-through triggers false positives.    */
         setTimeout(async () => {
           if (settled) return;
-          const audioCtx = convAudioCtxRef.current;
-          if (!audioCtx || audioCtx.state === "closed") return;
           try {
+            bargeInCtx = new AudioContext();
+            await bargeInCtx.resume();
             bargeInStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            if (settled) { bargeInStream.getTracks().forEach(t => t.stop()); bargeInStream = null; return; }
+            if (settled) { done(true); return; }
 
-            const source   = audioCtx.createMediaStreamSource(bargeInStream);
-            const analyser = audioCtx.createAnalyser();
+            const src      = bargeInCtx.createMediaStreamSource(bargeInStream);
+            const analyser = bargeInCtx.createAnalyser();
             analyser.fftSize = 2048;
-            source.connect(analyser);
+            src.connect(analyser);
             const pcmData = new Float32Array(analyser.fftSize);
             let speechStart: number | null = null;
 
@@ -619,20 +630,17 @@ function MCQContent() {
               let sum = 0;
               for (let i = 0; i < pcmData.length; i++) sum += pcmData[i] * pcmData[i];
               const rms = Math.sqrt(sum / pcmData.length);
-
               if (rms > BARGE_IN_THRESHOLD) {
                 if (speechStart === null) speechStart = Date.now();
                 else if (Date.now() - speechStart >= BARGE_IN_HOLD) {
-                  /* Student is speaking — interrupt TTS, return to LISTENING */
-                  source.disconnect();
-                  audio.pause();
-                  done(true);
+                  src.disconnect();
+                  done(true); /* barge-in confirmed — loop back to LISTENING */
                 }
               } else {
                 speechStart = null;
               }
             }, 50);
-          } catch { /* mic unavailable during SPEAKING — play to end without barge-in */ }
+          } catch { /* mic unavailable during SPEAKING — play to completion */ }
         }, BARGE_IN_GRACE);
 
       } catch { resolve(false); }
@@ -737,7 +745,6 @@ function MCQContent() {
   const startVoiceConv = () => {
     if (convActiveRef.current) return;
     convActiveRef.current = true;
-    convAudioCtxRef.current = new AudioContext();
     doVoiceConvTurn();
   };
 
@@ -749,8 +756,6 @@ function MCQContent() {
     mediaRecorderRef.current = null;
     convAudioRef.current?.pause();
     convAudioRef.current = null;
-    convAudioCtxRef.current?.close().catch(() => {});
-    convAudioCtxRef.current = null;
     setConvState("idle");
   }, []);
 
