@@ -206,6 +206,7 @@ export interface TutorProbeRequest {
   selectedIndex: number;
   isCorrect:    boolean;
   explanation:  string;
+  hasVisual?:   boolean;
   language:     string;
 }
 
@@ -257,6 +258,8 @@ export interface SessionQuestion {
   slide_image_url?: string | null; /* snake_case — FastAPI default */
   courseId?:     string;
   course_id?:    string;
+  hasVisual?:    boolean;         /* camelCase — question grounded in diagram/chart */
+  has_visual?:   boolean;         /* snake_case fallback */
 }
 
 export interface SessionCreateResponse {
