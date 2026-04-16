@@ -476,18 +476,31 @@ function MCQContent() {
           audioCtx.close().catch(() => {});
         };
 
-        const checkSilence = () => {
-          if (autoStopped) return;
+        /* ── Noise floor calibration during grace period ──────────
+           Sample RMS for SILENCE_GRACE ms, then set the effective
+           threshold as noisFloor × 1.5 so it adapts to the room.      */
+        const getRMS = (): number => {
           analyser.getByteTimeDomainData(pcmData);
-          /* RMS of deviation from centre (128) — range 0–128 */
           let sum = 0;
           for (let i = 0; i < pcmData.length; i++) {
             const v = (pcmData[i] - 128) / 128;
             sum += v * v;
           }
-          const rms = Math.sqrt(sum / pcmData.length) * 128;
+          return Math.sqrt(sum / pcmData.length) * 128;
+        };
 
-          if (rms < SILENCE_THRESHOLD) {
+        let noiseSamples: number[] = [];
+        const calibRafId = { id: 0 };
+        const sampleNoise = () => {
+          noiseSamples.push(getRMS());
+          calibRafId.id = requestAnimationFrame(sampleNoise);
+        };
+        calibRafId.id = requestAnimationFrame(sampleNoise);
+
+        const checkSilence = (effectiveThreshold: number) => () => {
+          if (autoStopped) return;
+          const rms = getRMS();
+          if (rms < effectiveThreshold) {
             if (silenceStart === null) silenceStart = Date.now();
             else if (Date.now() - silenceStart >= SILENCE_DURATION) {
               autoStopped = true;
@@ -498,7 +511,7 @@ function MCQContent() {
           } else {
             silenceStart = null;
           }
-          rafId = requestAnimationFrame(checkSilence);
+          rafId = requestAnimationFrame(checkSilence(effectiveThreshold));
         };
 
         recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
@@ -512,9 +525,17 @@ function MCQContent() {
         recorder.start(250);
         mediaRecorderRef.current = recorder;
 
-        /* Grace period before silence detection activates — gives student
-           time to start speaking without background noise triggering early stop */
-        setTimeout(() => { if (!autoStopped) rafId = requestAnimationFrame(checkSilence); }, SILENCE_GRACE);
+        /* After grace period: stop calibration, compute noise floor,
+           set adaptive threshold = max(SILENCE_THRESHOLD, noiseFloor × 1.5) */
+        setTimeout(() => {
+          cancelAnimationFrame(calibRafId.id);
+          if (autoStopped) return;
+          const noiseFloor = noiseSamples.length > 0
+            ? noiseSamples.reduce((a, b) => a + b, 0) / noiseSamples.length
+            : 0;
+          const effectiveThreshold = Math.max(SILENCE_THRESHOLD, noiseFloor * 1.5);
+          rafId = requestAnimationFrame(checkSilence(effectiveThreshold));
+        }, SILENCE_GRACE);
 
       } catch { resolve(null); }
     });
