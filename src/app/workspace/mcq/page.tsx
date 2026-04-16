@@ -316,7 +316,7 @@ function MCQContent() {
     return opts as MCQOption[];
   };
 
-  const toMCQQuestion = (sq: SessionQuestion): MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string } => ({
+  const toMCQQuestion = (sq: SessionQuestion): MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string; hasVisual?: boolean } => ({
     question:     sq.question,
     options:      normaliseOptions(sq.options),
     correctIndex: sq.correctIndex ?? sq.correct_index ?? 0,
@@ -325,6 +325,7 @@ function MCQContent() {
     slideImageUrl: sq.slideImageUrl ?? sq.slide_image_url ?? undefined,
     courseId:     sq.courseId ?? sq.course_id ?? courseId,
     pageNumber:   sq.pageNumber ?? sq.page_number ?? undefined,
+    hasVisual:    sq.hasVisual ?? sq.has_visual ?? false,
   });
 
   /* ── Load a question from the session into state ── */
@@ -350,7 +351,7 @@ function MCQContent() {
           }
         : null;
       /* Rebuild a minimal MCQQuestion from stored data */
-      const question: MCQQuestion & { mcqId?: string; pageNumber?: number; courseId?: string } = {
+      const question: MCQQuestion & { mcqId?: string; pageNumber?: number; courseId?: string; hasVisual?: boolean } = {
         question:     sq.question,
         options:      normaliseOptions(sq.options),
         correctIndex: corrIdx,
@@ -358,6 +359,7 @@ function MCQContent() {
         courseId:     courseId,
         mcqId:        sq.mcqId,
         pageNumber:   sq.pageNumber ?? sq.page_number ?? undefined,
+        hasVisual:    sq.hasVisual ?? sq.has_visual ?? false,
       };
       return {
         question,
@@ -563,6 +565,7 @@ function MCQContent() {
         selectedIndex: focusR.selected,
         isCorrect:     focusR.selected === focusR.question.correctIndex,
         explanation:   focusR.question.explanation,
+        hasVisual:     (focusR.question as any).hasVisual ?? false,
         language:      lang,
         history:       updatedHistory,
       });
@@ -847,6 +850,7 @@ function MCQContent() {
         selectedIndex: allResults[focusIdx].selected,
         isCorrect:     allResults[focusIdx].selected === allResults[focusIdx].question.correctIndex,
         explanation:   allResults[focusIdx].question.explanation,
+        hasVisual:     (allResults[focusIdx].question as any).hasVisual ?? false,
         language:      lang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
@@ -897,6 +901,7 @@ function MCQContent() {
         selectedIndex: focusR.selected,
         isCorrect:     focusR.selected === focusR.question.correctIndex,
         explanation:   focusR.question.explanation,
+        hasVisual:     (focusR.question as any).hasVisual ?? false,
         language:      lang,
         history:       updatedHistory,
       });
@@ -929,6 +934,7 @@ function MCQContent() {
         selectedIndex: r.selected,
         isCorrect:     r.selected === r.question.correctIndex,
         explanation:   r.question.explanation,
+        hasVisual:     (r.question as any).hasVisual ?? false,
         language:      lang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
@@ -1240,6 +1246,7 @@ function MCQContent() {
                   selectedIndex: r.selected,
                   isCorrect:     r.selected === r.question.correctIndex,
                   explanation:   r.question.explanation,
+                  hasVisual:     (r.question as any).hasVisual ?? false,
                   language:      lang,
                 })
                   .then(({ message }) => {
