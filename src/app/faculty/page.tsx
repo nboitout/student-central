@@ -326,27 +326,6 @@ function draftFromDoc(q: MCQDoc): EditDraft {
 
 interface ReformResult { original: string; reformulated: string; }
 
-function generateMockReformulation(text: string): string {
-  const swaps: [RegExp, string][] = [
-    [/\bWhich\b/,        "What"],
-    [/\bWhat is\b/,      "Identify the"],
-    [/\billustrates\b/,  "depicts"],
-    [/\bdescribes\b/,    "outlines"],
-    [/\bprimary\b/,      "main"],
-    [/\brelationship\b/, "connection"],
-    [/\bcomponent\b/,    "element"],
-    [/\bstrategy\b/,     "approach"],
-    [/\baddresses\b/,    "tackles"],
-    [/\bfundamental\b/,  "core"],
-  ];
-  let result = text;
-  for (const [pat, rep] of swaps) {
-    if (pat.test(result)) { result = result.replace(pat, rep); break; }
-  }
-  if (result === text) result = result.replace(/\?$/, " — select the best answer.");
-  return result;
-}
-
 function ReformulationPanel({ result, onKeep, onEdit, onAccept }: {
   result: ReformResult;
   onKeep:   () => void;
@@ -405,20 +384,23 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
     setReformulating(field);
     setPending(prev => { const n = { ...prev }; delete n[field]; return n; });
     try {
-      // ── MOCK (remove when backend ready) ────────────────────────────────────
-      await new Promise(r => setTimeout(r, 1800));
-      const reformulated = generateMockReformulation(text);
-      // ── REAL: uncomment once POST /api/mcq/reformulate exists ───────────────
-      // const API = process.env.NEXT_PUBLIC_API_URL
-      //   ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
-      // const res = await fetch(`${API}/api/mcq/reformulate`, {
-      //   method: "POST", headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ text, type: field === "question" ? "question" : "option",
-      //                          pedagogical_function: draft.function, course_title: courseTitle }),
-      // });
-      // if (!res.ok) throw new Error(`${res.status}`);
-      // const { reformulated } = await res.json();
-      // ────────────────────────────────────────────────────────────────────────
+      const API = process.env.NEXT_PUBLIC_API_URL
+        ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+      const type = field === "question"    ? "question"
+                 : field === "explanation" ? "explanation"
+                 :                          "option";
+      const res = await fetch(`${API}/api/mcq/reformulate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          type,
+          pedagogical_function: draft.function,
+          course_title:         courseTitle,
+        }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const { reformulated } = await res.json();
       setPending(prev => ({ ...prev, [field]: { original: text, reformulated } }));
     } catch (e) {
       console.warn("Reformulate failed:", e);
