@@ -639,7 +639,7 @@ export default function FacultyDashboard() {
     if (!facultyReady || !selectedCourse || activeMode !== "questions") return;
     setMcqLoading(true);
     setMcqBank([]);
-    fetch(`${API}/api/mcq/bank/${selectedCourse.id}?userId=${facultyId}`)
+    fetch(`${API}/api/mcq/bank/${selectedCourse?.id}?userId=${facultyId}`)
       .then(r => r.json())
       .then(data => {
         /* Response shape: { mcqs: [...], count: N, courseId: string } */
@@ -690,7 +690,7 @@ export default function FacultyDashboard() {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          courseId:      selectedCourse.id,
+          courseId:      selectedCourse?.id ?? "",
           question:      doc.question,
           options:       doc.options,
           correctIndex:  doc.correctIndex,
