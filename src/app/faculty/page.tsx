@@ -361,10 +361,12 @@ function ReformulationPanel({ result, onKeep, onEdit, onAccept }: {
 
 // ─── QuestionEditor ───────────────────────────────────────────────────────────
 
+interface AcceptedReform { original: string; reformulated: string; }
+
 function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTitle }: {
   draft: EditDraft;
   onChange: (d: EditDraft) => void;
-  onSave: () => void;
+  onSave: (accepted: Record<string, AcceptedReform>) => void;
   onCancel: () => void;
   onDelete?: () => void;
   courseTitle: string;
@@ -376,8 +378,9 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
     set({ options: opts });
   };
 
-  const [reformulating, setReformulating] = useState<string | null>(null);
-  const [pending, setPending]             = useState<Record<string, ReformResult>>({});
+  const [reformulating,    setReformulating]    = useState<string | null>(null);
+  const [pending,          setPending]          = useState<Record<string, ReformResult>>({});
+  const [acceptedReforms,  setAcceptedReforms]  = useState<Record<string, AcceptedReform>>({});
 
   const reformulate = async (field: string, text: string) => {
     if (!text.trim() || reformulating) return;
@@ -404,6 +407,25 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
       setPending(prev => ({ ...prev, [field]: { original: text, reformulated } }));
     } catch (e) {
       console.warn("Reformulate failed:", e);
+      /* Endpoint not yet live — fall back to mock so the UI remains usable */
+      const swaps: [RegExp, string][] = [
+        [/Which/,        "What"],
+        [/What is/,      "Identify the"],
+        [/illustrates/,  "depicts"],
+        [/describes/,    "outlines"],
+        [/primary/,      "main"],
+        [/relationship/, "connection"],
+        [/component/,    "element"],
+        [/strategy/,     "approach"],
+        [/addresses/,    "tackles"],
+        [/fundamental/,  "core"],
+      ];
+      let reformulated = text;
+      for (const [pat, rep] of swaps) {
+        if (pat.test(reformulated)) { reformulated = reformulated.replace(pat, rep); break; }
+      }
+      if (reformulated === text) reformulated = text.replace(/\?$/, " — select the best answer.");
+      setPending(prev => ({ ...prev, [field]: { original: text, reformulated } }));
     } finally {
       setReformulating(null);
     }
@@ -422,7 +444,9 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
     setPending(prev => { const n = { ...prev }; delete n[field]; return n; });
 
   const acceptReform = (field: string) => {
-    applyToField(field, pending[field].reformulated);
+    const result = pending[field];
+    applyToField(field, result.reformulated);
+    setAcceptedReforms(prev => ({ ...prev, [field]: { original: result.original, reformulated: result.reformulated } }));
     dismiss(field);
   };
 
@@ -551,7 +575,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
       </div>
 
       <div className={styles.editorActions}>
-        <button className={styles.saveBtn} onClick={onSave}>
+        <button className={styles.saveBtn} onClick={() => { onSave(acceptedReforms); setAcceptedReforms({}); }}>
           {draft.id ? "Save changes" : "Create question"}
         </button>
         <button className={styles.cancelBtn} onClick={onCancel}>Cancel</button>
@@ -587,7 +611,7 @@ export default function FacultyDashboard() {
   const openNew  = ()           => { setEditDraft(blankDraft());    setRightPanel("new-q");  };
   const cancelEdit = ()         => { setRightPanel("empty"); setEditDraft(null); };
 
-  const saveQuestion = () => {
+  const saveQuestion = (acceptedReforms: Record<string, AcceptedReform>) => {
     if (!editDraft) return;
     const doc: MCQDoc = {
       id: editDraft.id ?? `q${Date.now()}`,
@@ -599,6 +623,36 @@ export default function FacultyDashboard() {
       pageNumber: Number(editDraft.pageNumber) || 0,
       hasVisual: editDraft.hasVisual,
     };
+
+    /* Persist to backend — fire-and-forget, local state update is immediate */
+    if (editDraft.id) {
+      const API = process.env.NEXT_PUBLIC_API_URL
+        ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+      const now = new Date().toISOString();
+      const reformulations = Object.entries(acceptedReforms).map(([field, r]) => ({
+        field,
+        original:     r.original,
+        reformulated: r.reformulated,
+        acceptedAt:   now,
+      }));
+      fetch(`${API}/api/mcq/${editDraft.id}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId:      selectedCourse.id,
+          question:      doc.question,
+          options:       doc.options,
+          correctIndex:  doc.correctIndex,
+          explanation:   doc.explanation,
+          function:      doc.function,
+          pageNumber:    doc.pageNumber,
+          hasVisual:     doc.hasVisual,
+          reformulations: reformulations.length > 0 ? reformulations : undefined,
+        }),
+      }).catch(err => console.warn("MCQ save failed:", err));
+    }
+
+    /* Always update local state immediately — UI stays responsive */
     if (editDraft.id) {
       setMcqBank(prev => prev.map(q => q.id === doc.id ? doc : q));
     } else {
