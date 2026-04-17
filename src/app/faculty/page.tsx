@@ -399,7 +399,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
               disabled={!!reformulating || !draft.question.trim()}
               title="Reformulate with AI"
             >
-              {reformulating === "question" ? "…" : "✦"}
+              {reformulating === "question" ? "…" : "reformulate"}
             </button>
           </div>
         </div>
@@ -428,7 +428,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
                   disabled={!!reformulating || !opt.trim()}
                   title="Reformulate with AI"
                 >
-                  {reformulating === `opt-${i}` ? "…" : "✦"}
+                  {reformulating === `opt-${i}` ? "…" : "reformulate"}
                 </button>
               </div>
             </div>
@@ -452,7 +452,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
               disabled={!!reformulating || !draft.explanation.trim()}
               title="Reformulate with AI"
             >
-              {reformulating === "explanation" ? "…" : "✦"}
+              {reformulating === "explanation" ? "…" : "reformulate"}
             </button>
           </div>
         </div>
