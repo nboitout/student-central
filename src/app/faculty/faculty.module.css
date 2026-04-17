@@ -1,12 +1,8 @@
-/*
- * faculty.module.css
- * Signal colors live here as local CSS vars on .shell
- * 0px border-radius throughout (workspace convention)
- * All design tokens via var(--token) from globals.css
- */
+/* faculty.module.css
+   Conventions: 0px border-radius, var(--token) always, no hardcoded layout colors
+   Signal palette is semantic and intentionally hardcoded */
 
 .shell {
-  /* Signal palette — local to this module */
   --sig-strong:  #22c55e;
   --sig-fragile: #f59e0b;
   --sig-partial: #f97316;
@@ -14,13 +10,14 @@
   --sig-none:    var(--on-surface-variant);
 
   display: grid;
-  grid-template-columns: 220px 340px 1fr;
-  height: calc(100vh - 56px); /* nav offset — adjust to match var(--nav-height) */
+  grid-template-columns: 210px 340px 1fr;
+  height: calc(100vh - 56px);
   overflow: hidden;
   background: var(--surface-lowest);
+  font-family: var(--font-body);
 }
 
-/* ─── Pane shells ─────────────────────────────────────────────────────────── */
+/* ── Panes ─────────────────────────────────────────────────────────────────── */
 
 .paneLeft,
 .paneMiddle,
@@ -31,33 +28,28 @@
   border-right: 1px solid var(--outline-variant);
 }
 
-.paneRight {
-  border-right: none;
-}
+.paneRight { border-right: none; }
 
-/* ─── Pane header ─────────────────────────────────────────────────────────── */
-
-.paneHeader {
+.paneHd {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--outline-variant);
   flex-shrink: 0;
   background: var(--surface-lowest);
 }
 
-.headerMeta {
+.hdMeta {
   font-family: var(--font-display);
   font-size: 0.6875rem;
   color: var(--on-surface-variant);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 160px;
 }
 
-/* ─── Eyebrow label ───────────────────────────────────────────────────────── */
+/* ── Eyebrow ───────────────────────────────────────────────────────────────── */
 
 .eyebrow {
   font-family: var(--font-display);
@@ -70,42 +62,7 @@
   white-space: nowrap;
 }
 
-/* ─── Empty / utility states ──────────────────────────────────────────────── */
-
-.emptyState {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 24px;
-  text-align: center;
-}
-
-.emptyState p {
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  color: var(--on-surface-variant);
-  max-width: 200px;
-  line-height: 1.55;
-}
-
-.hint {
-  font-family: var(--font-body);
-  font-size: 0.6875rem;
-  color: var(--on-surface-variant);
-  padding: 8px 16px;
-}
-
-.errorMsg {
-  font-family: var(--font-body);
-  font-size: 0.6875rem;
-  color: var(--error);
-  padding: 8px 16px;
-}
-
-/* ─── LEFT: Course list ───────────────────────────────────────────────────── */
+/* ── Left: course list ─────────────────────────────────────────────────────── */
 
 .courseList {
   list-style: none;
@@ -116,20 +73,18 @@
 }
 
 .courseItem {
-  padding: 10px 16px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--outline-variant);
   cursor: pointer;
   transition: background 0.1s;
 }
 
-.courseItem:hover {
-  background: var(--surface-low);
-}
+.courseItem:hover { background: var(--surface-low); }
 
 .courseItemActive {
   background: var(--surface-low);
   border-left: 2px solid var(--primary);
-  padding-left: 14px;
+  padding-left: 12px;
 }
 
 .courseTitle {
@@ -157,34 +112,30 @@
 .status_ready      { background: #22c55e; }
 .status_generating { background: #f59e0b; }
 .status_none       { background: var(--outline-variant); }
-.status_failed     { background: #ef4444; }
 
 .statusLabel {
   font-family: var(--font-display);
-  font-size: 0.5625rem;
+  font-size: 0.5rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--on-surface-variant);
 }
 
 .mcqCount {
-  font-family: var(--font-display);
   font-size: 0.5625rem;
   color: var(--on-surface-variant);
   margin-left: auto;
-  opacity: 0.55;
+  opacity: 0.5;
+  font-family: var(--font-display);
 }
 
-/* ─── MIDDLE: Student selector + session list ─────────────────────────────── */
+/* ── Middle ────────────────────────────────────────────────────────────────── */
 
-.paneMiddle {
-  overflow-y: auto;
-}
+.paneMiddle { overflow: hidden; }
 
-/* Synthesis strip */
 .synthesisStrip {
-  padding: 10px 16px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--outline-variant);
   background: var(--surface-low);
   flex-shrink: 0;
@@ -195,7 +146,7 @@
   font-size: 0.75rem;
   color: var(--on-surface);
   line-height: 1.5;
-  margin: 4px 0 8px;
+  margin: 0 0 8px;
 }
 
 .conceptRow {
@@ -215,45 +166,73 @@
   color: var(--on-surface-variant);
 }
 
-/* Student input */
-.studentBlock {
-  padding: 12px 16px 4px;
+/* ── Mode tabs ─────────────────────────────────────────────────────────────── */
+
+.modeTabs {
+  display: flex;
+  border-bottom: 1px solid var(--outline-variant);
+  background: var(--surface-lowest);
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 0;
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-right: 1px solid var(--outline-variant);
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.tab:last-child { border-right: none; }
+
+.tab:hover:not(.tabActive) { color: var(--on-surface); }
+
+.tabActive {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* ── Panel shell (shared) ──────────────────────────────────────────────────── */
+
+.panelShell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.panelHd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--outline-variant);
   flex-shrink: 0;
 }
 
-.studentInputRow {
-  display: flex;
-}
-
-.studentInput {
+.panelScroll {
+  overflow-y: auto;
   flex: 1;
-  padding: 7px 10px;
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  background: var(--surface-lowest);
-  border: 1px solid var(--outline-variant);
-  border-right: none;
-  color: var(--on-surface);
-  outline: none;
 }
 
-.studentInput::placeholder {
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-}
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
 
-.studentInput:focus {
-  border-color: var(--primary);
-}
-
-.loadBtn {
-  padding: 7px 14px;
+.addBtn {
   font-family: var(--font-display);
-  font-size: 0.6875rem;
+  font-size: 0.5625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  padding: 4px 12px;
   background: var(--primary-gradient);
   color: #fff;
   border: none;
@@ -261,453 +240,773 @@
   flex-shrink: 0;
 }
 
-.loadBtn:hover {
-  opacity: 0.88;
-}
+.addBtn:hover { opacity: 0.88; }
 
-.apiNote {
-  font-family: var(--font-body);
+.ghostBtn {
+  font-family: var(--font-display);
   font-size: 0.5625rem;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-  margin: 5px 0 0;
-}
-
-/* Session list */
-.sessionList {
-  list-style: none;
-  margin: 0;
-  padding: 10px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sessionCard {
-  padding: 10px 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  background: none;
   border: 1px solid var(--outline-variant);
-  background: var(--surface-lowest);
+  color: var(--on-surface-variant);
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
 }
 
-.sessionCard:hover {
-  background: var(--surface-low);
-}
-
-.sessionCardActive {
-  border-color: var(--primary);
-  background: var(--surface-low);
-}
-
-.sessionCardTop {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 7px;
-}
-
-.sessionIndex {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  color: var(--on-surface-variant);
-  opacity: 0.5;
-  min-width: 20px;
-}
-
-.sessionDate {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  color: var(--on-surface);
-  flex: 1;
-}
-
-.sessionLang {
-  font-family: var(--font-display);
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-  opacity: 0.55;
-}
-
-.sessionMode {
+.editBtn {
   font-family: var(--font-display);
   font-size: 0.5rem;
   font-weight: 700;
   letter-spacing: 0.07em;
-  text-transform: uppercase;
-  padding: 1px 5px;
-}
-
-.mode_tutoring   { color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.25); }
-.mode_assessment { color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.25); }
-
-.scoreRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 7px;
-}
-
-.scoreBar {
-  flex: 1;
-  height: 3px;
-  background: var(--outline-variant);
-  overflow: hidden;
-}
-
-.scoreBarFill {
-  height: 100%;
-  background: var(--primary-gradient);
-  transition: width 0.4s ease;
-}
-
-.scoreLabel {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  color: var(--on-surface-variant);
-}
-
-.scorePct {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--on-surface);
-  min-width: 32px;
-  text-align: right;
-}
-
-.duration {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  color: var(--on-surface-variant);
-  opacity: 0.55;
-}
-
-.signalRow {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.signalChip {
-  font-family: var(--font-display);
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  padding: 1px 5px;
-  color: var(--chip-color, var(--on-surface-variant));
-  border: 1px solid var(--chip-color, var(--outline-variant));
-  opacity: 0.9;
-}
-
-/* ─── RIGHT: Session detail ───────────────────────────────────────────────── */
-
-.paneRight {
-  overflow-y: auto;
-}
-
-.statusBadge {
-  font-family: var(--font-display);
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 2px 7px;
+  background: none;
   border: 1px solid var(--outline-variant);
   color: var(--on-surface-variant);
+  cursor: pointer;
 }
 
-.statusBadge[data-status="completed"] {
-  color: #22c55e;
-  border-color: rgba(34, 197, 94, 0.3);
-}
+.editBtn:hover { border-color: var(--primary); color: var(--primary); }
 
-/* Summary bar */
-.summaryBar {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--outline-variant);
-  background: var(--surface-low);
-  flex-shrink: 0;
-}
-
-.summaryScore {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 52px;
-}
-
-.summaryScoreBig {
-  font-family: var(--font-display);
-  font-size: 1.625rem;
-  font-weight: 700;
-  color: var(--on-surface);
-  line-height: 1;
-}
-
-.summaryScoreSub {
+.delBtnSm {
   font-family: var(--font-display);
   font-size: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--on-surface-variant);
-  margin-top: 2px;
-}
-
-.summarySignals {
-  display: flex;
-  gap: 16px;
-  flex: 1;
-}
-
-.summarySignalItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.summarySignalN {
-  font-family: var(--font-display);
-  font-size: 1rem;
   font-weight: 700;
-  line-height: 1;
-}
-
-.summarySignalLabel {
-  font-family: var(--font-display);
-  font-size: 0.4375rem;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--on-surface-variant);
+  padding: 2px 7px;
+  background: none;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  cursor: pointer;
 }
 
-.summaryDur {
+/* ── Function chips ────────────────────────────────────────────────────────── */
+
+.fnChip {
   font-family: var(--font-display);
-  font-size: 0.75rem;
-  color: var(--on-surface-variant);
-  white-space: nowrap;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid;
 }
 
-/* Question list */
-.qList {
-  list-style: none;
-  margin: 0;
-  padding: 10px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.fn_orient     { color: #60a5fa; border-color: rgba(96, 165, 250, 0.3); }
+.fn_understand { color: #34d399; border-color: rgba(52, 211, 153, 0.3); }
+.fn_recognize  { color: #a78bfa; border-color: rgba(167, 139, 250, 0.3); }
+.fn_connect    { color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);  }
+.fn_evaluate   { color: #f87171; border-color: rgba(248, 113, 113, 0.3); }
 
-.qCard {
-  border: 1px solid var(--outline-variant);
-  background: var(--surface-lowest);
-}
+.fnChipDim { opacity: 0.3; }
 
-.qHeader {
+/* ── Questions panel ───────────────────────────────────────────────────────── */
+
+.fnGroupHd {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  user-select: none;
+  padding: 6px 14px;
+  background: var(--surface-low);
+  border-bottom: 1px solid var(--outline-variant);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.fnCount {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  color: var(--on-surface-variant);
+  margin-left: auto;
+  opacity: 0.55;
+}
+
+.qRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--outline-variant);
   transition: background 0.1s;
 }
 
-.qHeader:hover {
-  background: var(--surface-low);
-}
+.qRow:hover { background: var(--surface-low); }
 
-.qPos {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  color: var(--on-surface-variant);
-  opacity: 0.45;
-  min-width: 20px;
-}
+.qRowActive { background: var(--surface-low); border-left: 2px solid var(--primary); padding-left: 12px; }
 
-.qFn {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  min-width: 76px;
-}
-
-.qCorrect {
-  font-size: 0.875rem;
-  font-weight: 700;
-  min-width: 18px;
-  text-align: center;
-}
-
-.correct   { color: #22c55e; }
-.incorrect { color: #ef4444; }
-
-.qSignal {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.qRowMain {
   flex: 1;
-}
-
-.qDur {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  color: var(--on-surface-variant);
-  opacity: 0.45;
-}
-
-.qChevron {
-  font-size: 0.4375rem;
-  color: var(--on-surface-variant);
-  opacity: 0.35;
-}
-
-/* Q body */
-.qBody {
-  padding: 0 12px 12px;
-  border-top: 1px solid var(--outline-variant);
+  cursor: pointer;
 }
 
 .qText {
   font-family: var(--font-body);
   font-size: 0.8125rem;
   color: var(--on-surface);
-  line-height: 1.55;
-  padding: 10px 0 8px;
-}
-
-.optionList {
-  list-style: none;
-  margin: 0 0 10px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.option {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 5px 8px;
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: var(--on-surface);
-  background: var(--surface-low);
   line-height: 1.4;
 }
 
-.optionCorrect {
-  background: rgba(34, 197, 94, 0.08);
-  color: #22c55e;
-}
-
-.optionWrong {
-  background: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
-}
-
-.optionLetter {
-  font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  opacity: 0.45;
-  min-width: 12px;
-  padding-top: 1px;
-}
-
-/* Explanation + insight blocks */
-.explanationBlock,
-.insightBlock {
-  padding: 8px 10px;
-  border: 1px solid var(--outline-variant);
-  margin-bottom: 8px;
-  background: var(--surface-low);
-}
-
-.explanationText,
-.insightText {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: var(--on-surface);
-  line-height: 1.55;
-  margin: 4px 0 0;
-}
-
-/* Chat section */
-.chatSection {
-  margin-top: 8px;
-}
-
-.chatToggleBtn {
-  background: none;
-  border: none;
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--primary);
-  text-decoration: underline;
-  text-decoration-color: var(--primary);
-  cursor: pointer;
-  padding: 0;
-  letter-spacing: 0.02em;
-}
-
-.chatToggleBtn:hover {
-  opacity: 0.75;
-}
-
-.chatReplay {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.chatMsg {
-  padding: 7px 10px;
-}
-
-.chatMsgAi {
-  background: var(--surface-low);
-  border-left: 2px solid var(--primary);
-}
-
-.chatMsgStudent {
-  background: var(--surface-lowest);
-  border-left: 2px solid var(--outline-variant);
-}
-
-.chatRole {
-  display: block;
+.visualFlag {
+  display: inline-block;
+  margin-top: 3px;
   font-family: var(--font-display);
   font-size: 0.4375rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  color: var(--on-surface-variant);
   opacity: 0.45;
+  border: 1px solid var(--outline-variant);
+  padding: 1px 4px;
+}
+
+.qActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.emptyGroup {
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  opacity: 0.45;
+  font-style: italic;
+}
+
+/* ── Share panel ───────────────────────────────────────────────────────────── */
+
+.shareInputRow {
+  display: flex;
+  border-bottom: 1px solid var(--outline-variant);
+  flex-shrink: 0;
+}
+
+.shareInput {
+  flex: 1;
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  background: var(--surface-lowest);
+  border: none;
+  border-right: 1px solid var(--outline-variant);
+  color: var(--on-surface);
+  outline: none;
+}
+
+.shareInput::placeholder { color: var(--on-surface-variant); opacity: 0.45; }
+.shareInput:focus { background: var(--surface-low); }
+
+/* ── Student rows (shared across Share / Students) ──────────────────────────── */
+
+.studentRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.avatar_active  { background: rgba(96, 165, 250, 0.12); color: #60a5fa; }
+.avatar_invited { background: rgba(245, 158, 11, 0.12);  color: #f59e0b; }
+.avatar_pending { background: var(--surface-low);         color: var(--on-surface-variant); }
+
+.studentInfo { flex: 1; min-width: 0; }
+
+.studentEmail {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studentMeta {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  color: var(--on-surface-variant);
+  opacity: 0.55;
+}
+
+/* Status pills */
+.pill {
+  font-family: var(--font-display);
+  font-size: 0.4375rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.pillActive  { color: #22c55e; border-color: rgba(34, 197, 94, 0.3); }
+.pillInvited { color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
+.pillPending { color: var(--on-surface-variant); border-color: var(--outline-variant); }
+
+/* Course settings block */
+.courseSettingsBlock {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+}
+
+.settingLabel { color: var(--on-surface); }
+
+.toggleOff {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+}
+
+/* ── Students panel: upload zone ────────────────────────────────────────────── */
+
+.uploadZone {
+  margin: 10px 14px;
+  border: 1px dashed var(--outline-variant);
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.uploadZone:hover { border-color: var(--primary); }
+
+.uploadZone p {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  margin-bottom: 4px;
+}
+
+.uploadHint {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* ── Analytics panel ───────────────────────────────────────────────────────── */
+
+.statRow {
+  display: flex;
+  border-bottom: 1px solid var(--outline-variant);
+  flex-shrink: 0;
+}
+
+.statBox {
+  flex: 1;
+  padding: 10px 14px;
+  border-right: 1px solid var(--outline-variant);
+}
+
+.statBox:last-child { border-right: none; }
+
+.statN {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  line-height: 1;
+}
+
+.statLbl {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.55;
+  margin-top: 3px;
+}
+
+.analyticsRow {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--outline-variant);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.analyticsRow:hover { background: var(--surface-low); }
+
+.analyticsRowActive { background: var(--surface-low); border-left: 2px solid var(--primary); padding-left: 12px; }
+
+.analyticsLabel {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
   color: var(--on-surface);
   margin-bottom: 3px;
 }
 
-.chatText {
+.analyticsMeta {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  color: var(--on-surface-variant);
+  opacity: 0.6;
+  margin-bottom: 5px;
+}
+
+.barTrack {
+  height: 3px;
+  background: var(--outline-variant);
+  width: 100%;
+}
+
+.barFill {
+  height: 3px;
+  background: var(--primary-gradient);
+  transition: width 0.4s ease;
+}
+
+.weakBlock {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.weakItem {
   font-family: var(--font-body);
   font-size: 0.75rem;
   color: var(--on-surface);
+  padding: 5px 8px;
+  background: rgba(248, 113, 113, 0.06);
+  border-left: 2px solid #f87171;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.signalBlock { padding: 12px 14px; }
+
+.signalGrid {
+  display: flex;
+  gap: 16px;
+}
+
+.signalItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.signalN {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.signalLbl {
+  font-family: var(--font-display);
+  font-size: 0.4375rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+}
+
+/* Signal color classes */
+.sigStrong  { color: var(--sig-strong);  }
+.sigFragile { color: var(--sig-fragile); }
+.sigPartial { color: var(--sig-partial); }
+.sigLow     { color: var(--sig-low);     }
+.sigNone    { color: var(--sig-none);    }
+
+/* ── Right pane ────────────────────────────────────────────────────────────── */
+
+.paneRight {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.emptyState p {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  max-width: 200px;
   line-height: 1.55;
-  margin: 0;
+}
+
+/* ── Question editor ───────────────────────────────────────────────────────── */
+
+.editorShell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.editorScroll {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.editorSection {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.fieldLabel {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.6;
+  margin-bottom: 6px;
+}
+
+.fieldTextarea {
+  width: 100%;
+  padding: 7px 10px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  resize: vertical;
+  outline: none;
+  line-height: 1.5;
+}
+
+.fieldTextarea:focus { border-color: var(--primary); }
+
+.fieldSelect,
+.fieldInput {
+  width: 100%;
+  padding: 6px 8px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: var(--on-surface);
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  outline: none;
+  appearance: none;
+}
+
+.fieldSelect:focus,
+.fieldInput:focus { border-color: var(--primary); }
+
+/* Option editor rows */
+.optEditorRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.optEditorCorrect .optInput {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.correctBtn {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.correctBtnActive {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.optInput {
+  flex: 1;
+  padding: 5px 8px;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  outline: none;
+}
+
+.optInput:focus { border-color: var(--primary); }
+
+/* Meta row (function / page / visual) */
+.metaRow {
+  display: flex;
+  gap: 10px;
+}
+
+.metaField { flex: 1; }
+
+.toggleBtn {
+  width: 100%;
+  padding: 6px 8px;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  text-align: center;
+}
+
+.toggleBtnOn {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #60a5fa;
+}
+
+/* Editor action bar */
+.editorActions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--outline-variant);
+  flex-shrink: 0;
+  background: var(--surface-lowest);
+  align-items: center;
+}
+
+.saveBtn {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  background: var(--primary-gradient);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.saveBtn:hover { opacity: 0.88; }
+
+.cancelBtn {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+}
+
+.deleteBtn {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+/* ── Invite right panel ─────────────────────────────────────────────────────── */
+
+.inviteShell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.invitePreview {
+  margin: 14px 16px;
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+  padding: 14px;
+}
+
+.inviteSubject {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+.inviteBody {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  line-height: 1.65;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inviteLink {
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+}
+
+.inviteHint {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  margin-top: 6px;
+  letter-spacing: 0.06em;
+}
+
+/* ── Student detail ─────────────────────────────────────────────────────────── */
+
+.studentDetailShell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.signalSummary {
+  display: flex;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--outline-variant);
+  gap: 0;
+}
+
+.signalSummaryItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-right: 1px solid var(--outline-variant);
+}
+
+.signalSummaryItem:last-child { border-right: none; }
+
+.signalSummaryN {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.detailSection {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Session progression bars */
+.sessionBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 60px;
+}
+
+.sessionBarItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sessionBarOuter {
+  width: 32px;
+  height: 50px;
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sessionBarInner {
+  width: 100%;
+  background: var(--primary-gradient);
+  transition: height 0.4s ease;
+}
+
+.sessionBarLbl {
+  font-family: var(--font-display);
+  font-size: 0.4375rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  opacity: 0.55;
+  white-space: nowrap;
+}
+
+.noDataHint {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  opacity: 0.45;
+  font-style: italic;
+}
+
+/* Function coverage row */
+.fnCoverageRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
