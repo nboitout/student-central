@@ -1127,8 +1127,8 @@ export default function FacultyDashboard() {
           </>
         )}
       </section>
-    </div>
     </>
     }
+    </div>
   );
 }
