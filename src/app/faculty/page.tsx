@@ -324,12 +324,13 @@ function draftFromDoc(q: MCQDoc): EditDraft {
 
 // ─── QuestionEditor ───────────────────────────────────────────────────────────
 
-function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete }: {
+function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTitle }: {
   draft: EditDraft;
   onChange: (d: EditDraft) => void;
   onSave: () => void;
   onCancel: () => void;
   onDelete?: () => void;
+  courseTitle: string;
 }) {
   const set = (patch: Partial<EditDraft>) => onChange({ ...draft, ...patch });
   const setOpt = (i: number, val: string) => {
@@ -338,13 +339,69 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete }: {
     set({ options: opts });
   };
 
+  const [reformulating, setReformulating] = useState<string | null>(null);
+
+  const reformulate = async (field: string, text: string) => {
+    if (!text.trim() || reformulating) return;
+    setReformulating(field);
+    try {
+      // Backend endpoint: POST /api/mcq/reformulate
+      // To implement in routers/mcq.py — prompt: rephrase keeping same meaning,
+      // pedagogical function and difficulty. Returns { reformulated: string }.
+      const API = process.env.NEXT_PUBLIC_API_URL
+        ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+      const res = await fetch(`${API}/api/mcq/reformulate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          type:                 field === "question" ? "question" : "option",
+          pedagogical_function: draft.function,
+          course_title:         courseTitle,
+        }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+      const reformulated: string = data.reformulated ?? data.text ?? text;
+      if (field === "question") {
+        set({ question: reformulated });
+      } else {
+        const idx = parseInt(field.replace("opt-", ""));
+        const opts = [...draft.options] as [string, string, string, string];
+        opts[idx] = reformulated;
+        set({ options: opts });
+      }
+    } catch (e) {
+      // Endpoint not yet available — silent fail, no UX disruption
+      console.warn("Reformulate endpoint not yet implemented:", e);
+    } finally {
+      setReformulating(null);
+    }
+  };
+
   return (
     <div className={styles.editorShell}>
       <div className={styles.editorScroll}>
         <div className={styles.editorSection}>
           <label className={styles.fieldLabel}>Question text</label>
-          <textarea className={styles.fieldTextarea} rows={3} value={draft.question}
-            onChange={e => set({ question: e.target.value })} placeholder="Type the question…" />
+          <div className={styles.textareaWrapper}>
+            <textarea
+              className={styles.fieldTextarea}
+              rows={3}
+              value={draft.question}
+              onChange={e => set({ question: e.target.value })}
+              placeholder="Type the question…"
+              disabled={reformulating === "question"}
+            />
+            <button
+              className={styles.reformulateBtn}
+              onClick={() => reformulate("question", draft.question)}
+              disabled={!!reformulating || !draft.question.trim()}
+              title="Reformulate this question with AI"
+            >
+              {reformulating === "question" ? "Reformulating…" : "✦ Reformulate"}
+            </button>
+          </div>
         </div>
 
         <div className={styles.editorSection}>
@@ -357,18 +414,45 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete }: {
               >
                 {String.fromCharCode(65 + i)}
               </button>
-              <input className={styles.optInput} value={opt}
+              <input
+                className={styles.optInput}
+                value={opt}
                 onChange={e => setOpt(i, e.target.value)}
-                placeholder={`Option ${String.fromCharCode(65 + i)}…`} />
+                placeholder={`Option ${String.fromCharCode(65 + i)}…`}
+                disabled={reformulating === `opt-${i}`}
+              />
+              <button
+                className={styles.reformulateBtnOpt}
+                onClick={() => reformulate(`opt-${i}`, opt)}
+                disabled={!!reformulating || !opt.trim()}
+                title="Reformulate this option with AI"
+              >
+                {reformulating === `opt-${i}` ? "…" : "✦"}
+              </button>
             </div>
           ))}
         </div>
 
         <div className={styles.editorSection}>
           <label className={styles.fieldLabel}>Explanation</label>
-          <textarea className={styles.fieldTextarea} rows={3} value={draft.explanation}
-            onChange={e => set({ explanation: e.target.value })}
-            placeholder="Why is this the correct answer?" />
+          <div className={styles.textareaWrapper}>
+            <textarea
+              className={styles.fieldTextarea}
+              rows={3}
+              value={draft.explanation}
+              onChange={e => set({ explanation: e.target.value })}
+              placeholder="Why is this the correct answer?"
+              disabled={reformulating === "explanation"}
+            />
+            <button
+              className={styles.reformulateBtn}
+              onClick={() => reformulate("explanation", draft.explanation)}
+              disabled={!!reformulating || !draft.explanation.trim()}
+              title="Reformulate this explanation with AI"
+            >
+              {reformulating === "explanation" ? "Reformulating…" : "✦ Reformulate"}
+            </button>
+          </div>
         </div>
 
         <div className={styles.editorSection}>
@@ -775,6 +859,7 @@ export default function FacultyDashboard() {
 
             <QuestionEditor draft={editDraft} onChange={setEditDraft}
               onSave={saveQuestion} onCancel={cancelEdit}
+              courseTitle={selectedCourse.title}
               onDelete={rightPanel==="edit-q" && editDraft.id ? ()=>deleteQuestion(editDraft.id!) : undefined} />
           </>
         )}
