@@ -397,9 +397,9 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
               className={styles.reformulateBtn}
               onClick={() => reformulate("question", draft.question)}
               disabled={!!reformulating || !draft.question.trim()}
-              title="Reformulate this question with AI"
+              title="Reformulate with AI"
             >
-              {reformulating === "question" ? "Reformulating…" : "✦ Reformulate"}
+              {reformulating === "question" ? "…" : "✦"}
             </button>
           </div>
         </div>
@@ -414,21 +414,23 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
               >
                 {String.fromCharCode(65 + i)}
               </button>
-              <input
-                className={styles.optInput}
-                value={opt}
-                onChange={e => setOpt(i, e.target.value)}
-                placeholder={`Option ${String.fromCharCode(65 + i)}…`}
-                disabled={reformulating === `opt-${i}`}
-              />
-              <button
-                className={styles.reformulateBtnOpt}
-                onClick={() => reformulate(`opt-${i}`, opt)}
-                disabled={!!reformulating || !opt.trim()}
-                title="Reformulate this option with AI"
-              >
-                {reformulating === `opt-${i}` ? "…" : "✦"}
-              </button>
+              <div className={styles.optInputWrapper}>
+                <input
+                  className={styles.optInput}
+                  value={opt}
+                  onChange={e => setOpt(i, e.target.value)}
+                  placeholder={`Option ${String.fromCharCode(65 + i)}…`}
+                  disabled={reformulating === `opt-${i}`}
+                />
+                <button
+                  className={styles.reformulateBtnOpt}
+                  onClick={() => reformulate(`opt-${i}`, opt)}
+                  disabled={!!reformulating || !opt.trim()}
+                  title="Reformulate with AI"
+                >
+                  {reformulating === `opt-${i}` ? "…" : "✦"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -448,9 +450,9 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
               className={styles.reformulateBtn}
               onClick={() => reformulate("explanation", draft.explanation)}
               disabled={!!reformulating || !draft.explanation.trim()}
-              title="Reformulate this explanation with AI"
+              title="Reformulate with AI"
             >
-              {reformulating === "explanation" ? "Reformulating…" : "✦ Reformulate"}
+              {reformulating === "explanation" ? "…" : "✦"}
             </button>
           </div>
         </div>
