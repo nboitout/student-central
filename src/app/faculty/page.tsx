@@ -420,6 +420,8 @@ export default function FacultyDashboard() {
   const [mcqBank, setMcqBank]               = useState<MCQDoc[]>(MOCK_MCQS);
   const [editDraft, setEditDraft]           = useState<EditDraft | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<MockStudent | null>(null);
+  const [leftCollapsed, setLeftCollapsed]   = useState(false);
+  const [slideExpanded, setSlideExpanded]   = useState(true);
 
   const selectCourse = (c: MockCourse) => {
     setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
@@ -469,11 +471,33 @@ export default function FacultyDashboard() {
     <div className={styles.shell}>
 
       {/* LEFT */}
-      <aside className={styles.paneLeft}>
+      <aside className={`${styles.paneLeft} ${leftCollapsed ? styles.paneLeftCollapsed : ""}`}>
         <div className={styles.paneHd}>
-          <span className={styles.eyebrow}>Courses</span>
-          <span className={styles.hdMeta}>nicolasboitout</span>
+          {!leftCollapsed && <span className={styles.eyebrow}>Courses</span>}
+          {!leftCollapsed && <span className={styles.hdMeta}>nicolasboitout</span>}
+          <button
+            className={styles.collapseBtn}
+            onClick={() => setLeftCollapsed(v => !v)}
+            title={leftCollapsed ? "Expand course list" : "Collapse course list"}
+          >
+            {leftCollapsed ? "›" : "‹"}
+          </button>
         </div>
+
+        {leftCollapsed ? (
+          <div className={styles.collapsedList}>
+            {MOCK_COURSES.map(c => (
+              <div
+                key={c.id}
+                className={`${styles.courseDot} ${selectedCourse.id === c.id ? styles.courseDotActive : ""}`}
+                onClick={() => selectCourse(c)}
+                title={c.title}
+              >
+                {c.title.charAt(0)}
+              </div>
+            ))}
+          </div>
+        ) : (
         <ul className={styles.courseList}>
           {MOCK_COURSES.map(c => (
             <li key={c.id}
@@ -488,6 +512,7 @@ export default function FacultyDashboard() {
             </li>
           ))}
         </ul>
+        )}
       </aside>
 
       {/* MIDDLE */}
@@ -687,6 +712,67 @@ export default function FacultyDashboard() {
                 {editDraft.function}
               </span>
             </div>
+
+            {/* PDF slide preview — only when editing existing question with a page ref */}
+            {rightPanel === "edit-q" && editDraft.id && Number(editDraft.pageNumber) > 0 && (
+              <div className={styles.slideSection}>
+                <div className={styles.slideHd}>
+                  <span className={styles.eyebrow}>PDF reference</span>
+                  <span className={styles.slidePageLabel}>Page {editDraft.pageNumber}</span>
+                  <button
+                    className={styles.slideToggle}
+                    onClick={() => setSlideExpanded(v => !v)}
+                  >
+                    {slideExpanded ? "Collapse" : "Expand"}
+                  </button>
+                </div>
+                {slideExpanded && (
+                  <div className={styles.slideBody}>
+                    <div className={styles.slideImgArea}>
+                      {/* TODO: replace with <img src={sasUrl}> from getSlideSasUrl(selectedCourse.id, editDraft.id) */}
+                      <div className={styles.slidePlaceholder}>
+                        <div className={styles.slidePlaceholderTitle} />
+                        {editDraft.hasVisual
+                          ? <div className={styles.slidePlaceholderDiagram} />
+                          : null}
+                        <div className={styles.slidePlaceholderLines}>
+                          <div className={styles.slidePlaceholderLine} />
+                          <div className={`${styles.slidePlaceholderLine} ${styles.slidePlaceholderLineShort}`} />
+                          <div className={styles.slidePlaceholderLine} />
+                          <div className={`${styles.slidePlaceholderLine} ${styles.slidePlaceholderLineShort}`} />
+                        </div>
+                      </div>
+                      <div className={styles.pageBadge}>p. {editDraft.pageNumber}</div>
+                    </div>
+                    <div className={styles.slideMeta}>
+                      <div className={styles.slideMetaRow}>
+                        <span className={styles.fieldLabel}>Page</span>
+                        <span className={styles.slideMetaVal}>{editDraft.pageNumber}</span>
+                      </div>
+                      <div className={styles.slideMetaRow}>
+                        <span className={styles.fieldLabel}>Has visual</span>
+                        <span className={`${styles.slideMetaVal} ${editDraft.hasVisual ? styles.slideMetaVisual : ""}`}>
+                          {editDraft.hasVisual ? "Yes" : "No"}
+                        </span>
+                      </div>
+                      <div className={styles.slideMetaRow}>
+                        <span className={styles.fieldLabel}>Source</span>
+                        <span className={styles.slideMetaSource}>{selectedCourse.title}.pdf</span>
+                      </div>
+                      <a
+                        href={`/api/courses/${selectedCourse.id}/pdf-url`}
+                        className={styles.pdfLink}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open full PDF →
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <QuestionEditor draft={editDraft} onChange={setEditDraft}
               onSave={saveQuestion} onCancel={cancelEdit}
               onDelete={rightPanel==="edit-q" && editDraft.id ? ()=>deleteQuestion(editDraft.id!) : undefined} />
