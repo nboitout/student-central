@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./faculty.module.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -593,11 +593,40 @@ export default function FacultyDashboard() {
   const [selectedCourse, setSelectedCourse] = useState<MockCourse>(MOCK_COURSES[0]);
   const [activeMode, setActiveMode]         = useState<Mode>("questions");
   const [rightPanel, setRightPanel]         = useState<RightPanel>("empty");
-  const [mcqBank, setMcqBank]               = useState<MCQDoc[]>(MOCK_MCQS);
+  const [mcqBank, setMcqBank]               = useState<MCQDoc[]>([]);
+  const [mcqLoading, setMcqLoading]         = useState(false);
   const [editDraft, setEditDraft]           = useState<EditDraft | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<MockStudent | null>(null);
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
   const [slideExpanded, setSlideExpanded]   = useState(true);
+  const [facultyId, setFacultyId]           = useState("nicolas");
+
+  const API = process.env.NEXT_PUBLIC_API_URL
+    ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+
+  /* ── Resolve facultyId from NextAuth session on mount ── */
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then(r => r.json())
+      .then(s => { const uid = s?.user?.email ?? s?.user?.id ?? "nicolas"; setFacultyId(uid); })
+      .catch(() => {});
+  }, []);
+
+  /* ── Fetch MCQ bank whenever course or tab changes ── */
+  useEffect(() => {
+    if (activeMode !== "questions") return;
+    setMcqLoading(true);
+    setMcqBank([]);
+    fetch(`${API}/api/mcq/bank/${selectedCourse.id}?userId=${facultyId}`)
+      .then(r => r.json())
+      .then(data => {
+        /* Response shape: { mcqs: [...], count: N, courseId: string } */
+        const raw: MCQDoc[] = Array.isArray(data) ? data : (data.mcqs ?? []);
+        setMcqBank(raw);
+      })
+      .catch(err => { console.warn("MCQ bank fetch failed:", err); setMcqBank([]); })
+      .finally(() => setMcqLoading(false));
+  }, [selectedCourse.id, activeMode, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectCourse = (c: MockCourse) => {
     setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
@@ -680,7 +709,7 @@ export default function FacultyDashboard() {
       <aside className={`${styles.paneLeft} ${leftCollapsed ? styles.paneLeftCollapsed : ""}`}>
         <div className={styles.paneHd}>
           {!leftCollapsed && <span className={styles.eyebrow}>Courses</span>}
-          {!leftCollapsed && <span className={styles.hdMeta}>nicolasboitout</span>}
+          {!leftCollapsed && <span className={styles.hdMeta}>{facultyId}</span>}
           <button
             className={styles.collapseBtn}
             onClick={() => setLeftCollapsed(v => !v)}
@@ -752,8 +781,10 @@ export default function FacultyDashboard() {
         {activeMode === "questions" && (
           <div className={styles.panelShell}>
             <div className={styles.panelHd}>
-              <span className={styles.eyebrow}>{mcqBank.length} questions</span>
-              <button className={styles.addBtn} onClick={openNew}>+ New question</button>
+              <span className={styles.eyebrow}>
+                {mcqLoading ? "Loading…" : `${mcqBank.length} questions`}
+              </span>
+              <button className={styles.addBtn} onClick={openNew} disabled={mcqLoading}>+ New question</button>
             </div>
             <div className={styles.panelScroll}>
               {groupedMcqs.map(({ fn, qs }) => (
