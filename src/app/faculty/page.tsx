@@ -22,12 +22,14 @@ interface MCQDoc {
   hasVisual: boolean;
 }
 
-interface MockCourse {
-  id: string;
-  title: string;
-  mcqStatus: "ready" | "generating" | "none";
-  mcqCount: number;
-  synthesis: { thesis: string; key_concepts: string[] };
+interface Course {
+  id:        string;
+  title:     string;
+  mcqStatus: "ready" | "generating" | "none" | "failed";
+  mcqCount:  number;
+  synthesis: { thesis?: string; key_concepts?: string[] } | null;
+  /* Real API may include additional fields — ignored here */
+  [key: string]: unknown;
 }
 
 interface MockStudent {
@@ -56,7 +58,7 @@ interface EditDraft {
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
-const MOCK_COURSES: MockCourse[] = [
+const MOCK_COURSES: Course[] = [
   { id: "c1", title: "Harness Engineering with Codex", mcqStatus: "ready", mcqCount: 20,
     synthesis: {
       thesis: "Harness provides a developer-first CI/CD platform that enforces policy guardrails and automated deployment verification to reduce release risk at enterprise scale.",
@@ -590,7 +592,8 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function FacultyDashboard() {
-  const [selectedCourse, setSelectedCourse] = useState<MockCourse>(MOCK_COURSES[0]);
+  const [courses,        setCourses]        = useState<Course[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [activeMode, setActiveMode]         = useState<Mode>("questions");
   const [rightPanel, setRightPanel]         = useState<RightPanel>("empty");
   const [mcqBank, setMcqBank]               = useState<MCQDoc[]>([]);
@@ -618,9 +621,22 @@ export default function FacultyDashboard() {
       .finally(() => setFacultyReady(true));
   }, []);
 
+  /* ── Fetch course list once facultyId is resolved ── */
+  useEffect(() => {
+    if (!facultyReady) return;
+    fetch(`${API}/api/courses?userId=${facultyId}`)
+      .then(r => r.json())
+      .then(data => {
+        const list: Course[] = Array.isArray(data) ? data : (data.courses ?? []);
+        setCourses(list);
+        if (list.length > 0) setSelectedCourse(list[0]);
+      })
+      .catch(err => console.warn("Course fetch failed:", err));
+  }, [facultyReady, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* ── Fetch MCQ bank — waits for facultyId to be resolved ── */
   useEffect(() => {
-    if (!facultyReady || activeMode !== "questions") return;
+    if (!facultyReady || !selectedCourse || activeMode !== "questions") return;
     setMcqLoading(true);
     setMcqBank([]);
     fetch(`${API}/api/mcq/bank/${selectedCourse.id}?userId=${facultyId}`)
@@ -634,7 +650,7 @@ export default function FacultyDashboard() {
       .finally(() => setMcqLoading(false));
   }, [selectedCourse.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const selectCourse = (c: MockCourse) => {
+  const selectCourse = (c: Course) => {
     setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
   };
 
@@ -727,10 +743,10 @@ export default function FacultyDashboard() {
 
         {leftCollapsed ? (
           <div className={styles.collapsedList}>
-            {MOCK_COURSES.map(c => (
+            {courses.map(c => (
               <div
                 key={c.id}
-                className={`${styles.courseDot} ${selectedCourse.id === c.id ? styles.courseDotActive : ""}`}
+                className={`${styles.courseDot} ${selectedCourse?.id === c.id ? styles.courseDotActive : ""}`}
                 onClick={() => selectCourse(c)}
                 title={c.title}
               >
@@ -740,9 +756,10 @@ export default function FacultyDashboard() {
           </div>
         ) : (
         <ul className={styles.courseList}>
-          {MOCK_COURSES.map(c => (
+          {courses.length === 0 && <li className={styles.courseItem} style={{opacity:0.4, cursor:"default"}}>Loading courses…</li>}
+          {courses.map(c => (
             <li key={c.id}
-              className={`${styles.courseItem} ${selectedCourse.id === c.id ? styles.courseItemActive : ""}`}
+              className={`${styles.courseItem} ${selectedCourse?.id === c.id ? styles.courseItemActive : ""}`}
               onClick={() => selectCourse(c)}>
               <div className={styles.courseTitle}>{c.title}</div>
               <div className={styles.courseMeta}>
@@ -756,18 +773,19 @@ export default function FacultyDashboard() {
         )}
       </aside>
 
-      {/* MIDDLE */}
+      {/* MIDDLE + RIGHT — only render once a course is selected */}
+      {selectedCourse && <>
       <section className={styles.paneMiddle}>
         <div className={styles.paneHd}>
           <span className={styles.eyebrow}>
-            {selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
+            {!selectedCourse ? "Select a course" : selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
           </span>
         </div>
 
         <div className={styles.synthesisStrip}>
-          <p className={styles.synthesisThesis}>{selectedCourse.synthesis.thesis}</p>
+          <p className={styles.synthesisThesis}>{selectedCourse?.synthesis?.thesis ?? ""}</p>
           <div className={styles.conceptRow}>
-            {selectedCourse.synthesis.key_concepts.map(k => (
+            {(selectedCourse?.synthesis?.key_concepts ?? []).map(k => (
               <span key={k} className={styles.conceptChip}>{k}</span>
             ))}
           </div>
@@ -972,7 +990,7 @@ export default function FacultyDashboard() {
                 {slideExpanded && (
                   <div className={styles.slideBody}>
                     <div className={styles.slideImgArea}>
-                      {/* TODO: replace with <img src={sasUrl}> from getSlideSasUrl(selectedCourse.id, editDraft.id) */}
+                      {/* TODO: replace with <img src={sasUrl}> from getSlideSasUrl(selectedCourse?.id, editDraft.id) */}
                       <div className={styles.slidePlaceholder}>
                         <div className={styles.slidePlaceholderTitle} />
                         {editDraft.hasVisual
@@ -1000,10 +1018,10 @@ export default function FacultyDashboard() {
                       </div>
                       <div className={styles.slideMetaRow}>
                         <span className={styles.fieldLabel}>Source</span>
-                        <span className={styles.slideMetaSource}>{selectedCourse.title}.pdf</span>
+                        <span className={styles.slideMetaSource}>{selectedCourse?.title}.pdf</span>
                       </div>
                       <a
-                        href={`/api/courses/${selectedCourse.id}/pdf-url`}
+                        href={`/api/courses/${selectedCourse?.id}/pdf-url`}
                         className={styles.pdfLink}
                         target="_blank"
                         rel="noreferrer"
@@ -1018,7 +1036,7 @@ export default function FacultyDashboard() {
 
             <QuestionEditor draft={editDraft} onChange={setEditDraft}
               onSave={saveQuestion} onCancel={cancelEdit}
-              courseTitle={selectedCourse.title}
+              courseTitle={selectedCourse?.title ?? ""}
               onDelete={rightPanel==="edit-q" && editDraft.id ? ()=>deleteQuestion(editDraft.id!) : undefined} />
           </>
         )}
@@ -1028,7 +1046,7 @@ export default function FacultyDashboard() {
             <div className={styles.paneHd}><span className={styles.eyebrow}>Invitation preview</span></div>
             <div className={styles.inviteShell}>
               <div className={styles.invitePreview}>
-                <div className={styles.inviteSubject}>You&apos;ve been enrolled in &ldquo;{selectedCourse.title}&rdquo;</div>
+                <div className={styles.inviteSubject}>You&apos;ve been enrolled in &ldquo;{selectedCourse?.title}&rdquo;</div>
                 <div className={styles.inviteBody}>
                   <p>Hello,</p>
                   <p>Your professor has shared a course with you on <strong>Student Central</strong>. Click below to access your MCQ session and AI tutor.</p>
@@ -1040,7 +1058,7 @@ export default function FacultyDashboard() {
                 <label className={styles.fieldLabel}>Paste emails or upload CSV</label>
                 <textarea className={styles.fieldTextarea} rows={5}
                   defaultValue={"alice.bernard@m2.univ.fr\nc.martin@m2.univ.fr\nt.dupont@m2.univ.fr"} />
-                <p className={styles.inviteHint}>3 valid addresses · Course: {selectedCourse.title}</p>
+                <p className={styles.inviteHint}>3 valid addresses · Course: {selectedCourse?.title}</p>
               </div>
               <div className={styles.editorActions}>
                 <button className={styles.saveBtn}>Send invitations</button>
@@ -1110,5 +1128,7 @@ export default function FacultyDashboard() {
         )}
       </section>
     </div>
+    </>
+    }
   );
 }
