@@ -9,8 +9,7 @@
   --sig-low:     #ef4444;
   --sig-none:    var(--on-surface-variant);
 
-  display: grid;
-  grid-template-columns: 210px 340px 1fr;
+  display: flex;
   height: calc(100vh - 56px);
   overflow: hidden;
   background: var(--surface-lowest);
@@ -28,7 +27,29 @@
   border-right: 1px solid var(--outline-variant);
 }
 
-.paneRight { border-right: none; }
+.paneLeft {
+  width: 210px;
+  min-width: 210px;
+  flex-shrink: 0;
+  transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.paneLeftCollapsed {
+  width: 48px;
+  min-width: 48px;
+}
+
+.paneMiddle {
+  width: 340px;
+  min-width: 340px;
+  flex-shrink: 0;
+}
+
+.paneRight {
+  flex: 1;
+  min-width: 0;
+  border-right: none;
+}
 
 .paneHd {
   display: flex;
@@ -128,6 +149,64 @@
   margin-left: auto;
   opacity: 0.5;
   font-family: var(--font-display);
+}
+
+/* ── Collapse button ───────────────────────────────────────────────────────── */
+
+.collapseBtn {
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--outline-variant);
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  color: var(--on-surface-variant);
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  transition: background 0.1s;
+}
+
+.collapseBtn:hover { background: var(--surface-low); }
+
+/* ── Collapsed course list ─────────────────────────────────────────────────── */
+
+.collapsedList {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  overflow: hidden;
+}
+
+.courseDot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  background: var(--surface-low);
+  cursor: pointer;
+  border: 1px solid var(--outline-variant);
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+
+.courseDot:hover { border-color: var(--primary); color: var(--primary); }
+
+.courseDotActive {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
 }
 
 /* ── Middle ────────────────────────────────────────────────────────────────── */
@@ -1009,4 +1088,153 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+/* ── PDF Slide preview ─────────────────────────────────────────────────────── */
+
+.slideSection {
+  border-bottom: 1px solid var(--outline-variant);
+  flex-shrink: 0;
+}
+
+.slideHd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--surface-low);
+}
+
+.slidePageLabel {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  color: var(--on-surface-variant);
+}
+
+.slideToggle {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  background: none;
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+}
+
+.slideBody {
+  display: flex;
+  height: 190px;
+}
+
+.slideImgArea {
+  flex: 1;
+  background: var(--surface-low);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid var(--outline-variant);
+}
+
+.slidePlaceholder {
+  width: 130px;
+  height: 168px;
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.slidePlaceholderTitle {
+  height: 5px;
+  background: var(--outline-variant);
+  width: 75%;
+  margin-bottom: 10px;
+}
+
+.slidePlaceholderDiagram {
+  height: 72px;
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  margin-bottom: 10px;
+}
+
+.slidePlaceholderLines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.slidePlaceholderLine {
+  height: 4px;
+  background: var(--outline-variant);
+  width: 100%;
+}
+
+.slidePlaceholderLineShort { width: 55%; }
+
+.pageBadge {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+}
+
+.slideMeta {
+  width: 160px;
+  min-width: 160px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.slideMetaRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.slideMetaVal {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+}
+
+.slideMetaVisual { color: #60a5fa; }
+
+.slideMetaSource {
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  color: var(--on-surface-variant);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.pdfLink {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  margin-top: auto;
+  cursor: pointer;
 }
