@@ -643,8 +643,19 @@ export default function FacultyDashboard() {
       .then(r => r.json())
       .then(data => {
         /* Response shape: { mcqs: [...], count: N, courseId: string } */
-        const raw: MCQDoc[] = Array.isArray(data) ? data : (data.mcqs ?? []);
-        setMcqBank(raw);
+        const raw = Array.isArray(data) ? data : (data.mcqs ?? []);
+        /* Normalise legacy MCQs that use level instead of function.
+           Generated before the five-function taxonomy — map to closest equivalent. */
+        const LEVEL_TO_FN: Record<string, MCQFunction> = {
+          basic:        "understand",
+          intermediate: "recognize",
+          advanced:     "evaluate",
+        };
+        const normalised: MCQDoc[] = raw.map((item: MCQDoc & { level?: string }) => ({
+          ...item,
+          function: item.function ?? LEVEL_TO_FN[item.level ?? ""] ?? "understand",
+        }));
+        setMcqBank(normalised);
       })
       .catch(err => { console.warn("MCQ bank fetch failed:", err); setMcqBank([]); })
       .finally(() => setMcqLoading(false));
