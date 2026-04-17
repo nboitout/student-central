@@ -648,7 +648,7 @@ export default function FacultyDashboard() {
       })
       .catch(err => { console.warn("MCQ bank fetch failed:", err); setMcqBank([]); })
       .finally(() => setMcqLoading(false));
-  }, [selectedCourse.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectCourse = (c: Course) => {
     setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
