@@ -322,6 +322,64 @@ function draftFromDoc(q: MCQDoc): EditDraft {
            function: q.function, pageNumber: q.pageNumber, hasVisual: q.hasVisual };
 }
 
+// ─── Reformulation result type ────────────────────────────────────────────────
+
+interface ReformResult { original: string; reformulated: string; }
+
+function generateMockReformulation(text: string): string {
+  const swaps: [RegExp, string][] = [
+    [/\bWhich\b/,        "What"],
+    [/\bWhat is\b/,      "Identify the"],
+    [/\billustrates\b/,  "depicts"],
+    [/\bdescribes\b/,    "outlines"],
+    [/\bprimary\b/,      "main"],
+    [/\brelationship\b/, "connection"],
+    [/\bcomponent\b/,    "element"],
+    [/\bstrategy\b/,     "approach"],
+    [/\baddresses\b/,    "tackles"],
+    [/\bfundamental\b/,  "core"],
+  ];
+  let result = text;
+  for (const [pat, rep] of swaps) {
+    if (pat.test(result)) { result = result.replace(pat, rep); break; }
+  }
+  if (result === text) result = result.replace(/\?$/, " — select the best answer.");
+  return result;
+}
+
+function ReformulationPanel({ result, onKeep, onEdit, onAccept }: {
+  result: ReformResult;
+  onKeep:   () => void;
+  onEdit:   () => void;
+  onAccept: () => void;
+}) {
+  return (
+    <div className={styles.reformulationPanel}>
+      <div className={styles.reformulationHd}>
+        <span className={styles.reformulationHdLabel}>Reformulation ready</span>
+        <button className={styles.reformulationDismiss} onClick={onKeep}>✕</button>
+      </div>
+      <div className={styles.reformulationCompare}>
+        <div className={styles.reformulationCol}>
+          <span className={styles.reformulationColLabel}>Original</span>
+          <p className={styles.reformulationText}>{result.original}</p>
+        </div>
+        <div className={styles.reformulationCol}>
+          <span className={styles.reformulationColLabel}>Reformulated</span>
+          <p className={`${styles.reformulationText} ${styles.reformulationTextNew}`}>
+            {result.reformulated}
+          </p>
+        </div>
+      </div>
+      <div className={styles.reformulationActions}>
+        <button className={styles.keepBtn}       onClick={onKeep}>Keep original</button>
+        <button className={styles.editReformBtn} onClick={onEdit}>Edit ↗</button>
+        <button className={styles.acceptBtn}     onClick={onAccept}>Accept</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── QuestionEditor ───────────────────────────────────────────────────────────
 
 function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTitle }: {
@@ -340,123 +398,149 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
   };
 
   const [reformulating, setReformulating] = useState<string | null>(null);
+  const [pending, setPending]             = useState<Record<string, ReformResult>>({});
 
   const reformulate = async (field: string, text: string) => {
     if (!text.trim() || reformulating) return;
     setReformulating(field);
+    setPending(prev => { const n = { ...prev }; delete n[field]; return n; });
     try {
-      // Backend endpoint: POST /api/mcq/reformulate
-      // To implement in routers/mcq.py — prompt: rephrase keeping same meaning,
-      // pedagogical function and difficulty. Returns { reformulated: string }.
-      const API = process.env.NEXT_PUBLIC_API_URL
-        ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
-      const res = await fetch(`${API}/api/mcq/reformulate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text,
-          type:                 field === "question" ? "question" : "option",
-          pedagogical_function: draft.function,
-          course_title:         courseTitle,
-        }),
-      });
-      if (!res.ok) throw new Error(`${res.status}`);
-      const data = await res.json();
-      const reformulated: string = data.reformulated ?? data.text ?? text;
-      if (field === "question") {
-        set({ question: reformulated });
-      } else {
-        const idx = parseInt(field.replace("opt-", ""));
-        const opts = [...draft.options] as [string, string, string, string];
-        opts[idx] = reformulated;
-        set({ options: opts });
-      }
+      // ── MOCK (remove when backend ready) ────────────────────────────────────
+      await new Promise(r => setTimeout(r, 1800));
+      const reformulated = generateMockReformulation(text);
+      // ── REAL: uncomment once POST /api/mcq/reformulate exists ───────────────
+      // const API = process.env.NEXT_PUBLIC_API_URL
+      //   ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+      // const res = await fetch(`${API}/api/mcq/reformulate`, {
+      //   method: "POST", headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ text, type: field === "question" ? "question" : "option",
+      //                          pedagogical_function: draft.function, course_title: courseTitle }),
+      // });
+      // if (!res.ok) throw new Error(`${res.status}`);
+      // const { reformulated } = await res.json();
+      // ────────────────────────────────────────────────────────────────────────
+      setPending(prev => ({ ...prev, [field]: { original: text, reformulated } }));
     } catch (e) {
-      // Endpoint not yet available — silent fail, no UX disruption
-      console.warn("Reformulate endpoint not yet implemented:", e);
+      console.warn("Reformulate failed:", e);
     } finally {
       setReformulating(null);
     }
   };
 
+  const applyToField = (field: string, text: string) => {
+    if (field === "question")    { set({ question: text });    return; }
+    if (field === "explanation") { set({ explanation: text }); return; }
+    const idx = parseInt(field.replace("opt-", ""));
+    const opts = [...draft.options] as [string, string, string, string];
+    opts[idx] = text;
+    set({ options: opts });
+  };
+
+  const dismiss = (field: string) =>
+    setPending(prev => { const n = { ...prev }; delete n[field]; return n; });
+
+  const acceptReform = (field: string) => {
+    applyToField(field, pending[field].reformulated);
+    dismiss(field);
+  };
+
+  const editReform = (field: string) => {
+    applyToField(field, pending[field].reformulated);
+    dismiss(field);
+  };
+
+  const rfClass = (field: string) =>
+    reformulating === field
+      ? `${styles.reformulateBtn} ${styles.reformulateBtnLoading}`
+      : styles.reformulateBtn;
+
+  const rfOptClass = (field: string) =>
+    reformulating === field
+      ? `${styles.reformulateBtnOpt} ${styles.reformulateBtnLoading}`
+      : styles.reformulateBtnOpt;
+
   return (
     <div className={styles.editorShell}>
       <div className={styles.editorScroll}>
+
+        {/* ── Question ── */}
         <div className={styles.editorSection}>
           <label className={styles.fieldLabel}>Question text</label>
           <div className={styles.textareaWrapper}>
-            <textarea
-              className={styles.fieldTextarea}
-              rows={3}
-              value={draft.question}
-              onChange={e => set({ question: e.target.value })}
-              placeholder="Type the question…"
-              disabled={reformulating === "question"}
-            />
-            <button
-              className={styles.reformulateBtn}
+            <textarea className={styles.fieldTextarea} rows={3}
+              value={draft.question} onChange={e => set({ question: e.target.value })}
+              placeholder="Type the question…" />
+            <button className={rfClass("question")}
               onClick={() => reformulate("question", draft.question)}
-              disabled={!!reformulating || !draft.question.trim()}
-              title="Reformulate with AI"
-            >
-              {reformulating === "question" ? "…" : "reformulate"}
+              disabled={!!reformulating || !draft.question.trim()} title="Reformulate with AI">
+              {reformulating === "question" ? "Reformulating…" : "Reformulate"}
             </button>
           </div>
         </div>
+        {pending["question"] && (
+          <ReformulationPanel result={pending["question"]}
+            onKeep={()   => dismiss("question")}
+            onEdit={()   => editReform("question")}
+            onAccept={() => acceptReform("question")} />
+        )}
 
+        {/* ── Options ── */}
         <div className={styles.editorSection}>
           <label className={styles.fieldLabel}>Options — click letter to mark correct</label>
-          {draft.options.map((opt, i) => (
-            <div key={i} className={`${styles.optEditorRow} ${draft.correctIndex === i ? styles.optEditorCorrect : ""}`}>
-              <button
-                className={`${styles.correctBtn} ${draft.correctIndex === i ? styles.correctBtnActive : ""}`}
-                onClick={() => set({ correctIndex: i })}
-              >
-                {String.fromCharCode(65 + i)}
-              </button>
-              <div className={styles.optInputWrapper}>
-                <input
-                  className={styles.optInput}
-                  value={opt}
-                  onChange={e => setOpt(i, e.target.value)}
-                  placeholder={`Option ${String.fromCharCode(65 + i)}…`}
-                  disabled={reformulating === `opt-${i}`}
-                />
-                <button
-                  className={styles.reformulateBtnOpt}
-                  onClick={() => reformulate(`opt-${i}`, opt)}
-                  disabled={!!reformulating || !opt.trim()}
-                  title="Reformulate with AI"
-                >
-                  {reformulating === `opt-${i}` ? "…" : "reformulate"}
-                </button>
+          {draft.options.map((opt, i) => {
+            const field = `opt-${i}`;
+            return (
+              <div key={i}>
+                <div className={`${styles.optEditorRow} ${draft.correctIndex === i ? styles.optEditorCorrect : ""}`}>
+                  <button
+                    className={`${styles.correctBtn} ${draft.correctIndex === i ? styles.correctBtnActive : ""}`}
+                    onClick={() => set({ correctIndex: i })}>
+                    {String.fromCharCode(65 + i)}
+                  </button>
+                  <div className={styles.optInputWrapper}>
+                    <input className={styles.optInput} value={opt}
+                      onChange={e => setOpt(i, e.target.value)}
+                      placeholder={`Option ${String.fromCharCode(65 + i)}…`} />
+                    <button className={rfOptClass(field)}
+                      onClick={() => reformulate(field, opt)}
+                      disabled={!!reformulating || !opt.trim()} title="Reformulate with AI">
+                      {reformulating === field ? "…" : "Reformulate"}
+                    </button>
+                  </div>
+                </div>
+                {pending[field] && (
+                  <ReformulationPanel result={pending[field]}
+                    onKeep={()   => dismiss(field)}
+                    onEdit={()   => editReform(field)}
+                    onAccept={() => acceptReform(field)} />
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
+        {/* ── Explanation ── */}
         <div className={styles.editorSection}>
           <label className={styles.fieldLabel}>Explanation</label>
           <div className={styles.textareaWrapper}>
-            <textarea
-              className={styles.fieldTextarea}
-              rows={3}
-              value={draft.explanation}
-              onChange={e => set({ explanation: e.target.value })}
-              placeholder="Why is this the correct answer?"
-              disabled={reformulating === "explanation"}
-            />
-            <button
-              className={styles.reformulateBtn}
+            <textarea className={styles.fieldTextarea} rows={3}
+              value={draft.explanation} onChange={e => set({ explanation: e.target.value })}
+              placeholder="Why is this the correct answer?" />
+            <button className={rfClass("explanation")}
               onClick={() => reformulate("explanation", draft.explanation)}
-              disabled={!!reformulating || !draft.explanation.trim()}
-              title="Reformulate with AI"
-            >
-              {reformulating === "explanation" ? "…" : "reformulate"}
+              disabled={!!reformulating || !draft.explanation.trim()} title="Reformulate with AI">
+              {reformulating === "explanation" ? "Reformulating…" : "Reformulate"}
             </button>
           </div>
         </div>
+        {pending["explanation"] && (
+          <ReformulationPanel result={pending["explanation"]}
+            onKeep={()   => dismiss("explanation")}
+            onEdit={()   => editReform("explanation")}
+            onAccept={() => acceptReform("explanation")} />
+        )}
 
+        {/* ── Meta ── */}
         <div className={styles.editorSection}>
           <div className={styles.metaRow}>
             <div className={styles.metaField}>
