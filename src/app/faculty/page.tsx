@@ -605,16 +605,22 @@ export default function FacultyDashboard() {
     ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
   /* ── Resolve facultyId from NextAuth session on mount ── */
+  const [facultyReady, setFacultyReady] = useState(false);
+
   useEffect(() => {
     fetch("/api/auth/session")
       .then(r => r.json())
-      .then(s => { const uid = s?.user?.email ?? s?.user?.id ?? "nicolas"; setFacultyId(uid); })
-      .catch(() => {});
+      .then(s => {
+        const uid = s?.user?.email ?? s?.user?.id ?? "nicolas";
+        setFacultyId(uid);
+      })
+      .catch(() => {})
+      .finally(() => setFacultyReady(true));
   }, []);
 
-  /* ── Fetch MCQ bank whenever course or tab changes ── */
+  /* ── Fetch MCQ bank — waits for facultyId to be resolved ── */
   useEffect(() => {
-    if (activeMode !== "questions") return;
+    if (!facultyReady || activeMode !== "questions") return;
     setMcqLoading(true);
     setMcqBank([]);
     fetch(`${API}/api/mcq/bank/${selectedCourse.id}?userId=${facultyId}`)
@@ -626,7 +632,7 @@ export default function FacultyDashboard() {
       })
       .catch(err => { console.warn("MCQ bank fetch failed:", err); setMcqBank([]); })
       .finally(() => setMcqLoading(false));
-  }, [selectedCourse.id, activeMode, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedCourse.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectCourse = (c: MockCourse) => {
     setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
