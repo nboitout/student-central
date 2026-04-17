@@ -1,639 +1,781 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import styles from "./faculty.module.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface CourseSynthesis {
-  title: string;
-  domain: string;
-  purpose: string;
-  thesis: string;
-  key_concepts: string[];
-  structure: string;
-  audience: string;
-}
+type MCQFunction = "orient" | "understand" | "recognize" | "connect" | "evaluate";
+type RightPanel  = "empty" | "edit-q" | "new-q" | "student-detail" | "invite";
+type Mode        = "questions" | "share" | "students" | "analytics";
 
-interface Course {
+interface MCQOption { letter: string; text: string; }
+
+interface MCQDoc {
   id: string;
-  title: string;
-  author?: string;
-  source?: string;
-  mcqStatus: "none" | "generating" | "ready" | "failed";
-  mcqCount?: number;
-  synthesis?: CourseSynthesis;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface SessionQuestion {
-  position: number;
-  mcqId: string;
   question: string;
-  options: string[];
-  correctIndex?: number;
-  correct_index?: number;
-  function: "orient" | "understand" | "recognize" | "connect" | "evaluate";
-  hasVisual?: boolean;
-  has_visual?: boolean;
-  selectedIndex?: number;
-  selected_index?: number;
-  isCorrect?: boolean;
-  is_correct?: boolean;
-  durationSec?: number;
-  duration_sec?: number;
-  studentExplanation?: string;
-  student_explanation?: string;
-  evaluationSignal?: string;
-  evaluation_signal?: string;
-  evaluationConfidence?: string;
-  evaluation_confidence?: string;
-  facultyInsight?: string;
-  faculty_insight?: string;
+  options: MCQOption[];
+  correctIndex: number;
+  explanation: string;
+  function: MCQFunction;
+  pageNumber: number;
+  hasVisual: boolean;
 }
 
-interface ChatEntry {
-  role: "ai" | "student";
-  text: string;
-  questionPosition?: number;
-  question_position?: number;
-  timestamp: string;
-}
-
-interface SessionSummary {
-  totalQuestions?: number;
-  total_questions?: number;
-  correctCount?: number;
-  correct_count?: number;
-  totalDurationSec?: number;
-  total_duration_sec?: number;
-  signalBreakdown?: Record<string, number>;
-  signal_breakdown?: Record<string, number>;
-}
-
-interface Session {
+interface MockCourse {
   id: string;
-  courseId?: string;
-  course_id?: string;
-  userId?: string;
-  user_id?: string;
-  mode: "tutoring" | "assessment";
-  language: string;
-  status: string;
-  startedAt?: string;
-  started_at?: string;
-  completedAt?: string;
-  completed_at?: string;
-  questions: SessionQuestion[];
-  chatHistory?: ChatEntry[];
-  chat_history?: ChatEntry[];
-  summary: SessionSummary;
+  title: string;
+  mcqStatus: "ready" | "generating" | "none";
+  mcqCount: number;
+  synthesis: { thesis: string; key_concepts: string[] };
 }
+
+interface MockStudent {
+  id: string;
+  email: string;
+  initials: string;
+  status: "active" | "invited" | "pending";
+  joinedAt: string;
+  sessions: number;
+  avgScore: number;
+  signalBreakdown: Record<string, number>;
+  functionCoverage: MCQFunction[];
+  weakConcepts: string[];
+}
+
+interface EditDraft {
+  id?: string;
+  question: string;
+  options: [string, string, string, string];
+  correctIndex: number;
+  explanation: string;
+  function: MCQFunction;
+  pageNumber: number | "";
+  hasVisual: boolean;
+}
+
+// ─── Mock data ────────────────────────────────────────────────────────────────
+
+const MOCK_COURSES: MockCourse[] = [
+  { id: "c1", title: "Harness Engineering with Codex", mcqStatus: "ready", mcqCount: 20,
+    synthesis: {
+      thesis: "Harness provides a developer-first CI/CD platform that enforces policy guardrails and automated deployment verification to reduce release risk at enterprise scale.",
+      key_concepts: ["Pipelines", "Delegates", "Feature Flags", "Canary Deployments", "Policy Engine"],
+    },
+  },
+  { id: "c2", title: "Harness Engineering", mcqStatus: "ready", mcqCount: 20,
+    synthesis: {
+      thesis: "An introduction to Harness CI/CD fundamentals covering pipeline construction, secret management, and multi-cloud deployment strategies.",
+      key_concepts: ["CI Stages", "Secrets", "Connectors", "Multi-cloud", "Rollback"],
+    },
+  },
+  { id: "c3", title: "World Models", mcqStatus: "ready", mcqCount: 20,
+    synthesis: {
+      thesis: "World models are learned internal representations that enable agents to simulate future states and plan efficiently without real-world interaction.",
+      key_concepts: ["Latent Space", "RSSM", "Dreamer", "Model-Based RL", "Imagination"],
+    },
+  },
+];
+
+const MOCK_MCQS: MCQDoc[] = [
+  // orient × 4
+  { id: "q01", function: "orient", pageNumber: 2, hasVisual: false, correctIndex: 1,
+    question: "What is the primary goal of the Harness CI/CD platform as described in this document?",
+    options: [
+      { letter: "A", text: "To replace Kubernetes container orchestration entirely" },
+      { letter: "B", text: "To automate software delivery with policy guardrails" },
+      { letter: "C", text: "To provide real-time production incident monitoring" },
+      { letter: "D", text: "To optimise cloud infrastructure costs automatically" },
+    ],
+    explanation: "Harness positions itself as a developer-centric delivery platform built around policy enforcement and automated guardrails, not a replacement for orchestration or monitoring tools." },
+  { id: "q02", function: "orient", pageNumber: 4, hasVisual: true, correctIndex: 2,
+    question: "Which diagram in chapter 1 illustrates the relationship between the Harness control plane and the delegate?",
+    options: [
+      { letter: "A", text: "The multi-cloud topology map" },
+      { letter: "B", text: "The pipeline execution graph" },
+      { letter: "C", text: "The agent/control-plane architecture diagram" },
+      { letter: "D", text: "The secret manager integration flowchart" },
+    ],
+    explanation: "Chapter 1 opens with the agent/control-plane diagram showing how delegates communicate outbound to the Harness SaaS, eliminating inbound firewall rules." },
+  { id: "q03", function: "orient", pageNumber: 1, hasVisual: false, correctIndex: 0,
+    question: "According to the introduction, which problem does Harness primarily address?",
+    options: [
+      { letter: "A", text: "Slow, error-prone manual release processes" },
+      { letter: "B", text: "Lack of container image signing standards" },
+      { letter: "C", text: "Insufficient compute capacity in cloud providers" },
+      { letter: "D", text: "Absence of multi-region database replication" },
+    ],
+    explanation: "The introduction frames Harness as a solution to slow, risky manual releases — it automates the delivery pipeline with built-in verification and rollback." },
+  { id: "q04", function: "orient", pageNumber: 6, hasVisual: false, correctIndex: 3,
+    question: "Which of the following best describes the Harness delegate component?",
+    options: [
+      { letter: "A", text: "A SaaS module that runs in Harness's own data centre" },
+      { letter: "B", text: "A load balancer for routing pipeline traffic" },
+      { letter: "C", text: "A secret vault for storing deployment credentials" },
+      { letter: "D", text: "A lightweight agent installed in the customer's infrastructure" },
+    ],
+    explanation: "The delegate is a customer-installed agent that executes pipeline tasks locally, communicating outbound to the Harness control plane so credentials never leave the customer's environment." },
+  // understand × 5
+  { id: "q05", function: "understand", pageNumber: 10, hasVisual: false, correctIndex: 1,
+    question: "What does the delegate handle that distinguishes it from a traditional CI agent?",
+    options: [
+      { letter: "A", text: "It compiles source code before pushing to the registry" },
+      { letter: "B", text: "It executes tasks locally and never exposes secrets to Harness SaaS" },
+      { letter: "C", text: "It pulls pipeline definitions directly from Git on each run" },
+      { letter: "D", text: "It manages Kubernetes cluster auto-scaling decisions" },
+    ],
+    explanation: "Unlike traditional agents that receive credentials from a central server, the Harness delegate executes within the customer's environment so secrets remain under customer control." },
+  { id: "q06", function: "understand", pageNumber: 13, hasVisual: false, correctIndex: 0,
+    question: "How does Harness differ from a traditional Jenkins-based CI pipeline?",
+    options: [
+      { letter: "A", text: "Harness offers built-in deployment verification and automated rollback, whereas Jenkins requires custom scripting" },
+      { letter: "B", text: "Jenkins supports canary deployments natively; Harness does not" },
+      { letter: "C", text: "Harness pipelines run exclusively on Kubernetes; Jenkins supports bare metal" },
+      { letter: "D", text: "Jenkins has a policy engine; Harness relies on external OPA servers" },
+    ],
+    explanation: "The document contrasts Harness's built-in verification strategies and automatic rollback against Jenkins, which requires teams to script these capabilities themselves." },
+  { id: "q07", function: "understand", pageNumber: 16, hasVisual: true, correctIndex: 2,
+    question: "What are the three phases of a Harness canary deployment as shown in figure 3.2?",
+    options: [
+      { letter: "A", text: "Build → Test → Release" },
+      { letter: "B", text: "Stage → Verify → Promote" },
+      { letter: "C", text: "Canary → Verification → Full rollout (or rollback)" },
+      { letter: "D", text: "Primary → Shadow → Cutover" },
+    ],
+    explanation: "Figure 3.2 shows the three-phase canary flow: route a small percentage of traffic to the canary, run automated verification, then either promote or rollback." },
+  { id: "q08", function: "understand", pageNumber: 19, hasVisual: false, correctIndex: 3,
+    question: "Which Harness module manages runtime configuration without a new deployment?",
+    options: [
+      { letter: "A", text: "CD — Continuous Delivery" },
+      { letter: "B", text: "CI — Continuous Integration" },
+      { letter: "C", text: "CCM — Cloud Cost Management" },
+      { letter: "D", text: "FF — Feature Flags" },
+    ],
+    explanation: "Feature Flags (FF) allow teams to toggle functionality at runtime via configuration, decoupling feature release from code deployment." },
+  { id: "q09", function: "understand", pageNumber: 22, hasVisual: false, correctIndex: 1,
+    question: "What triggers an automatic rollback in a Harness pipeline?",
+    options: [
+      { letter: "A", text: "Any failed unit test in the CI stage" },
+      { letter: "B", text: "A verification step that detects anomalies against a defined baseline" },
+      { letter: "C", text: "A manual approval gate being rejected" },
+      { letter: "D", text: "A pod restart count exceeding the Kubernetes threshold" },
+    ],
+    explanation: "Harness rollback is triggered by continuous verification — it compares post-deployment metrics against a baseline and rolls back automatically if anomalies exceed configured thresholds." },
+  // recognize × 5
+  { id: "q10", function: "recognize", pageNumber: 25, hasVisual: false, correctIndex: 0,
+    question: "A team deploys a new API version to 5% of production traffic, monitors error rates for 10 minutes, then expands or reverts. Which Harness concept applies?",
+    options: [
+      { letter: "A", text: "Canary deployment with continuous verification" },
+      { letter: "B", text: "Blue-green deployment with manual approval" },
+      { letter: "C", text: "Rolling deployment with health checks" },
+      { letter: "D", text: "Feature flag with metric-based gating" },
+    ],
+    explanation: "The described pattern — incremental traffic shift + automated metric monitoring + promote/rollback decision — is the Harness canary deployment with continuous verification." },
+  { id: "q11", function: "recognize", pageNumber: 27, hasVisual: false, correctIndex: 2,
+    question: "An engineer installs a small process on a Kubernetes node. It contacts Harness SaaS outbound on port 443 and receives task instructions. What component is this?",
+    options: [
+      { letter: "A", text: "The Harness Operator" },
+      { letter: "B", text: "The pipeline runner" },
+      { letter: "C", text: "The delegate" },
+      { letter: "D", text: "The connector" },
+    ],
+    explanation: "An outbound-only agent installed in customer infrastructure that receives task instructions from the control plane is exactly the delegate model." },
+  { id: "q12", function: "recognize", pageNumber: 30, hasVisual: false, correctIndex: 1,
+    question: "A team ships code daily but toggles features on only for internal users. External users get the previous experience. Which mechanism does this match?",
+    options: [
+      { letter: "A", text: "Canary deployment" },
+      { letter: "B", text: "Feature flags" },
+      { letter: "C", text: "Blue-green deployment" },
+      { letter: "D", text: "A/B testing at infrastructure level" },
+    ],
+    explanation: "Shipping code while controlling visibility per user segment through configuration — without a new deployment — is the Feature Flags pattern." },
+  { id: "q13", function: "recognize", pageNumber: 32, hasVisual: true, correctIndex: 3,
+    question: "The diagram shows two identical production environments: one receives live traffic while the other is updated, then traffic is switched instantly. What strategy is this?",
+    options: [
+      { letter: "A", text: "Canary deployment" },
+      { letter: "B", text: "Rolling update" },
+      { letter: "C", text: "Shadow deployment" },
+      { letter: "D", text: "Blue-green deployment" },
+    ],
+    explanation: "Maintaining two mirror environments and switching traffic in a single cutover is the blue-green pattern, which eliminates downtime but doubles infrastructure cost during the switch." },
+  { id: "q14", function: "recognize", pageNumber: 35, hasVisual: false, correctIndex: 0,
+    question: "A policy blocks any pipeline that lacks a manual approval gate before production. In which Harness module would this rule be configured?",
+    options: [
+      { letter: "A", text: "Policy Engine (OPA-based)" },
+      { letter: "B", text: "Feature Flags" },
+      { letter: "C", text: "Continuous Verification" },
+      { letter: "D", text: "Secret Manager" },
+    ],
+    explanation: "Harness uses an Open Policy Agent (OPA)-based Policy Engine to enforce governance rules such as mandatory approval gates before production stages." },
+  // connect × 4
+  { id: "q15", function: "connect", pageNumber: 38, hasVisual: false, correctIndex: 2,
+    question: "How do Feature Flags and canary deployments complement each other in the document's recommended release workflow?",
+    options: [
+      { letter: "A", text: "Feature Flags replace canary by enabling instant rollback without redeployment" },
+      { letter: "B", text: "Canary eliminates the need for Feature Flags by routing users at the infrastructure level" },
+      { letter: "C", text: "Canary validates infrastructure stability; Feature Flags control user exposure within a stable deployment" },
+      { letter: "D", text: "They address the same problem and should not be used together" },
+    ],
+    explanation: "The document recommends using canary deployments to validate infrastructure health, then layering Feature Flags on top to progressively expose features to user segments." },
+  { id: "q16", function: "connect", pageNumber: 40, hasVisual: false, correctIndex: 1,
+    question: "How does the delegate architecture relate to the Secret Manager integration described in chapter 4?",
+    options: [
+      { letter: "A", text: "The delegate stores secrets in its local filesystem to avoid SaaS round-trips" },
+      { letter: "B", text: "The delegate fetches secrets directly from the customer's vault at runtime, so they never traverse the Harness control plane" },
+      { letter: "C", text: "The delegate requires Harness SaaS to decrypt secrets before task execution" },
+      { letter: "D", text: "Secret Manager and the delegate are independent subsystems with no integration" },
+    ],
+    explanation: "Because the delegate runs in customer infrastructure, it can fetch secrets from on-premises or cloud vaults at execution time — credentials never reach Harness's servers." },
+  { id: "q17", function: "connect", pageNumber: 43, hasVisual: false, correctIndex: 0,
+    question: "The Policy Engine and Continuous Verification both act as gatekeepers. What fundamental difference determines when each is applied?",
+    options: [
+      { letter: "A", text: "Policy Engine enforces pre-deployment governance rules; Verification evaluates post-deployment runtime signals" },
+      { letter: "B", text: "Policy Engine runs after deployment; Verification runs before" },
+      { letter: "C", text: "Both run pre-deployment but on different artifact types" },
+      { letter: "D", text: "Policy Engine is optional; Verification is always mandatory" },
+    ],
+    explanation: "Policy Engine gates are evaluated before deployment begins; Continuous Verification runs after deployment using live signals to decide whether to proceed or roll back." },
+  { id: "q18", function: "connect", pageNumber: 46, hasVisual: false, correctIndex: 3,
+    question: "How does the document link the shift-left principle to both the CI stage and the Policy Engine?",
+    options: [
+      { letter: "A", text: "Shift-left applies only to testing in CI; Policy Engine is a post-deployment concern" },
+      { letter: "B", text: "The Policy Engine enforces shift-left by running security scans after production deployment" },
+      { letter: "C", text: "Shift-left in CI means running unit tests; Policy Engine adds integration tests in staging" },
+      { letter: "D", text: "Both embody shift-left by surfacing failures early — CI catches code defects, Policy Engine catches governance violations, before production" },
+    ],
+    explanation: "The document ties shift-left to both dimensions: CI surfaces bugs early in the development cycle; Policy Engine surfaces compliance violations before they reach production." },
+  // evaluate × 2
+  { id: "q19", function: "evaluate", pageNumber: 50, hasVisual: false, correctIndex: 1,
+    question: "Evaluate the trade-offs between canary and blue-green deployments. Under what conditions should a team prefer blue-green?",
+    options: [
+      { letter: "A", text: "When incremental metric comparison is more important than zero-downtime cutover" },
+      { letter: "B", text: "When the application cannot tolerate partial state inconsistencies across versions and instant cutover is preferable to gradual traffic shift" },
+      { letter: "C", text: "When infrastructure cost is constrained and running two full environments is not feasible" },
+      { letter: "D", text: "When the team requires automated metric-based rollback rather than manual intervention" },
+    ],
+    explanation: "Blue-green is recommended when state consistency is critical — stateful applications or schema migrations that make running two versions simultaneously problematic benefit from the atomic cutover." },
+  { id: "q20", function: "evaluate", pageNumber: 54, hasVisual: false, correctIndex: 2,
+    question: "The document argues that the delegate model improves security over traditional agent architectures. Critically assess this claim — what assumption must hold for it to be valid?",
+    options: [
+      { letter: "A", text: "The Harness SaaS control plane must be certified as a zero-trust environment" },
+      { letter: "B", text: "The customer's Kubernetes cluster must have network policies preventing all egress except to Harness" },
+      { letter: "C", text: "The customer's own infrastructure must already be secure, since the delegate's security boundary is only as strong as the environment it runs in" },
+      { letter: "D", text: "Secrets must be encrypted end-to-end between the vault and the delegate using customer-managed keys" },
+    ],
+    explanation: "The delegate model shifts the trust boundary into the customer's infrastructure. This is only an improvement if that environment is itself hardened — a compromised node running the delegate nullifies the security benefit." },
+];
+
+const MOCK_STUDENTS: MockStudent[] = [
+  { id: "s1", email: "alice.bernard@m2.univ.fr", initials: "AB", status: "active",
+    joinedAt: "10 Apr 2026", sessions: 3, avgScore: 74,
+    signalBreakdown: { Strong: 5, Fragile: 4, "Partial misconception": 3, "Low mastery": 1, unevaluated: 2 },
+    functionCoverage: ["orient", "understand", "recognize"],
+    weakConcepts: ["Canary vs blue-green trade-offs"] },
+  { id: "s2", email: "c.martin@m2.univ.fr", initials: "CM", status: "active",
+    joinedAt: "11 Apr 2026", sessions: 2, avgScore: 52,
+    signalBreakdown: { Strong: 2, Fragile: 3, "Partial misconception": 4, "Low mastery": 1, unevaluated: 0 },
+    functionCoverage: ["orient", "understand"],
+    weakConcepts: ["Delegate architecture", "Verification triggers"] },
+  { id: "s3", email: "t.dupont@m2.univ.fr", initials: "TD", status: "invited",
+    joinedAt: "—", sessions: 0, avgScore: 0,
+    signalBreakdown: { Strong: 0, Fragile: 0, "Partial misconception": 0, "Low mastery": 0, unevaluated: 0 },
+    functionCoverage: [], weakConcepts: [] },
+  { id: "s4", email: "l.rey@m2.univ.fr", initials: "LR", status: "pending",
+    joinedAt: "—", sessions: 0, avgScore: 0,
+    signalBreakdown: { Strong: 0, Fragile: 0, "Partial misconception": 0, "Low mastery": 0, unevaluated: 0 },
+    functionCoverage: [], weakConcepts: [] },
+];
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SIGNAL_META: Record<string, { short: string; cssVar: string }> = {
-  Strong:                  { short: "Strong",  cssVar: "--sig-strong"  },
-  Fragile:                 { short: "Fragile", cssVar: "--sig-fragile" },
-  "Partial misconception": { short: "Partial", cssVar: "--sig-partial" },
-  "Low mastery":           { short: "Low",     cssVar: "--sig-low"     },
-  unevaluated:             { short: "—",       cssVar: "--sig-none"    },
+const FN_ORDER: MCQFunction[] = ["orient", "understand", "recognize", "connect", "evaluate"];
+
+const FN_DISTRIBUTION: Record<MCQFunction, number> = {
+  orient: 4, understand: 5, recognize: 5, connect: 4, evaluate: 2,
 };
 
-const FN_COLORS: Record<string, string> = {
-  orient:     "#60a5fa",
-  understand: "#34d399",
-  recognize:  "#a78bfa",
-  connect:    "#f59e0b",
-  evaluate:   "#f87171",
-};
-
-// TODO: migrate to api.ts following the request<T> pattern
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ??
-  "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
-
-async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`);
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  return res.json();
-}
+const SIGNAL_META = [
+  { key: "Strong",                short: "Strong",  cls: "sigStrong"  },
+  { key: "Fragile",               short: "Fragile", cls: "sigFragile" },
+  { key: "Partial misconception", short: "Partial", cls: "sigPartial" },
+  { key: "Low mastery",           short: "Low",     cls: "sigLow"     },
+  { key: "unevaluated",           short: "—",       cls: "sigNone"    },
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getScore(s: Session) {
-  const c = s.summary?.correctCount ?? s.summary?.correct_count ?? 0;
-  const t = s.summary?.totalQuestions ?? s.summary?.total_questions ?? 5;
-  return { c, t, pct: t > 0 ? Math.round((c / t) * 100) : 0 };
+function statusPillCls(status: MockStudent["status"], s: Record<string, string>) {
+  if (status === "active")  return `${s.pill} ${s.pillActive}`;
+  if (status === "invited") return `${s.pill} ${s.pillInvited}`;
+  return `${s.pill} ${s.pillPending}`;
 }
 
-function getBreakdown(s: Session): Record<string, number> {
-  return s.summary?.signalBreakdown ?? s.summary?.signal_breakdown ?? {};
+function blankDraft(): EditDraft {
+  return { question: "", options: ["", "", "", ""], correctIndex: 0,
+           explanation: "", function: "orient", pageNumber: "", hasVisual: false };
 }
 
-function getChatForQ(s: Session, pos: number): ChatEntry[] {
-  return (s.chatHistory ?? s.chat_history ?? []).filter(
-    (m) => (m.questionPosition ?? m.question_position) === pos
-  );
+function draftFromDoc(q: MCQDoc): EditDraft {
+  return { id: q.id, question: q.question,
+           options: [q.options[0].text, q.options[1].text, q.options[2].text, q.options[3].text],
+           correctIndex: q.correctIndex, explanation: q.explanation,
+           function: q.function, pageNumber: q.pageNumber, hasVisual: q.hasVisual };
 }
 
-function formatDate(iso?: string): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+// ─── QuestionEditor ───────────────────────────────────────────────────────────
 
-function formatDuration(sec?: number): string {
-  if (!sec) return "";
-  return sec >= 60 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : `${sec}s`;
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export default function FacultyDashboard() {
-  // Auth
-  const [facultyId, setFacultyId] = useState("");
-
-  // Left pane
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [coursesLoading, setCoursesLoading] = useState(false);
-  const [coursesError, setCoursesError] = useState("");
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-
-  // Middle pane
-  const [studentEmailDraft, setStudentEmailDraft] = useState("");
-  const [studentEmail, setStudentEmail] = useState("");
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [sessionsLoading, setSessionsLoading] = useState(false);
-  const [sessionsError, setSessionsError] = useState("");
-
-  // Right pane
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  const [sessionLoading, setSessionLoading] = useState(false);
-  const [expandedQ, setExpandedQ] = useState<number | null>(null);
-  const [expandedChat, setExpandedChat] = useState<number | null>(null);
-
-  // ── Auth ────────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((r) => r.json())
-      .then((s) => {
-        const uid = s?.user?.email ?? s?.user?.id ?? "";
-        setFacultyId(uid);
-      })
-      .catch(() => {});
-  }, []);
-
-  // ── Load courses ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!facultyId) return;
-    setCoursesLoading(true);
-    setCoursesError("");
-    apiFetch<Course[] | { courses: Course[] }>(`/api/courses?userId=${facultyId}`)
-      .then((res) => {
-        const list = Array.isArray(res) ? res : (res.courses ?? []);
-        setCourses(list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
-      })
-      .catch((e: Error) => setCoursesError(e.message))
-      .finally(() => setCoursesLoading(false));
-  }, [facultyId]);
-
-  // ── Load sessions ───────────────────────────────────────────────────────────
-  const loadSessions = useCallback(() => {
-    if (!selectedCourse || !studentEmail) return;
-    setSessionsLoading(true);
-    setSessionsError("");
-    setSessions([]);
-    setSelectedSession(null);
-    setExpandedQ(null);
-    setExpandedChat(null);
-    apiFetch<Session[] | { sessions: Session[] }>(
-      `/api/sessions?courseId=${selectedCourse.id}&userId=${encodeURIComponent(studentEmail)}`
-    )
-      .then((res) => {
-        const list = Array.isArray(res) ? res : (res.sessions ?? []);
-        setSessions(list);
-      })
-      .catch((e: Error) => setSessionsError(e.message))
-      .finally(() => setSessionsLoading(false));
-  }, [selectedCourse, studentEmail]);
-
-  useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
-
-  // ── Open session detail ─────────────────────────────────────────────────────
-  const openSession = useCallback(
-    (s: Session) => {
-      if (selectedSession?.id === s.id) {
-        setSelectedSession(null);
-        return;
-      }
-      setExpandedQ(null);
-      setExpandedChat(null);
-      setSessionLoading(true);
-      const courseId = s.courseId ?? s.course_id ?? selectedCourse?.id ?? "";
-      apiFetch<Session>(`/api/sessions/${s.id}?courseId=${courseId}`)
-        .then((full) => setSelectedSession(full))
-        .catch(() => setSelectedSession(s)) // fallback to list-level data
-        .finally(() => setSessionLoading(false));
-    },
-    [selectedSession, selectedCourse]
-  );
-
-  // ── Select course ───────────────────────────────────────────────────────────
-  const selectCourse = (c: Course) => {
-    setSelectedCourse(c);
-    setSessions([]);
-    setSelectedSession(null);
-    setStudentEmail("");
-    setStudentEmailDraft("");
-    setExpandedQ(null);
-    setExpandedChat(null);
+function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete }: {
+  draft: EditDraft;
+  onChange: (d: EditDraft) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  onDelete?: () => void;
+}) {
+  const set = (patch: Partial<EditDraft>) => onChange({ ...draft, ...patch });
+  const setOpt = (i: number, val: string) => {
+    const opts = [...draft.options] as [string, string, string, string];
+    opts[i] = val;
+    set({ options: opts });
   };
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <div className={styles.editorShell}>
+      <div className={styles.editorScroll}>
+        <div className={styles.editorSection}>
+          <label className={styles.fieldLabel}>Question text</label>
+          <textarea className={styles.fieldTextarea} rows={3} value={draft.question}
+            onChange={e => set({ question: e.target.value })} placeholder="Type the question…" />
+        </div>
+
+        <div className={styles.editorSection}>
+          <label className={styles.fieldLabel}>Options — click letter to mark correct</label>
+          {draft.options.map((opt, i) => (
+            <div key={i} className={`${styles.optEditorRow} ${draft.correctIndex === i ? styles.optEditorCorrect : ""}`}>
+              <button
+                className={`${styles.correctBtn} ${draft.correctIndex === i ? styles.correctBtnActive : ""}`}
+                onClick={() => set({ correctIndex: i })}
+              >
+                {String.fromCharCode(65 + i)}
+              </button>
+              <input className={styles.optInput} value={opt}
+                onChange={e => setOpt(i, e.target.value)}
+                placeholder={`Option ${String.fromCharCode(65 + i)}…`} />
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.editorSection}>
+          <label className={styles.fieldLabel}>Explanation</label>
+          <textarea className={styles.fieldTextarea} rows={3} value={draft.explanation}
+            onChange={e => set({ explanation: e.target.value })}
+            placeholder="Why is this the correct answer?" />
+        </div>
+
+        <div className={styles.editorSection}>
+          <div className={styles.metaRow}>
+            <div className={styles.metaField}>
+              <label className={styles.fieldLabel}>Function</label>
+              <select className={styles.fieldSelect} value={draft.function}
+                onChange={e => set({ function: e.target.value as MCQFunction })}>
+                {FN_ORDER.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
+              </select>
+            </div>
+            <div className={styles.metaField}>
+              <label className={styles.fieldLabel}>Page ref</label>
+              <input className={styles.fieldInput} type="number" min={1}
+                value={draft.pageNumber}
+                onChange={e => set({ pageNumber: e.target.value === "" ? "" : Number(e.target.value) })}
+                placeholder="—" />
+            </div>
+            <div className={styles.metaField}>
+              <label className={styles.fieldLabel}>Has visual</label>
+              <button className={`${styles.toggleBtn} ${draft.hasVisual ? styles.toggleBtnOn : ""}`}
+                onClick={() => set({ hasVisual: !draft.hasVisual })}>
+                {draft.hasVisual ? "Yes" : "No"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.editorActions}>
+        <button className={styles.saveBtn} onClick={onSave}>
+          {draft.id ? "Save changes" : "Create question"}
+        </button>
+        <button className={styles.cancelBtn} onClick={onCancel}>Cancel</button>
+        {onDelete && (
+          <button className={styles.deleteBtn} onClick={onDelete}>Delete question</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+export default function FacultyDashboard() {
+  const [selectedCourse, setSelectedCourse] = useState<MockCourse>(MOCK_COURSES[0]);
+  const [activeMode, setActiveMode]         = useState<Mode>("questions");
+  const [rightPanel, setRightPanel]         = useState<RightPanel>("empty");
+  const [mcqBank, setMcqBank]               = useState<MCQDoc[]>(MOCK_MCQS);
+  const [editDraft, setEditDraft]           = useState<EditDraft | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<MockStudent | null>(null);
+
+  const selectCourse = (c: MockCourse) => {
+    setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
+  };
+
+  const switchMode = (m: Mode) => {
+    setActiveMode(m); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
+  };
+
+  const openEdit = (q: MCQDoc) => { setEditDraft(draftFromDoc(q)); setRightPanel("edit-q"); };
+  const openNew  = ()           => { setEditDraft(blankDraft());    setRightPanel("new-q");  };
+  const cancelEdit = ()         => { setRightPanel("empty"); setEditDraft(null); };
+
+  const saveQuestion = () => {
+    if (!editDraft) return;
+    const doc: MCQDoc = {
+      id: editDraft.id ?? `q${Date.now()}`,
+      question: editDraft.question,
+      options: (["A","B","C","D"] as const).map((l, i) => ({ letter: l, text: editDraft.options[i] })),
+      correctIndex: editDraft.correctIndex,
+      explanation: editDraft.explanation,
+      function: editDraft.function,
+      pageNumber: Number(editDraft.pageNumber) || 0,
+      hasVisual: editDraft.hasVisual,
+    };
+    if (editDraft.id) {
+      setMcqBank(prev => prev.map(q => q.id === doc.id ? doc : q));
+    } else {
+      setMcqBank(prev => [...prev, doc]);
+    }
+    setRightPanel("empty"); setEditDraft(null);
+  };
+
+  const deleteQuestion = (id: string) => {
+    setMcqBank(prev => prev.filter(q => q.id !== id));
+    setRightPanel("empty"); setEditDraft(null);
+  };
+
+  const groupedMcqs = FN_ORDER.map(fn => ({ fn, qs: mcqBank.filter(q => q.function === fn) }));
+
+  const activeStudents = MOCK_STUDENTS.filter(s => s.status === "active");
+  const classAvgScore  = activeStudents.length
+    ? Math.round(activeStudents.reduce((s, st) => s + st.avgScore, 0) / activeStudents.length) : 0;
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={styles.shell}>
 
-      {/* ── LEFT: Course list ─────────────────────────────────────────────── */}
+      {/* LEFT */}
       <aside className={styles.paneLeft}>
-        <div className={styles.paneHeader}>
+        <div className={styles.paneHd}>
           <span className={styles.eyebrow}>Courses</span>
-          {facultyId && (
-            <span className={styles.headerMeta} title={facultyId}>
-              {facultyId.split("@")[0]}
-            </span>
-          )}
+          <span className={styles.hdMeta}>nicolasboitout</span>
         </div>
-
-        {coursesLoading && <p className={styles.hint}>Loading…</p>}
-        {coursesError && <p className={styles.errorMsg}>{coursesError}</p>}
-
         <ul className={styles.courseList}>
-          {courses.map((c) => (
-            <li
-              key={c.id}
-              className={`${styles.courseItem} ${selectedCourse?.id === c.id ? styles.courseItemActive : ""}`}
-              onClick={() => selectCourse(c)}
-            >
+          {MOCK_COURSES.map(c => (
+            <li key={c.id}
+              className={`${styles.courseItem} ${selectedCourse.id === c.id ? styles.courseItemActive : ""}`}
+              onClick={() => selectCourse(c)}>
               <div className={styles.courseTitle}>{c.title}</div>
               <div className={styles.courseMeta}>
-                <span className={`${styles.statusDot} ${styles[`status_${c.mcqStatus}`]}`} />
+                <span className={`${styles.statusDot} ${styles[`status_${c.mcqStatus}` as keyof typeof styles]}`} />
                 <span className={styles.statusLabel}>{c.mcqStatus}</span>
-                {c.mcqCount != null && (
-                  <span className={styles.mcqCount}>{c.mcqCount} Q</span>
-                )}
+                <span className={styles.mcqCount}>{c.mcqCount} Q</span>
               </div>
             </li>
           ))}
-          {!coursesLoading && courses.length === 0 && !coursesError && (
-            <p className={styles.hint}>No courses found.</p>
-          )}
         </ul>
       </aside>
 
-      {/* ── MIDDLE: Sessions ──────────────────────────────────────────────── */}
+      {/* MIDDLE */}
       <section className={styles.paneMiddle}>
-        {!selectedCourse ? (
-          <div className={styles.emptyState}>
-            <span className={styles.eyebrow}>Select a course</span>
-            <p>Choose a course from the panel on the left.</p>
+        <div className={styles.paneHd}>
+          <span className={styles.eyebrow}>
+            {selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
+          </span>
+        </div>
+
+        <div className={styles.synthesisStrip}>
+          <p className={styles.synthesisThesis}>{selectedCourse.synthesis.thesis}</p>
+          <div className={styles.conceptRow}>
+            {selectedCourse.synthesis.key_concepts.map(k => (
+              <span key={k} className={styles.conceptChip}>{k}</span>
+            ))}
           </div>
-        ) : (
+        </div>
+
+        <div className={styles.modeTabs}>
+          {(["questions","share","students","analytics"] as Mode[]).map(m => (
+            <button key={m}
+              className={`${styles.tab} ${activeMode === m ? styles.tabActive : ""}`}
+              onClick={() => switchMode(m)}>
+              {m.charAt(0).toUpperCase() + m.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Questions ── */}
+        {activeMode === "questions" && (
+          <div className={styles.panelShell}>
+            <div className={styles.panelHd}>
+              <span className={styles.eyebrow}>{mcqBank.length} questions</span>
+              <button className={styles.addBtn} onClick={openNew}>+ New question</button>
+            </div>
+            <div className={styles.panelScroll}>
+              {groupedMcqs.map(({ fn, qs }) => (
+                <div key={fn}>
+                  <div className={styles.fnGroupHd}>
+                    <span className={`${styles.fnChip} ${styles[`fn_${fn}` as keyof typeof styles]}`}>{fn}</span>
+                    <span className={styles.fnCount}>{qs.length} / {FN_DISTRIBUTION[fn]}</span>
+                  </div>
+                  {qs.map(q => (
+                    <div key={q.id}
+                      className={`${styles.qRow} ${editDraft?.id === q.id ? styles.qRowActive : ""}`}>
+                      <div className={styles.qRowMain} onClick={() => openEdit(q)}>
+                        <div className={styles.qText}>{q.question}</div>
+                        {q.hasVisual && <span className={styles.visualFlag}>visual</span>}
+                      </div>
+                      <div className={styles.qActions}>
+                        <button className={styles.editBtn} onClick={() => openEdit(q)}>Edit</button>
+                        <button className={styles.delBtnSm} onClick={() => deleteQuestion(q.id)}>Del</button>
+                      </div>
+                    </div>
+                  ))}
+                  {qs.length === 0 && (
+                    <div className={styles.emptyGroup}>No {fn} questions yet</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Share ── */}
+        {activeMode === "share" && (
+          <div className={styles.panelShell}>
+            <div className={styles.shareInputRow}>
+              <input className={styles.shareInput} type="email" placeholder="Student email address…" />
+              <button className={styles.addBtn}>Share</button>
+            </div>
+            <div className={styles.panelHd}>
+              <span className={styles.eyebrow}>{MOCK_STUDENTS.filter(s=>s.status!=="pending").length} students with access</span>
+              <button className={styles.ghostBtn}>Export</button>
+            </div>
+            <div className={styles.panelScroll}>
+              {MOCK_STUDENTS.filter(s => s.status !== "pending").map(s => (
+                <div key={s.id} className={styles.studentRow}>
+                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>{s.initials}</div>
+                  <div className={styles.studentInfo}>
+                    <div className={styles.studentEmail}>{s.email}</div>
+                    <div className={styles.studentMeta}>{s.sessions > 0 ? `${s.sessions} session${s.sessions>1?"s":""}` : "No sessions yet"}</div>
+                  </div>
+                  <span className={statusPillCls(s.status, styles)}>{s.status}</span>
+                  <button className={styles.delBtnSm}>Remove</button>
+                </div>
+              ))}
+              <div className={styles.courseSettingsBlock}>
+                <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>Course settings</span>
+                <div className={styles.settingRow}>
+                  <span className={styles.settingLabel}>Allow PDF download</span>
+                  <span className={styles.toggleOff}>Off</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Students ── */}
+        {activeMode === "students" && (
+          <div className={styles.panelShell}>
+            <div className={styles.panelHd}>
+              <span className={styles.eyebrow}>Roster — {MOCK_STUDENTS.length}</span>
+              <button className={styles.addBtn} onClick={() => setRightPanel("invite")}>+ Invite</button>
+            </div>
+            <div className={styles.uploadZone}>
+              <p>Drop a .csv of student emails</p>
+              <span className={styles.uploadHint}>one email per line · sends invite to each</span>
+            </div>
+            <div className={styles.panelScroll}>
+              {MOCK_STUDENTS.map(s => (
+                <div key={s.id} className={styles.studentRow}>
+                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>{s.initials}</div>
+                  <div className={styles.studentInfo}>
+                    <div className={styles.studentEmail}>{s.email}</div>
+                    <div className={styles.studentMeta}>{s.joinedAt !== "—" ? `Joined ${s.joinedAt}` : "Invited 14 Apr"}</div>
+                  </div>
+                  <span className={statusPillCls(s.status, styles)}>{s.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Analytics ── */}
+        {activeMode === "analytics" && (
+          <div className={styles.panelShell}>
+            <div className={styles.statRow}>
+              <div className={styles.statBox}><div className={styles.statN}>{activeStudents.length}</div><div className={styles.statLbl}>Students</div></div>
+              <div className={styles.statBox}><div className={styles.statN}>{activeStudents.reduce((s,st)=>s+st.sessions,0)}</div><div className={styles.statLbl}>Sessions</div></div>
+              <div className={styles.statBox}><div className={styles.statN}>{classAvgScore}%</div><div className={styles.statLbl}>Avg score</div></div>
+            </div>
+            <div className={styles.panelScroll}>
+              {MOCK_STUDENTS.map(s => (
+                <div key={s.id}
+                  className={`${styles.analyticsRow} ${selectedStudent?.id===s.id ? styles.analyticsRowActive : ""}`}
+                  onClick={() => { setSelectedStudent(s); setRightPanel("student-detail"); }}>
+                  <div className={styles.analyticsLabel}>{s.email}</div>
+                  <div className={styles.analyticsMeta}>
+                    {s.sessions > 0 ? `${s.sessions} session${s.sessions>1?"s":""} · ${s.avgScore}%` : "No sessions"}
+                  </div>
+                  <div className={styles.barTrack}>
+                    <div className={styles.barFill} style={{ width:`${s.avgScore}%` }} />
+                  </div>
+                </div>
+              ))}
+              <div className={styles.weakBlock}>
+                <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>Weak concepts — class</span>
+                {["Canary vs blue-green trade-offs","Delegate architecture"].map(c => (
+                  <div key={c} className={styles.weakItem}>{c}</div>
+                ))}
+              </div>
+              <div className={styles.signalBlock}>
+                <span className={styles.eyebrow} style={{ display:"block", marginBottom:10 }}>Signal breakdown — all sessions</span>
+                <div className={styles.signalGrid}>
+                  {SIGNAL_META.map(sm => (
+                    <div key={sm.key} className={styles.signalItem}>
+                      <span className={`${styles.signalN} ${styles[sm.cls as keyof typeof styles]}`}>
+                        {activeStudents.reduce((s,st)=>s+(st.signalBreakdown[sm.key]??0),0)}
+                      </span>
+                      <span className={styles.signalLbl}>{sm.short}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* RIGHT */}
+      <section className={styles.paneRight}>
+
+        {rightPanel === "empty" && (
+          <div className={styles.emptyState}>
+            <span className={styles.eyebrow}>
+              {activeMode==="questions" && "Select a question"}
+              {activeMode==="share"     && "Share settings"}
+              {activeMode==="students"  && "Invitation"}
+              {activeMode==="analytics" && "Select a student"}
+            </span>
+            <p>
+              {activeMode==="questions" && "Click a question to edit, or create a new one."}
+              {activeMode==="share"     && "Enter a student email above to share this course."}
+              {activeMode==="students"  && "Click Invite to send bulk invitations."}
+              {activeMode==="analytics" && "Click a student row to inspect their progress."}
+            </p>
+          </div>
+        )}
+
+        {(rightPanel==="edit-q"||rightPanel==="new-q") && editDraft && (
           <>
-            <div className={styles.paneHeader}>
-              <span className={styles.eyebrow}>Sessions</span>
-              <span className={styles.headerMeta} title={selectedCourse.title}>
-                {selectedCourse.title}
+            <div className={styles.paneHd}>
+              <span className={styles.eyebrow}>{rightPanel==="new-q" ? "New question" : "Edit question"}</span>
+              <span className={`${styles.fnChip} ${styles[`fn_${editDraft.function}` as keyof typeof styles]}`}>
+                {editDraft.function}
               </span>
             </div>
+            <QuestionEditor draft={editDraft} onChange={setEditDraft}
+              onSave={saveQuestion} onCancel={cancelEdit}
+              onDelete={rightPanel==="edit-q" && editDraft.id ? ()=>deleteQuestion(editDraft.id!) : undefined} />
+          </>
+        )}
 
-            {/* Synthesis strip */}
-            {selectedCourse.synthesis && (
-              <div className={styles.synthesisStrip}>
-                <span className={styles.eyebrow}>Synthesis</span>
-                <p className={styles.synthesisThesis}>
-                  {selectedCourse.synthesis.thesis}
-                </p>
-                <div className={styles.conceptRow}>
-                  {selectedCourse.synthesis.key_concepts.slice(0, 5).map((k) => (
-                    <span key={k} className={styles.conceptChip}>
-                      {k}
+        {rightPanel==="invite" && (
+          <>
+            <div className={styles.paneHd}><span className={styles.eyebrow}>Invitation preview</span></div>
+            <div className={styles.inviteShell}>
+              <div className={styles.invitePreview}>
+                <div className={styles.inviteSubject}>You&apos;ve been enrolled in &ldquo;{selectedCourse.title}&rdquo;</div>
+                <div className={styles.inviteBody}>
+                  <p>Hello,</p>
+                  <p>Your professor has shared a course with you on <strong>Student Central</strong>. Click below to access your MCQ session and AI tutor.</p>
+                  <p className={styles.inviteLink}>→ Open Student Central</p>
+                  <p>Once logged in, the course will appear in your workspace automatically.</p>
+                </div>
+              </div>
+              <div className={styles.editorSection} style={{ padding:"12px 16px" }}>
+                <label className={styles.fieldLabel}>Paste emails or upload CSV</label>
+                <textarea className={styles.fieldTextarea} rows={5}
+                  defaultValue={"alice.bernard@m2.univ.fr\nc.martin@m2.univ.fr\nt.dupont@m2.univ.fr"} />
+                <p className={styles.inviteHint}>3 valid addresses · Course: {selectedCourse.title}</p>
+              </div>
+              <div className={styles.editorActions}>
+                <button className={styles.saveBtn}>Send invitations</button>
+                <button className={styles.cancelBtn} onClick={()=>setRightPanel("empty")}>Cancel</button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {rightPanel==="student-detail" && selectedStudent && (
+          <>
+            <div className={styles.paneHd}>
+              <span className={styles.eyebrow}>{selectedStudent.email}</span>
+              <span className={statusPillCls(selectedStudent.status, styles)}>{selectedStudent.status}</span>
+            </div>
+            <div className={styles.studentDetailShell}>
+              <div className={styles.signalSummary}>
+                {SIGNAL_META.map(sm => (
+                  <div key={sm.key} className={styles.signalSummaryItem}>
+                    <span className={`${styles.signalSummaryN} ${styles[sm.cls as keyof typeof styles]}`}>
+                      {selectedStudent.signalBreakdown[sm.key]??0}
+                    </span>
+                    <span className={styles.signalLbl}>{sm.short}</span>
+                  </div>
+                ))}
+              </div>
+              <div className={styles.detailSection}>
+                <span className={styles.eyebrow}>Session progression</span>
+                <div className={styles.sessionBars}>
+                  {selectedStudent.sessions > 0
+                    ? Array.from({ length: selectedStudent.sessions }).map((_,i) => {
+                        const score = Math.min(100, Math.round(selectedStudent.avgScore*(0.7+(i/selectedStudent.sessions)*0.6)));
+                        return (
+                          <div key={i} className={styles.sessionBarItem}>
+                            <div className={styles.sessionBarOuter}>
+                              <div className={styles.sessionBarInner} style={{ height:`${score}%` }} />
+                            </div>
+                            <span className={styles.sessionBarLbl}>S{i+1} {score}%</span>
+                          </div>
+                        );
+                      })
+                    : <p className={styles.noDataHint}>No sessions yet.</p>
+                  }
+                </div>
+              </div>
+              <div className={styles.detailSection}>
+                <span className={styles.eyebrow}>Function coverage</span>
+                <div className={styles.fnCoverageRow}>
+                  {FN_ORDER.map(fn => (
+                    <span key={fn}
+                      className={`${styles.fnChip} ${styles[`fn_${fn}` as keyof typeof styles]} ${!selectedStudent.functionCoverage.includes(fn)?styles.fnChipDim:""}`}>
+                      {fn}{selectedStudent.functionCoverage.includes(fn)?" ✓":""}
                     </span>
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* Student selector */}
-            <div className={styles.studentBlock}>
-              <div className={styles.studentInputRow}>
-                <input
-                  className={styles.studentInput}
-                  type="email"
-                  placeholder="Student email…"
-                  value={studentEmailDraft}
-                  onChange={(e) => setStudentEmailDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") setStudentEmail(studentEmailDraft.trim());
-                  }}
-                />
-                <button
-                  className={styles.loadBtn}
-                  onClick={() => setStudentEmail(studentEmailDraft.trim())}
-                >
-                  Load
-                </button>
-              </div>
-              <p className={styles.apiNote}>
-                {/* Flagged: cross-student view needs GET /api/sessions?courseId={id} (no userId filter) */}
-                Multi-student view pending backend endpoint
-              </p>
-            </div>
-
-            {/* Session list */}
-            {sessionsLoading && <p className={styles.hint}>Loading sessions…</p>}
-            {sessionsError && <p className={styles.errorMsg}>{sessionsError}</p>}
-
-            {sessions.length > 0 && (
-              <ul className={styles.sessionList}>
-                {sessions.map((s, i) => {
-                  const { c, t, pct } = getScore(s);
-                  const bd = getBreakdown(s);
-                  const isActive = selectedSession?.id === s.id;
-                  const startedAt = s.startedAt ?? s.started_at ?? "";
-                  const dur =
-                    s.summary?.totalDurationSec ?? s.summary?.total_duration_sec;
-                  return (
-                    <li
-                      key={s.id}
-                      className={`${styles.sessionCard} ${isActive ? styles.sessionCardActive : ""}`}
-                      onClick={() => openSession(s)}
-                    >
-                      <div className={styles.sessionCardTop}>
-                        <span className={styles.sessionIndex}>
-                          #{sessions.length - i}
-                        </span>
-                        <span className={styles.sessionDate}>
-                          {formatDate(startedAt)}
-                        </span>
-                        <span className={styles.sessionLang}>{s.language}</span>
-                        <span
-                          className={`${styles.sessionMode} ${styles[`mode_${s.mode}`]}`}
-                        >
-                          {s.mode}
-                        </span>
-                      </div>
-
-                      <div className={styles.scoreRow}>
-                        <div className={styles.scoreBar}>
-                          <div
-                            className={styles.scoreBarFill}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <span className={styles.scoreLabel}>{c}/{t}</span>
-                        <span className={styles.scorePct}>{pct}%</span>
-                        {dur != null && dur > 0 && (
-                          <span className={styles.duration}>
-                            {formatDuration(dur)}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className={styles.signalRow}>
-                        {Object.entries(SIGNAL_META).map(([key, { short, cssVar }]) => {
-                          const n = bd[key] ?? 0;
-                          if (n === 0) return null;
-                          return (
-                            <span
-                              key={key}
-                              className={styles.signalChip}
-                              style={
-                                { "--chip-color": `var(${cssVar})` } as React.CSSProperties
-                              }
-                            >
-                              {short} {n}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-
-            {!sessionsLoading && studentEmail && sessions.length === 0 && !sessionsError && (
-              <p className={styles.hint}>No sessions for {studentEmail}.</p>
-            )}
-          </>
-        )}
-      </section>
-
-      {/* ── RIGHT: Session detail ─────────────────────────────────────────── */}
-      <section className={styles.paneRight}>
-        {!selectedSession ? (
-          <div className={styles.emptyState}>
-            {sessionLoading ? (
-              <p className={styles.hint}>Loading session…</p>
-            ) : (
-              <>
-                <span className={styles.eyebrow}>Session detail</span>
-                <p>Select a session to inspect results and chat replay.</p>
-              </>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className={styles.paneHeader}>
-              <span className={styles.eyebrow}>Session detail</span>
-              <span
-                className={styles.statusBadge}
-                data-status={selectedSession.status}
-              >
-                {selectedSession.status}
-              </span>
-              <span className={styles.headerMeta} style={{ marginLeft: "auto" }}>
-                {formatDate(
-                  selectedSession.startedAt ?? selectedSession.started_at
-                )}
-              </span>
-            </div>
-
-            {/* Summary bar */}
-            {(() => {
-              const { c, t, pct } = getScore(selectedSession);
-              const dur =
-                selectedSession.summary?.totalDurationSec ??
-                selectedSession.summary?.total_duration_sec;
-              const bd = getBreakdown(selectedSession);
-              return (
-                <div className={styles.summaryBar}>
-                  <div className={styles.summaryScore}>
-                    <span className={styles.summaryScoreBig}>{pct}%</span>
-                    <span className={styles.summaryScoreSub}>{c} / {t}</span>
-                  </div>
-                  <div className={styles.summarySignals}>
-                    {Object.entries(SIGNAL_META).map(([key, { short, cssVar }]) => (
-                      <div key={key} className={styles.summarySignalItem}>
-                        <span
-                          className={styles.summarySignalN}
-                          style={{ color: `var(${cssVar})` }}
-                        >
-                          {bd[key] ?? 0}
-                        </span>
-                        <span className={styles.summarySignalLabel}>{short}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {dur != null && dur > 0 && (
-                    <span className={styles.summaryDur}>{formatDuration(dur)}</span>
-                  )}
+              {selectedStudent.weakConcepts.length > 0 && (
+                <div className={styles.detailSection}>
+                  <span className={styles.eyebrow}>Consistently weak</span>
+                  {selectedStudent.weakConcepts.map(c=>(
+                    <div key={c} className={styles.weakItem}>{c}</div>
+                  ))}
                 </div>
-              );
-            })()}
-
-            {/* Question list */}
-            <ul className={styles.qList}>
-              {selectedSession.questions.map((q) => {
-                const signal =
-                  q.evaluationSignal ?? q.evaluation_signal ?? "unevaluated";
-                const sigMeta =
-                  SIGNAL_META[signal] ?? SIGNAL_META["unevaluated"];
-                const isCorrect = q.isCorrect ?? q.is_correct ?? false;
-                const selIdx = q.selectedIndex ?? q.selected_index ?? -1;
-                const corrIdx = q.correctIndex ?? q.correct_index ?? 0;
-                const dur = q.durationSec ?? q.duration_sec;
-                const explanation =
-                  q.studentExplanation ?? q.student_explanation;
-                const insight = q.facultyInsight ?? q.faculty_insight;
-                const fnColor = FN_COLORS[q.function] ?? "#999";
-                const chat = getChatForQ(selectedSession, q.position);
-                const isQOpen = expandedQ === q.position;
-                const isChatOpen = expandedChat === q.position;
-
-                return (
-                  <li key={q.position} className={styles.qCard}>
-                    {/* Header row */}
-                    <div
-                      className={styles.qHeader}
-                      onClick={() =>
-                        setExpandedQ(isQOpen ? null : q.position)
-                      }
-                    >
-                      <span className={styles.qPos}>Q{q.position}</span>
-                      <span
-                        className={styles.qFn}
-                        style={{ color: fnColor }}
-                      >
-                        {q.function}
-                      </span>
-                      <span
-                        className={`${styles.qCorrect} ${isCorrect ? styles.correct : styles.incorrect}`}
-                      >
-                        {isCorrect ? "✓" : "✗"}
-                      </span>
-                      <span
-                        className={styles.qSignal}
-                        style={{ color: `var(${sigMeta.cssVar})` }}
-                      >
-                        {sigMeta.short}
-                      </span>
-                      {dur != null && (
-                        <span className={styles.qDur}>{dur}s</span>
-                      )}
-                      <span className={styles.qChevron}>
-                        {isQOpen ? "▲" : "▼"}
-                      </span>
-                    </div>
-
-                    {/* Body */}
-                    {isQOpen && (
-                      <div className={styles.qBody}>
-                        <p className={styles.qText}>{q.question}</p>
-
-                        <ul className={styles.optionList}>
-                          {q.options.map((opt, idx) => (
-                            <li
-                              key={idx}
-                              className={[
-                                styles.option,
-                                idx === corrIdx ? styles.optionCorrect : "",
-                                idx === selIdx && idx !== corrIdx
-                                  ? styles.optionWrong
-                                  : "",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                            >
-                              <span className={styles.optionLetter}>
-                                {String.fromCharCode(65 + idx)}
-                              </span>
-                              {opt}
-                            </li>
-                          ))}
-                        </ul>
-
-                        {explanation && (
-                          <div className={styles.explanationBlock}>
-                            <span className={styles.eyebrow}>
-                              Student explanation
-                            </span>
-                            <p className={styles.explanationText}>
-                              {explanation}
-                            </p>
-                          </div>
-                        )}
-
-                        {insight && (
-                          <div className={styles.insightBlock}>
-                            <span className={styles.eyebrow}>
-                              Faculty insight
-                            </span>
-                            <p className={styles.insightText}>{insight}</p>
-                          </div>
-                        )}
-
-                        {chat.length > 0 && (
-                          <div className={styles.chatSection}>
-                            <button
-                              className={styles.chatToggleBtn}
-                              onClick={() =>
-                                setExpandedChat(isChatOpen ? null : q.position)
-                              }
-                            >
-                              {isChatOpen ? "Hide" : "Show"} chat replay (
-                              {chat.length} turns)
-                            </button>
-                            {isChatOpen && (
-                              <div className={styles.chatReplay}>
-                                {chat.map((m, mi) => (
-                                  <div
-                                    key={mi}
-                                    className={`${styles.chatMsg} ${m.role === "ai" ? styles.chatMsgAi : styles.chatMsgStudent}`}
-                                  >
-                                    <span className={styles.chatRole}>
-                                      {m.role === "ai" ? "Tutor" : "Student"}
-                                    </span>
-                                    <p className={styles.chatText}>{m.text}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+              )}
+            </div>
           </>
         )}
       </section>
