@@ -40,15 +40,30 @@
 }
 
 .paneMiddle {
-  flex: 1;
-  min-width: 300px;
+  flex-shrink: 0;
+  min-width: 220px;
+  /* width set via inline style — default 340px */
 }
 
 .paneRight {
-  width: 560px;
-  min-width: 440px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
   border-right: none;
+}
+
+.resizeHandle {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+  margin-left: -1px; /* sits on top of paneMiddle's right border */
+  transition: background 0.15s;
+}
+
+.resizeHandle:hover {
+  background: rgba(0, 72, 216, 0.18);
 }
 
 .paneHd {
