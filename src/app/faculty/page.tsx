@@ -329,16 +329,25 @@ function draftFromDoc(q: MCQDoc): EditDraft {
 
 interface ReformResult { original: string; reformulated: string; }
 
-function ReformulationPanel({ result, onKeep, onEdit, onAccept }: {
-  result: ReformResult;
-  onKeep:   () => void;
-  onEdit:   () => void;
-  onAccept: () => void;
+function ReformulationPanel({ result, onKeep, onAccept }: {
+  result:    ReformResult;
+  onKeep:    () => void;
+  onAccept:  (finalText: string) => void;
 }) {
+  const [editing,    setEditing]    = useState(false);
+  const [editedText, setEditedText] = useState(result.reformulated);
+
+  const enterEdit = () => {
+    setEditedText(result.reformulated);
+    setEditing(true);
+  };
+
   return (
     <div className={styles.reformulationPanel}>
       <div className={styles.reformulationHd}>
-        <span className={styles.reformulationHdLabel}>Reformulation ready</span>
+        <span className={styles.reformulationHdLabel}>
+          {editing ? "Edit reformulation" : "Reformulation ready"}
+        </span>
         <button className={styles.reformulationDismiss} onClick={onKeep}>✕</button>
       </div>
       <div className={styles.reformulationCompare}>
@@ -347,16 +356,36 @@ function ReformulationPanel({ result, onKeep, onEdit, onAccept }: {
           <p className={styles.reformulationText}>{result.original}</p>
         </div>
         <div className={styles.reformulationCol}>
-          <span className={styles.reformulationColLabel}>Reformulated</span>
-          <p className={`${styles.reformulationText} ${styles.reformulationTextNew}`}>
-            {result.reformulated}
-          </p>
+          <span className={styles.reformulationColLabel}>
+            {editing ? "Your edit" : "Reformulated"}
+          </span>
+          {editing ? (
+            <textarea
+              className={styles.reformulationEditArea}
+              value={editedText}
+              onChange={e => setEditedText(e.target.value)}
+              autoFocus
+              rows={4}
+            />
+          ) : (
+            <p className={`${styles.reformulationText} ${styles.reformulationTextNew}`}>
+              {result.reformulated}
+            </p>
+          )}
         </div>
       </div>
       <div className={styles.reformulationActions}>
-        <button className={styles.keepBtn}       onClick={onKeep}>Keep original</button>
-        <button className={styles.editReformBtn} onClick={onEdit}>Edit ↗</button>
-        <button className={styles.acceptBtn}     onClick={onAccept}>Accept</button>
+        <button className={styles.keepBtn} onClick={onKeep}>Keep original</button>
+        {!editing && (
+          <button className={styles.editReformBtn} onClick={enterEdit}>Edit ↗</button>
+        )}
+        <button
+          className={styles.acceptBtn}
+          onClick={() => onAccept(editing ? editedText.trim() || result.reformulated : result.reformulated)}
+          disabled={editing && !editedText.trim()}
+        >
+          Accept
+        </button>
       </div>
     </div>
   );
@@ -446,15 +475,10 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
   const dismiss = (field: string) =>
     setPending(prev => { const n = { ...prev }; delete n[field]; return n; });
 
-  const acceptReform = (field: string) => {
+  const acceptReform = (field: string, finalText: string) => {
     const result = pending[field];
-    applyToField(field, result.reformulated);
-    setAcceptedReforms(prev => ({ ...prev, [field]: { original: result.original, reformulated: result.reformulated } }));
-    dismiss(field);
-  };
-
-  const editReform = (field: string) => {
-    applyToField(field, pending[field].reformulated);
+    applyToField(field, finalText);
+    setAcceptedReforms(prev => ({ ...prev, [field]: { original: result.original, reformulated: finalText } }));
     dismiss(field);
   };
 
@@ -489,8 +513,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
         {pending["question"] && (
           <ReformulationPanel result={pending["question"]}
             onKeep={()   => dismiss("question")}
-            onEdit={()   => editReform("question")}
-            onAccept={() => acceptReform("question")} />
+            onAccept={(t) => acceptReform("question", t)} />
         )}
 
         {/* ── Options ── */}
@@ -520,8 +543,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
                 {pending[field] && (
                   <ReformulationPanel result={pending[field]}
                     onKeep={()   => dismiss(field)}
-                    onEdit={()   => editReform(field)}
-                    onAccept={() => acceptReform(field)} />
+                    onAccept={(t) => acceptReform(field, t)} />
                 )}
               </div>
             );
@@ -545,8 +567,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
         {pending["explanation"] && (
           <ReformulationPanel result={pending["explanation"]}
             onKeep={()   => dismiss("explanation")}
-            onEdit={()   => editReform("explanation")}
-            onAccept={() => acceptReform("explanation")} />
+            onAccept={(t) => acceptReform("explanation", t)} />
         )}
 
         {/* ── Meta ── */}
