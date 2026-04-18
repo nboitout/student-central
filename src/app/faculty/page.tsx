@@ -24,13 +24,21 @@ interface MCQDoc {
 }
 
 interface Course {
-  id:        string;
-  title:     string;
-  mcqStatus: "ready" | "generating" | "none" | "failed";
-  mcqCount:  number;
-  synthesis: { thesis?: string; key_concepts?: string[] } | null;
+  id:            string;
+  title:         string;
+  mcqStatus:     "ready" | "generating" | "none" | "failed";
+  mcqCount:      number;
+  synthesis:     { thesis?: string; key_concepts?: string[] } | null;
+  allowDownload: boolean;
   /* Real API may include additional fields — ignored here */
   [key: string]: unknown;
+}
+
+interface AccessEntry {
+  email:        string;
+  status:       "invited" | "active";
+  sharedAt:     string;
+  sessionCount: number;
 }
 
 interface MockStudent {
@@ -98,10 +106,17 @@ const SIGNAL_META = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function statusPillCls(status: MockStudent["status"], s: Record<string, string>) {
+function statusPillCls(status: MockStudent["status"] | AccessEntry["status"], s: Record<string, string>) {
   if (status === "active")  return `${s.pill} ${s.pillActive}`;
   if (status === "invited") return `${s.pill} ${s.pillInvited}`;
   return `${s.pill} ${s.pillPending}`;
+}
+
+function emailInitials(email: string): string {
+  const local = email.split("@")[0];
+  const parts = local.split(/[._-]/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return local.slice(0, 2).toUpperCase();
 }
 
 function blankDraft(): EditDraft {
@@ -232,16 +247,16 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
       console.warn("Reformulate failed:", e);
       /* Endpoint not yet live — fall back to mock so the UI remains usable */
       const swaps: [RegExp, string][] = [
-        [/Which/,        "What"],
-        [/What is/,      "Identify the"],
-        [/illustrates/,  "depicts"],
-        [/describes/,    "outlines"],
-        [/primary/,      "main"],
-        [/relationship/, "connection"],
-        [/component/,    "element"],
-        [/strategy/,     "approach"],
-        [/addresses/,    "tackles"],
-        [/fundamental/,  "core"],
+        [/Which/,        "What"],
+        [/What is/,      "Identify the"],
+        [/illustrates/,  "depicts"],
+        [/describes/,    "outlines"],
+        [/primary/,      "main"],
+        [/relationship/, "connection"],
+        [/component/,    "element"],
+        [/strategy/,     "approach"],
+        [/addresses/,    "tackles"],
+        [/fundamental/,  "core"],
       ];
       let reformulated = text;
       for (const [pat, rep] of swaps) {
@@ -420,6 +435,11 @@ export default function FacultyDashboard() {
   const [slideExpanded, setSlideExpanded]   = useState(true);
   const [facultyId, setFacultyId]           = useState("nicolas");
 
+  // ── Share tab state ──
+  const [shareAccess,  setShareAccess]  = useState<AccessEntry[]>([]);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareEmail,   setShareEmail]   = useState("");
+
   const API = process.env.NEXT_PUBLIC_API_URL
     ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
@@ -477,6 +497,17 @@ export default function FacultyDashboard() {
       .finally(() => setMcqLoading(false));
   }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ── Fetch access list for Share tab ── */
+  useEffect(() => {
+    if (!facultyReady || !selectedCourse || activeMode !== "share") return;
+    setShareLoading(true);
+    fetch(`${API}/api/courses/${selectedCourse.id}/access?userId=${facultyId}`)
+      .then(r => r.json())
+      .then(data => setShareAccess(data.access ?? []))
+      .catch(err => console.warn("Access fetch failed:", err))
+      .finally(() => setShareLoading(false));
+  }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const selectCourse = (c: Course) => {
     setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
   };
@@ -504,8 +535,6 @@ export default function FacultyDashboard() {
 
     /* Persist to backend — fire-and-forget, local state update is immediate */
     if (editDraft.id) {
-      const API = process.env.NEXT_PUBLIC_API_URL
-        ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
       const now = new Date().toISOString();
       const reformulations = Object.entries(acceptedReforms).map(([field, r]) => ({
         field,
@@ -544,6 +573,44 @@ export default function FacultyDashboard() {
     setRightPanel("empty"); setEditDraft(null);
   };
 
+  /* ── Share tab handlers ── */
+  const handleShareAdd = () => {
+    const email = shareEmail.trim().toLowerCase();
+    if (!email || !selectedCourse) return;
+    setShareEmail("");
+    // Optimistic update — row appears immediately
+    setShareAccess(prev => {
+      if (prev.find(e => e.email === email)) return prev;
+      return [...prev, { email, status: "invited", sharedAt: new Date().toISOString(), sessionCount: 0 }];
+    });
+    fetch(`${API}/api/courses/${selectedCourse.id}/access`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentEmail: email, userId: facultyId }),
+    }).catch(err => console.warn("Share add failed:", err));
+  };
+
+  const handleShareRemove = (email: string) => {
+    if (!selectedCourse) return;
+    setShareAccess(prev => prev.filter(e => e.email !== email));
+    fetch(`${API}/api/courses/${selectedCourse.id}/access/${encodeURIComponent(email)}?userId=${facultyId}`, {
+      method: "DELETE",
+    }).catch(err => console.warn("Share remove failed:", err));
+  };
+
+  const handleAllowDownloadToggle = () => {
+    if (!selectedCourse) return;
+    const next = !selectedCourse.allowDownload;
+    const updated = { ...selectedCourse, allowDownload: next };
+    setSelectedCourse(updated);
+    setCourses(prev => prev.map(c => c.id === selectedCourse.id ? updated : c));
+    fetch(`${API}/api/courses/${selectedCourse.id}?userId=${facultyId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowDownload: next }),
+    }).catch(err => console.warn("allowDownload update failed:", err));
+  };
+
   /* ── Playlist mode handlers ── */
   const enterPlaylist = () => {
     /* Sort by existing position if set, otherwise current bank order */
@@ -558,8 +625,6 @@ export default function FacultyDashboard() {
   const cancelPlaylist = () => { setPlaylistMode(false); };
 
   const savePlaylist = () => {
-    const API = process.env.NEXT_PUBLIC_API_URL
-      ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
     /* Assign position 1-N based on drag order */
     const withPositions = playlistOrder.map((q, i) => ({ ...q, position: i + 1 }));
     setMcqBank(withPositions);
@@ -763,30 +828,57 @@ export default function FacultyDashboard() {
         {activeMode === "share" && (
           <div className={styles.panelShell}>
             <div className={styles.shareInputRow}>
-              <input className={styles.shareInput} type="email" placeholder="Student email address…" />
-              <button className={styles.addBtn}>Share</button>
+              <input
+                className={styles.shareInput}
+                type="email"
+                placeholder="Student email address…"
+                value={shareEmail}
+                onChange={e => setShareEmail(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleShareAdd()}
+              />
+              <button className={styles.addBtn} onClick={handleShareAdd} disabled={!shareEmail.trim()}>
+                Share
+              </button>
             </div>
             <div className={styles.panelHd}>
-              <span className={styles.eyebrow}>{MOCK_STUDENTS.filter(s=>s.status!=="pending").length} students with access</span>
+              <span className={styles.eyebrow}>
+                {shareLoading
+                  ? "Loading…"
+                  : `${shareAccess.length} student${shareAccess.length !== 1 ? "s" : ""} with access`}
+              </span>
               <button className={styles.ghostBtn}>Export</button>
             </div>
             <div className={styles.panelScroll}>
-              {MOCK_STUDENTS.filter(s => s.status !== "pending").map(s => (
-                <div key={s.id} className={styles.studentRow}>
-                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>{s.initials}</div>
+              {shareAccess.map(s => (
+                <div key={s.email} className={styles.studentRow}>
+                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>
+                    {emailInitials(s.email)}
+                  </div>
                   <div className={styles.studentInfo}>
                     <div className={styles.studentEmail}>{s.email}</div>
-                    <div className={styles.studentMeta}>{s.sessions > 0 ? `${s.sessions} session${s.sessions>1?"s":""}` : "No sessions yet"}</div>
+                    <div className={styles.studentMeta}>
+                      {s.sessionCount > 0
+                        ? `${s.sessionCount} session${s.sessionCount > 1 ? "s" : ""}`
+                        : "No sessions yet"}
+                    </div>
                   </div>
                   <span className={statusPillCls(s.status, styles)}>{s.status}</span>
-                  <button className={styles.delBtnSm}>Remove</button>
+                  <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>Remove</button>
                 </div>
               ))}
+              {!shareLoading && shareAccess.length === 0 && (
+                <div className={styles.emptyGroup}>No students yet — share this course using the input above.</div>
+              )}
               <div className={styles.courseSettingsBlock}>
-                <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>Course settings</span>
+                <span className={styles.eyebrow} style={{ display: "block", marginBottom: 8 }}>Course settings</span>
                 <div className={styles.settingRow}>
                   <span className={styles.settingLabel}>Allow PDF download</span>
-                  <span className={styles.toggleOff}>Off</span>
+                  <button
+                    className={`${styles.toggleBtn} ${selectedCourse.allowDownload ? styles.toggleBtnOn : ""}`}
+                    onClick={handleAllowDownloadToggle}
+                  >
+                    {selectedCourse.allowDownload ? "On" : "Off"}
+                  </button>
                 </div>
               </div>
             </div>
@@ -1047,8 +1139,8 @@ export default function FacultyDashboard() {
           </>
         )}
       </section>
-    </>
-    }
+      </>
+      }
     </div>
   );
 }
