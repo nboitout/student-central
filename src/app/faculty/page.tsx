@@ -20,6 +20,7 @@ interface MCQDoc {
   function: MCQFunction;
   pageNumber: number;
   hasVisual: boolean;
+  position?: number;  /* faculty-assigned playlist position — undefined = auto */
 }
 
 interface Course {
@@ -597,7 +598,10 @@ export default function FacultyDashboard() {
   const [activeMode, setActiveMode]         = useState<Mode>("questions");
   const [rightPanel, setRightPanel]         = useState<RightPanel>("empty");
   const [mcqBank, setMcqBank]               = useState<MCQDoc[]>([]);
-  const [mcqLoading, setMcqLoading]         = useState(false);
+  const [mcqLoading,    setMcqLoading]    = useState(false);
+  const [playlistMode,  setPlaylistMode] = useState(false);
+  const [playlistOrder, setPlaylistOrder] = useState<MCQDoc[]>([]);
+  const [dragIdx,       setDragIdx]      = useState<number | null>(null);
   const [editDraft, setEditDraft]           = useState<EditDraft | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<MockStudent | null>(null);
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
@@ -728,6 +732,51 @@ export default function FacultyDashboard() {
     setRightPanel("empty"); setEditDraft(null);
   };
 
+  /* ── Playlist mode handlers ── */
+  const enterPlaylist = () => {
+    /* Sort by existing position if set, otherwise current bank order */
+    const sorted = [...mcqBank].sort((a, b) =>
+      (a.position ?? 9999) - (b.position ?? 9999)
+    );
+    setPlaylistOrder(sorted);
+    setPlaylistMode(true);
+    setRightPanel("empty"); setEditDraft(null);
+  };
+
+  const cancelPlaylist = () => { setPlaylistMode(false); };
+
+  const savePlaylist = () => {
+    const API = process.env.NEXT_PUBLIC_API_URL
+      ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+    /* Assign position 1-N based on drag order */
+    const withPositions = playlistOrder.map((q, i) => ({ ...q, position: i + 1 }));
+    setMcqBank(withPositions);
+    setPlaylistMode(false);
+    /* Batch persist — fire and forget */
+    fetch(`${API}/api/mcq/batch-positions`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        courseId:  selectedCourse?.id ?? "",
+        positions: withPositions.map(q => ({ id: q.id, position: q.position })),
+      }),
+    }).catch(err => console.warn("Batch positions failed:", err));
+  };
+
+  const onDragStart = (idx: number) => setDragIdx(idx);
+
+  const onDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === idx) return;
+    const next = [...playlistOrder];
+    const [moved] = next.splice(dragIdx, 1);
+    next.splice(idx, 0, moved);
+    setPlaylistOrder(next);
+    setDragIdx(idx);
+  };
+
+  const onDrop = (e: React.DragEvent) => { e.preventDefault(); setDragIdx(null); };
+
   const groupedMcqs = FN_ORDER.map(fn => ({ fn, qs: mcqBank.filter(q => q.function === fn) }));
 
   const activeStudents = MOCK_STUDENTS.filter(s => s.status === "active");
@@ -817,36 +866,84 @@ export default function FacultyDashboard() {
           <div className={styles.panelShell}>
             <div className={styles.panelHd}>
               <span className={styles.eyebrow}>
-                {mcqLoading ? "Loading…" : `${mcqBank.length} questions`}
+                {mcqLoading ? "Loading…" : playlistMode ? "Ordering playlist" : `${mcqBank.length} questions`}
               </span>
-              <button className={styles.addBtn} onClick={openNew} disabled={mcqLoading}>+ New question</button>
+              <div style={{ display:"flex", gap:6 }}>
+                {playlistMode ? (
+                  <>
+                    <button className={styles.addBtn} onClick={savePlaylist}>Done</button>
+                    <button className={styles.ghostBtn} onClick={cancelPlaylist}>Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <button className={styles.ghostBtn} onClick={enterPlaylist} disabled={mcqLoading || mcqBank.length === 0}>✎ Order playlist</button>
+                    <button className={styles.addBtn} onClick={openNew} disabled={mcqLoading}>+ New</button>
+                  </>
+                )}
+              </div>
             </div>
-            <div className={styles.panelScroll}>
-              {groupedMcqs.map(({ fn, qs }) => (
-                <div key={fn}>
-                  <div className={styles.fnGroupHd}>
-                    <span className={`${styles.fnChip} ${styles[`fn_${fn}` as keyof typeof styles]}`}>{fn}</span>
-                    <span className={styles.fnCount}>{qs.length} / {FN_DISTRIBUTION[fn]}</span>
-                  </div>
-                  {qs.map(q => (
-                    <div key={q.id}
-                      className={`${styles.qRow} ${editDraft?.id === q.id ? styles.qRowActive : ""}`}>
-                      <div className={styles.qRowMain} onClick={() => openEdit(q)}>
-                        <div className={styles.qText}>{q.question}</div>
-                        {q.hasVisual && <span className={styles.visualFlag}>visual</span>}
-                      </div>
-                      <div className={styles.qActions}>
-                        <button className={styles.editBtn} onClick={() => openEdit(q)}>Edit</button>
-                        <button className={styles.delBtnSm} onClick={() => deleteQuestion(q.id)}>Del</button>
-                      </div>
+
+            {/* ── Playlist mode: flat draggable list ── */}
+            {playlistMode && (
+              <>
+                <div className={styles.playlistHint}>Drag rows to reorder · Done saves the order</div>
+                <div className={styles.panelScroll}>
+                  {playlistOrder.map((q, i) => (
+                    <div
+                      key={q.id}
+                      className={`${styles.playlistRow} ${dragIdx === i ? styles.playlistRowDragging : ""}`}
+                      draggable
+                      onDragStart={() => onDragStart(i)}
+                      onDragOver={e => onDragOver(e, i)}
+                      onDrop={onDrop}
+                    >
+                      <span className={styles.dragHandle}>
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                          <line x1="3" y1="5" x2="13" y2="5"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="11" x2="13" y2="11"/>
+                        </svg>
+                      </span>
+                      <span className={styles.playlistPos}>{i + 1}</span>
+                      <span className={`${styles.fnChip} ${styles[`fn_${q.function}` as keyof typeof styles]}`} style={{ fontSize:"0.5625rem", flexShrink:0 }}>{q.function}</span>
+                      <span className={styles.playlistQ}>{q.question}</span>
+                      <span className={styles.qPageRef}>p.{q.pageNumber}</span>
                     </div>
                   ))}
-                  {qs.length === 0 && (
-                    <div className={styles.emptyGroup}>No {fn} questions yet</div>
-                  )}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
+
+            {/* ── Normal mode: grouped view ── */}
+            {!playlistMode && (
+              <div className={styles.panelScroll}>
+                {groupedMcqs.map(({ fn, qs }) => (
+                  <div key={fn}>
+                    <div className={styles.fnGroupHd}>
+                      <span className={`${styles.fnChip} ${styles[`fn_${fn}` as keyof typeof styles]}`}>{fn}</span>
+                      <span className={styles.fnCount}>{qs.length} / {FN_DISTRIBUTION[fn]}</span>
+                    </div>
+                    {qs.map(q => (
+                      <div key={q.id}
+                        className={`${styles.qRow} ${editDraft?.id === q.id ? styles.qRowActive : ""}`}>
+                        {q.position !== undefined && (
+                          <span className={styles.posPin} title={`Session position ${q.position}`}>{q.position}</span>
+                        )}
+                        <div className={styles.qRowMain} onClick={() => openEdit(q)}>
+                          <div className={styles.qText}>{q.question}</div>
+                          {q.hasVisual && <span className={styles.visualFlag}>visual</span>}
+                        </div>
+                        <div className={styles.qActions}>
+                          <button className={styles.editBtn} onClick={() => openEdit(q)}>Edit</button>
+                          <button className={styles.delBtnSm} onClick={() => deleteQuestion(q.id)}>Del</button>
+                        </div>
+                      </div>
+                    ))}
+                    {qs.length === 0 && (
+                      <div className={styles.emptyGroup}>No {fn} questions yet</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
