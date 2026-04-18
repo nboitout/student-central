@@ -1524,9 +1524,7 @@
   color: var(--on-surface);
   flex: 1;
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.45;
 }
 
 /* Page ref in playlist mode */
