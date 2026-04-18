@@ -1458,3 +1458,94 @@
   margin-top: auto;
   cursor: pointer;
 }
+/* ── Playlist mode ────────────────────────────────────────── */
+
+/* Hint bar shown at top of playlist mode */
+.playlistHint {
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  color: var(--on-surface-variant);
+  opacity: 0.6;
+  padding: 7px 16px;
+  background: var(--surface-low);
+  border-bottom: 0.5px solid var(--outline-variant);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Each draggable row in playlist mode */
+.playlistRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 0.5px solid var(--outline-variant);
+  background: var(--surface-lowest);
+  cursor: default;
+  user-select: none;
+  transition: background 0.1s;
+}
+.playlistRow:last-child { border-bottom: none; }
+.playlistRow:hover { background: var(--surface-low); }
+
+.playlistRowDragging {
+  background: rgba(0, 72, 216, 0.06) !important;
+  border-left: 2px solid var(--primary);
+}
+
+/* Drag handle icon */
+.dragHandle {
+  color: var(--on-surface-variant);
+  opacity: 0.35;
+  cursor: grab;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.dragHandle:active { cursor: grabbing; }
+.playlistRow:hover .dragHandle { opacity: 0.7; }
+
+/* Position number in playlist mode */
+.playlistPos {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Question text in playlist mode — truncated */
+.playlistQ {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Page ref in playlist mode */
+.qPageRef {
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  color: var(--on-surface-variant);
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+
+/* Position pin shown in normal grouped view when positions are set */
+.posPin {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(0, 72, 216, 0.08);
+  padding: 1px 6px;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
