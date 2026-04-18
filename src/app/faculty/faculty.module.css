@@ -40,14 +40,14 @@
 }
 
 .paneMiddle {
-  width: 340px;
-  min-width: 340px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 300px;
 }
 
 .paneRight {
-  flex: 1;
-  min-width: 0;
+  width: 560px;
+  min-width: 440px;
+  flex-shrink: 0;
   border-right: none;
 }
 
@@ -360,6 +360,18 @@
   border: 1px solid rgba(239, 68, 68, 0.25);
   color: #ef4444;
   cursor: pointer;
+}
+
+.deleteConfirmLabel {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ef4444;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 /* ── Function chips ────────────────────────────────────────────────────────── */
