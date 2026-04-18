@@ -953,12 +953,12 @@
   text-transform: uppercase;
   padding: 4px 10px;
   background: none;
-  border: 1px solid var(--outline-variant);
-  color: var(--on-surface-variant);
+  border: 1px solid var(--primary);
+  color: var(--primary);
   cursor: pointer;
 }
 
-.editReformBtn:hover { border-color: var(--primary); color: var(--primary); }
+.editReformBtn:hover { background: rgba(0, 72, 216, 0.06); }
 
 .acceptBtn {
   font-family: var(--font-display);
@@ -975,6 +975,20 @@
 }
 
 .acceptBtn:hover { opacity: 0.88; }
+
+.reformulationEditArea {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--on-surface);
+  background: var(--surface-lowest);
+  border: 1.5px solid var(--primary);
+  padding: 8px 10px;
+  width: 100%;
+  resize: vertical;
+  line-height: 1.55;
+  outline: none;
+  box-sizing: border-box;
+}
 
 /* ── Question editor ───────────────────────────────────────────────────────── */
 
