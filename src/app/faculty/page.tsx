@@ -6,7 +6,7 @@ import styles from "./faculty.module.css";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type MCQFunction = "orient" | "understand" | "recognize" | "connect" | "evaluate";
-type RightPanel  = "empty" | "edit-q" | "new-q" | "student-detail" | "invite";
+type RightPanel  = "empty" | "edit-q" | "new-q" | "student-detail" | "invite" | "generate-similar";
 type Mode        = "questions" | "share" | "students" | "analytics";
 
 interface MCQOption { letter: string; text: string; }
@@ -450,6 +450,15 @@ export default function FacultyDashboard() {
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
   const [middleWidth,   setMiddleWidth]     = useState(340);
   const [slideExpanded, setSlideExpanded]   = useState(true);
+
+  // ── Generate-similar state ──
+  const [seedMode,       setSeedMode]       = useState(false);
+  const [seedIds,        setSeedIds]        = useState<string[]>([]);
+  const [genCount,       setGenCount]       = useState<1|3|5>(3);
+  const [genFn,          setGenFn]          = useState<MCQFunction|"same">("same");
+  const [genHint,        setGenHint]        = useState("");
+  const [genCandidates,  setGenCandidates]  = useState<MCQDoc[]>([]);
+  const [genLoading,     setGenLoading]     = useState(false);
   const [facultyId, setFacultyId]           = useState("nicolas");
 
   // ── Share tab state ──
@@ -589,6 +598,93 @@ export default function FacultyDashboard() {
     setMcqBank(prev => prev.filter(q => q.id !== id));
     setRightPanel("empty"); setEditDraft(null);
   };
+
+  /* ── Generate-similar handlers ── */
+  const enterSeedMode = () => {
+    setSeedMode(true); setSeedIds([]); setRightPanel("empty"); setEditDraft(null);
+  };
+
+  const clearSeeds = () => {
+    setSeedMode(false); setSeedIds([]); setGenCandidates([]);
+    if (rightPanel === "generate-similar") setRightPanel("empty");
+  };
+
+  const toggleSeedSimple = (id: string) =>
+    setSeedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id)
+      : prev.length >= 3 ? prev
+      : [...prev, id]
+    );
+
+  const openGeneratePanel = () => {
+    setGenCandidates([]); setGenHint(""); setRightPanel("generate-similar");
+  };
+
+  const handleGenerate = async () => {
+    if (!selectedCourse || seedIds.length === 0) return;
+    setGenLoading(true);
+    setGenCandidates([]);
+    const seeds = mcqBank.filter(q => seedIds.includes(q.id));
+    const targetFn = genFn === "same" ? (seeds[0]?.function ?? "understand") : genFn;
+    try {
+      const res = await fetch(`${API}/api/mcq/generate-similar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId:   selectedCourse.id,
+          userId:     facultyId,
+          seedIds,
+          count:      genCount,
+          function:   targetFn,
+          focusHint:  genHint.trim() || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+      setGenCandidates((data.candidates ?? data.mcqs ?? []).map((q: MCQDoc) => ({
+        ...q, id: q.id ?? `cand-${Date.now()}-${Math.random()}`,
+      })));
+    } catch (e) {
+      console.warn("generate-similar failed, using mock:", e);
+      /* Mock fallback — mirrors the seed questions with light variation */
+      const mock: MCQDoc[] = seeds.slice(0, genCount).map((seed, i) => ({
+        id: `cand-${Date.now()}-${i}`,
+        function:     targetFn,
+        pageNumber:   seed.pageNumber,
+        hasVisual:    seed.hasVisual,
+        correctIndex: (seed.correctIndex + 1) % 4,
+        question:     `[Preview] ${seed.question.replace(/^(What|Which|How)/, m => m === "What" ? "Which" : m === "Which" ? "How" : "What")}`,
+        options:      seed.options.map((o, oi) => ({
+          ...o, text: oi === (seed.correctIndex + 1) % 4 ? seed.options[seed.correctIndex].text : o.text,
+        })),
+        explanation: `Generated in the same vein as: "${seed.question.slice(0, 60)}…"`,
+      }));
+      setGenCandidates(mock);
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
+  const acceptCandidate = (q: MCQDoc) => {
+    const doc = { ...q, id: `q${Date.now()}` };
+    setMcqBank(prev => [...prev, doc]);
+    setGenCandidates(prev => prev.filter(c => c.id !== q.id));
+    /* fire-and-forget persist — treat same as new question */
+    fetch(`${API}/api/mcq`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId: selectedCourse?.id, userId: facultyId, ...doc }),
+    }).catch(err => console.warn("candidate persist failed:", err));
+  };
+
+  const editCandidate = (q: MCQDoc) => {
+    setGenCandidates(prev => prev.filter(c => c.id !== q.id));
+    setEditDraft(draftFromDoc(q));
+    setRightPanel("new-q");
+  };
+
+  const discardCandidate = (id: string) =>
+    setGenCandidates(prev => prev.filter(c => c.id !== id));
 
   /* ── Share tab handlers ── */
   const handleShareAdd = () => {
@@ -778,7 +874,7 @@ export default function FacultyDashboard() {
           <div className={styles.panelShell}>
             <div className={styles.panelHd}>
               <span className={styles.eyebrow}>
-                {mcqLoading ? "Loading…" : playlistMode ? "Ordering playlist" : `${mcqBank.length} questions`}
+                {mcqLoading ? "Loading…" : playlistMode ? "Ordering playlist" : seedMode ? "Select seeds (max 3)" : `${mcqBank.length} questions`}
               </span>
               <div style={{ display:"flex", gap:6 }}>
                 {playlistMode ? (
@@ -786,9 +882,17 @@ export default function FacultyDashboard() {
                     <button className={styles.addBtn} onClick={savePlaylist}>Done</button>
                     <button className={styles.ghostBtn} onClick={cancelPlaylist}>Cancel</button>
                   </>
+                ) : seedMode ? (
+                  <>
+                    <button className={styles.sparkBtn} onClick={openGeneratePanel} disabled={seedIds.length === 0}>
+                      ✦ Generate ({seedIds.length})
+                    </button>
+                    <button className={styles.ghostBtn} onClick={clearSeeds}>Cancel</button>
+                  </>
                 ) : (
                   <>
-                    <button className={styles.ghostBtn} onClick={enterPlaylist} disabled={mcqLoading || mcqBank.length === 0}>✎ Order playlist</button>
+                    <button className={styles.sparkBtnGhost} onClick={enterSeedMode} disabled={mcqLoading || mcqBank.length === 0}>✦ Similar</button>
+                    <button className={styles.ghostBtn} onClick={enterPlaylist} disabled={mcqLoading || mcqBank.length === 0}>✎ Order</button>
                     <button className={styles.addBtn} onClick={openNew} disabled={mcqLoading}>+ New</button>
                   </>
                 )}
@@ -835,18 +939,30 @@ export default function FacultyDashboard() {
                     </div>
                     {qs.map(q => (
                       <div key={q.id}
-                        className={`${styles.qRow} ${editDraft?.id === q.id ? styles.qRowActive : ""}`}>
+                        className={`${styles.qRow} ${editDraft?.id === q.id ? styles.qRowActive : ""} ${seedMode && seedIds.includes(q.id) ? styles.qRowSeed : ""}`}>
+                        {seedMode && (
+                          <button
+                            className={`${styles.seedCheck} ${seedIds.includes(q.id) ? styles.seedCheckOn : ""}`}
+                            onClick={() => toggleSeedSimple(q.id)}
+                            disabled={!seedIds.includes(q.id) && seedIds.length >= 3}
+                            title={seedIds.length >= 3 && !seedIds.includes(q.id) ? "Max 3 seeds" : ""}
+                          >
+                            {seedIds.includes(q.id) && "✓"}
+                          </button>
+                        )}
                         {q.position !== undefined && (
                           <span className={styles.posPin} title={`Session position ${q.position}`}>{q.position}</span>
                         )}
-                        <div className={styles.qRowMain} onClick={() => openEdit(q)}>
+                        <div className={styles.qRowMain} onClick={() => !seedMode && openEdit(q)}>
                           <div className={styles.qText}>{q.question}</div>
                           {q.hasVisual && <span className={styles.visualFlag}>visual</span>}
                         </div>
-                        <div className={styles.qActions}>
-                          <button className={styles.editBtn} onClick={() => openEdit(q)}>Edit</button>
-                          <button className={styles.delBtnSm} onClick={() => deleteQuestion(q.id)}>Del</button>
-                        </div>
+                        {!seedMode && (
+                          <div className={styles.qActions}>
+                            <button className={styles.editBtn} onClick={() => openEdit(q)}>Edit</button>
+                            <button className={styles.delBtnSm} onClick={() => deleteQuestion(q.id)}>Del</button>
+                          </div>
+                        )}
                       </div>
                     ))}
                     {qs.length === 0 && (
@@ -1090,6 +1206,121 @@ export default function FacultyDashboard() {
               onSave={saveQuestion} onCancel={cancelEdit}
               courseTitle={selectedCourse?.title ?? ""}
               onDelete={rightPanel==="edit-q" && editDraft.id ? ()=>deleteQuestion(editDraft.id!) : undefined} />
+          </>
+        )}
+
+        {rightPanel==="generate-similar" && (
+          <>
+            <div className={styles.paneHd}>
+              <span style={{ color:"#7c3aed", fontSize:"0.75rem" }}>✦</span>
+              <span className={styles.eyebrow}>Generate similar</span>
+              <button className={styles.ghostBtn} style={{ marginLeft:"auto" }} onClick={clearSeeds}>✕ Exit</button>
+            </div>
+            <div className={styles.genScroll}>
+
+              {/* Seeds */}
+              <div className={styles.genSection}>
+                <span className={styles.fieldLabel}>Seeds — {seedIds.length} selected</span>
+                <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                  {mcqBank.filter(q => seedIds.includes(q.id)).map(q => (
+                    <div key={q.id} className={styles.seedChip}>
+                      <span className={`${styles.fnChip} ${styles[`fn_${q.function}` as keyof typeof styles]}`} style={{ marginBottom:4, display:"inline-block" }}>
+                        {q.function}
+                      </span>
+                      <div className={styles.seedChipQ}>{q.question.length > 90 ? q.question.slice(0,90)+"…" : q.question}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Count */}
+              <div className={styles.genSection}>
+                <span className={styles.fieldLabel}>How many to generate</span>
+                <div style={{ display:"flex", gap:5 }}>
+                  {([1,3,5] as (1|3|5)[]).map(n => (
+                    <button key={n}
+                      className={`${styles.countBtn} ${genCount===n ? styles.countBtnOn : ""}`}
+                      onClick={() => setGenCount(n)}>{n}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Target function */}
+              <div className={styles.genSection}>
+                <span className={styles.fieldLabel}>Target function</span>
+                <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                  <button
+                    className={`${styles.countBtn} ${genFn==="same" ? styles.countBtnOn : ""}`}
+                    onClick={() => setGenFn("same")}>Same</button>
+                  {FN_ORDER.map(fn => (
+                    <button key={fn}
+                      className={`${styles.fnChip} ${styles[`fn_${fn}` as keyof typeof styles]} ${styles.fnSelBtn} ${genFn===fn ? styles.fnSelBtnOn : ""}`}
+                      onClick={() => setGenFn(fn)}>{fn}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Focus hint */}
+              <div className={styles.genSection}>
+                <span className={styles.fieldLabel}>Focus hint <span style={{ opacity:0.4, fontSize:"0.5rem" }}>(optional)</span></span>
+                <textarea
+                  className={styles.fieldTextarea}
+                  rows={2}
+                  placeholder="e.g. focus on chapter 3 diagrams, avoid overlap with existing questions…"
+                  value={genHint}
+                  onChange={e => setGenHint(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.genSection} style={{ borderBottom:"none" }}>
+                <button
+                  className={styles.sparkBtn}
+                  onClick={handleGenerate}
+                  disabled={genLoading || seedIds.length === 0}
+                  style={{ alignSelf:"flex-start" }}
+                >
+                  {genLoading ? "Generating…" : `✦ Generate ${genCount} question${genCount>1?"s":""}`}
+                </button>
+              </div>
+
+              {/* Candidates */}
+              {genCandidates.length > 0 && (
+                <>
+                  <div style={{ borderTop:"1px solid var(--outline-variant)", margin:"0" }} />
+                  <div style={{ padding:"10px 14px 4px" }}>
+                    <span className={styles.fieldLabel}>{genCandidates.length} candidate{genCandidates.length>1?"s":""} — accept or discard each</span>
+                  </div>
+                  {genCandidates.map((q, i) => (
+                    <div key={q.id} className={styles.candidateCard}>
+                      <div className={styles.candidateHd}>
+                        <span className={styles.candidateN}>{i+1}</span>
+                        <span className={`${styles.fnChip} ${styles[`fn_${q.function}` as keyof typeof styles]}`}>{q.function}</span>
+                      </div>
+                      <div className={styles.candidateQ}>{q.question}</div>
+                      <div className={styles.candidateOpts}>
+                        {q.options.map((o, oi) => (
+                          <div key={o.letter} className={`${styles.candidateOptRow} ${oi===q.correctIndex ? styles.candidateOptCorrect : ""}`}>
+                            <span className={styles.candidateOptLetter}>{o.letter}</span>
+                            <span>{o.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className={styles.candidateActions}>
+                        <button className={styles.candidateAcceptBtn} onClick={() => acceptCandidate(q)}>✓ Add to bank</button>
+                        <button className={styles.editBtn} onClick={() => editCandidate(q)}>Edit first</button>
+                        <button className={styles.deleteBtn} onClick={() => discardCandidate(q.id)}>Discard</button>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {genLoading && (
+                <div style={{ padding:"20px 14px", textAlign:"center" }}>
+                  <span className={styles.eyebrow} style={{ opacity:0.5 }}>Generating questions…</span>
+                </div>
+              )}
+            </div>
           </>
         )}
 
