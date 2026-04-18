@@ -835,7 +835,7 @@ export default function FacultyDashboard() {
 
       {/* MIDDLE + RIGHT — only render once a course is selected */}
       {selectedCourse && <>
-      <section className={styles.paneMiddle}>
+      <section className={styles.paneMiddle} style={playlistMode ? { flex: "1", maxWidth: "none", borderRight: "none" } : undefined}>
         <div className={styles.paneHd}>
           <span className={styles.eyebrow}>
             {!selectedCourse ? "Select a course" : selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
@@ -1054,7 +1054,7 @@ export default function FacultyDashboard() {
       </section>
 
       {/* RIGHT */}
-      <section className={styles.paneRight}>
+      <section className={styles.paneRight} style={playlistMode ? { display: "none" } : undefined}>
 
         {rightPanel === "empty" && (
           <div className={styles.emptyState}>
