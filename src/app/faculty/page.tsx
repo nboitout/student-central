@@ -219,8 +219,6 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
   const [reformulating,    setReformulating]    = useState<string | null>(null);
   const [pending,          setPending]          = useState<Record<string, ReformResult>>({});
   const [acceptedReforms,  setAcceptedReforms]  = useState<Record<string, AcceptedReform>>({});
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  useEffect(() => setConfirmingDelete(false), [draft.id]);
 
   const reformulate = async (field: string, text: string) => {
     if (!text.trim() || reformulating) return;
@@ -412,21 +410,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
         </button>
         <button className={styles.cancelBtn} onClick={onCancel}>Cancel</button>
         {onDelete && (
-          confirmingDelete ? (
-            <>
-              <span className={styles.deleteConfirmLabel}>Delete?</span>
-              <button className={styles.deleteBtn} onClick={() => { setConfirmingDelete(false); onDelete(); }}>
-                Confirm
-              </button>
-              <button className={styles.cancelBtn} onClick={() => setConfirmingDelete(false)}>
-                No
-              </button>
-            </>
-          ) : (
-            <button className={styles.deleteBtn} onClick={() => setConfirmingDelete(true)}>
-              Delete question
-            </button>
-          )
+          <button className={styles.deleteBtn} onClick={onDelete}>Delete question</button>
         )}
       </div>
     </div>
