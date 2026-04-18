@@ -219,6 +219,8 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
   const [reformulating,    setReformulating]    = useState<string | null>(null);
   const [pending,          setPending]          = useState<Record<string, ReformResult>>({});
   const [acceptedReforms,  setAcceptedReforms]  = useState<Record<string, AcceptedReform>>({});
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  useEffect(() => setConfirmingDelete(false), [draft.id]);
 
   const reformulate = async (field: string, text: string) => {
     if (!text.trim() || reformulating) return;
@@ -410,7 +412,21 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
         </button>
         <button className={styles.cancelBtn} onClick={onCancel}>Cancel</button>
         {onDelete && (
-          <button className={styles.deleteBtn} onClick={onDelete}>Delete question</button>
+          confirmingDelete ? (
+            <>
+              <span className={styles.deleteConfirmLabel}>Delete?</span>
+              <button className={styles.deleteBtn} onClick={() => { setConfirmingDelete(false); onDelete(); }}>
+                Confirm
+              </button>
+              <button className={styles.cancelBtn} onClick={() => setConfirmingDelete(false)}>
+                No
+              </button>
+            </>
+          ) : (
+            <button className={styles.deleteBtn} onClick={() => setConfirmingDelete(true)}>
+              Delete question
+            </button>
+          )
         )}
       </div>
     </div>
@@ -432,6 +448,7 @@ export default function FacultyDashboard() {
   const [editDraft, setEditDraft]           = useState<EditDraft | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<MockStudent | null>(null);
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
+  const [middleWidth,   setMiddleWidth]     = useState(340);
   const [slideExpanded, setSlideExpanded]   = useState(true);
   const [facultyId, setFacultyId]           = useState("nicolas");
 
@@ -654,6 +671,24 @@ export default function FacultyDashboard() {
 
   const onDrop = (e: React.DragEvent) => { e.preventDefault(); setDragIdx(null); };
 
+  /* ── Middle pane resize handler ── */
+  const onResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = middleWidth;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const next = Math.max(220, Math.min(640, startW + ev.clientX - startX));
+      setMiddleWidth(next);
+    };
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup",   onMouseUp);
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup",   onMouseUp);
+  };
+
   const groupedMcqs = FN_ORDER.map(fn => ({ fn, qs: mcqBank.filter(q => q.function === fn) }));
 
   const activeStudents = MOCK_STUDENTS.filter(s => s.status === "active");
@@ -712,7 +747,7 @@ export default function FacultyDashboard() {
 
       {/* MIDDLE + RIGHT — only render once a course is selected */}
       {selectedCourse && <>
-      <section className={styles.paneMiddle} style={playlistMode ? { flex: "1", maxWidth: "none", borderRight: "none" } : undefined}>
+      <section className={styles.paneMiddle} style={playlistMode ? { flex: "1", maxWidth: "none", borderRight: "none" } : { width: middleWidth, minWidth: middleWidth }}>
         <div className={styles.paneHd}>
           <span className={styles.eyebrow}>
             {!selectedCourse ? "Select a course" : selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
@@ -956,6 +991,11 @@ export default function FacultyDashboard() {
           </div>
         )}
       </section>
+
+      {/* RESIZE HANDLE — drag to adjust middle pane width */}
+      {!playlistMode && (
+        <div className={styles.resizeHandle} onMouseDown={onResizeMouseDown} />
+      )}
 
       {/* RIGHT */}
       <section className={styles.paneRight} style={playlistMode ? { display: "none" } : undefined}>
