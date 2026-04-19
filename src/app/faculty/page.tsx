@@ -843,7 +843,7 @@ export default function FacultyDashboard() {
 
       {/* MIDDLE + RIGHT — only render once a course is selected */}
       {selectedCourse && <>
-      <section className={styles.paneMiddle} style={playlistMode ? { flex: "1", maxWidth: "none", borderRight: "none" } : { width: middleWidth, minWidth: middleWidth }}>
+      <section className={styles.paneMiddle} style={{ width: middleWidth, minWidth: middleWidth }}>
         <div className={styles.paneHd}>
           <span className={styles.eyebrow}>
             {!selectedCourse ? "Select a course" : selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
@@ -860,7 +860,7 @@ export default function FacultyDashboard() {
         </div>
 
         <div className={styles.modeTabs}>
-          {(["questions","share","students","analytics"] as Mode[]).map(m => (
+          {(["questions","students","share","analytics"] as Mode[]).map(m => (
             <button key={m}
               className={`${styles.tab} ${activeMode === m ? styles.tabActive : ""}`}
               onClick={() => switchMode(m)}>
@@ -1109,12 +1109,10 @@ export default function FacultyDashboard() {
       </section>
 
       {/* RESIZE HANDLE — drag to adjust middle pane width */}
-      {!playlistMode && (
-        <div className={styles.resizeHandle} onMouseDown={onResizeMouseDown} />
-      )}
+      <div className={styles.resizeHandle} onMouseDown={onResizeMouseDown} />
 
       {/* RIGHT */}
-      <section className={styles.paneRight} style={playlistMode ? { display: "none" } : undefined}>
+      <section className={styles.paneRight}>
 
         {rightPanel === "empty" && (
           <div className={styles.emptyState}>
