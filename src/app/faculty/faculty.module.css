@@ -579,14 +579,35 @@
 
 .settingRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
   font-family: var(--font-body);
   font-size: 0.8125rem;
   color: var(--on-surface);
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--outline-variant);
 }
 
-.settingLabel { color: var(--on-surface); }
+.settingRow:last-child { border-bottom: none; }
+
+.settingLabel { color: var(--on-surface); font-size: 0.8125rem; }
+
+.settingLabelGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.settingHint {
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  color: var(--on-surface-variant);
+  opacity: 0.6;
+  line-height: 1.4;
+}
 
 .toggleOff {
   font-family: var(--font-display);
