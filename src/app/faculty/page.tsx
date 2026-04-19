@@ -29,7 +29,8 @@ interface Course {
   mcqStatus:     "ready" | "generating" | "none" | "failed";
   mcqCount:      number;
   synthesis:     { thesis?: string; key_concepts?: string[] } | null;
-  allowDownload: boolean;
+  allowDownload:     boolean;
+  progressMonitored: boolean;
   /* Real API may include additional fields — ignored here */
   [key: string]: unknown;
 }
@@ -724,25 +725,40 @@ export default function FacultyDashboard() {
     }).catch(err => console.warn("allowDownload update failed:", err));
   };
 
+  const handleProgressMonitoredToggle = () => {
+    if (!selectedCourse) return;
+    const next = !selectedCourse.progressMonitored;
+    const updated = { ...selectedCourse, progressMonitored: next };
+    setSelectedCourse(updated);
+    setCourses(prev => prev.map(c => c.id === selectedCourse.id ? updated : c));
+    fetch(`${API}/api/courses/${selectedCourse.id}?userId=${facultyId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ progressMonitored: next }),
+    }).catch(err => console.warn("progressMonitored update failed:", err));
+  };
+
   /* ── Playlist mode handlers ── */
   const enterPlaylist = () => {
-    /* Sort by existing position if set, otherwise current bank order */
     const sorted = [...mcqBank].sort((a, b) =>
       (a.position ?? 9999) - (b.position ?? 9999)
     );
     setPlaylistOrder(sorted);
     setPlaylistMode(true);
+    setMiddleWidth(w => Math.round(w * 1.3));
     setRightPanel("empty"); setEditDraft(null);
   };
 
-  const cancelPlaylist = () => { setPlaylistMode(false); };
+  const cancelPlaylist = () => {
+    setPlaylistMode(false);
+    setMiddleWidth(w => Math.round(w / 1.3));
+  };
 
   const savePlaylist = () => {
-    /* Assign position 1-N based on drag order */
     const withPositions = playlistOrder.map((q, i) => ({ ...q, position: i + 1 }));
     setMcqBank(withPositions);
     setPlaylistMode(false);
-    /* Batch persist — fire and forget */
+    setMiddleWidth(w => Math.round(w / 1.3));
     fetch(`${API}/api/mcq/batch-positions`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
@@ -997,7 +1013,6 @@ export default function FacultyDashboard() {
                   ? "Loading…"
                   : `${shareAccess.length} student${shareAccess.length !== 1 ? "s" : ""} with access`}
               </span>
-              <button className={styles.ghostBtn}>Export</button>
             </div>
             <div className={styles.panelScroll}>
               {shareAccess.map(s => (
@@ -1023,12 +1038,27 @@ export default function FacultyDashboard() {
               <div className={styles.courseSettingsBlock}>
                 <span className={styles.eyebrow} style={{ display: "block", marginBottom: 8 }}>Course settings</span>
                 <div className={styles.settingRow}>
-                  <span className={styles.settingLabel}>Allow PDF download</span>
+                  <div className={styles.settingLabelGroup}>
+                    <span className={styles.settingLabel}>Allow PDF download</span>
+                    <span className={styles.settingHint}>Students can save the course document</span>
+                  </div>
                   <button
                     className={`${styles.toggleBtn} ${selectedCourse.allowDownload ? styles.toggleBtnOn : ""}`}
                     onClick={handleAllowDownloadToggle}
                   >
                     {selectedCourse.allowDownload ? "On" : "Off"}
+                  </button>
+                </div>
+                <div className={styles.settingRow}>
+                  <div className={styles.settingLabelGroup}>
+                    <span className={styles.settingLabel}>Visible progress tracking</span>
+                    <span className={styles.settingHint}>Students see a banner indicating their sessions are reviewed by the instructor</span>
+                  </div>
+                  <button
+                    className={`${styles.toggleBtn} ${selectedCourse.progressMonitored ? styles.toggleBtnOn : ""}`}
+                    onClick={handleProgressMonitoredToggle}
+                  >
+                    {selectedCourse.progressMonitored ? "On" : "Off"}
                   </button>
                 </div>
               </div>
