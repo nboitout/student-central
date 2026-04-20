@@ -3173,30 +3173,3 @@
   cursor: pointer;
 }
 .cardEditCancel:hover { border-color: var(--on-surface-variant); }
-
-/* ── Faculty dashboard link ──────────────────────────────── */
-.facultyLink {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--on-surface-variant);
-  border: 0.5px solid var(--outline-variant);
-  padding: 5px 13px;
-  text-decoration: none;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.facultyLink:hover {
-  color: var(--primary);
-  border-color: var(--primary);
-  background: rgba(0, 72, 216, 0.04);
-}
-.facultyLink svg {
-  flex-shrink: 0;
-  opacity: 0.7;
-  transition: opacity 0.15s;
-}
-.facultyLink:hover svg { opacity: 1; }
