@@ -194,7 +194,6 @@ function ReformulationPanel({ result, onKeep, onAccept }: {
           Accept
         </button>
       </div>
-      {showIntro && <TeachIntroModal onClose={() => setShowIntro(false)} />}
     </div>
   );
 }
