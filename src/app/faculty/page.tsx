@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./faculty.module.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -194,6 +194,7 @@ function ReformulationPanel({ result, onKeep, onAccept }: {
           Accept
         </button>
       </div>
+      {showIntro && <TeachIntroModal onClose={() => setShowIntro(false)} />}
     </div>
   );
 }
@@ -423,6 +424,107 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
   );
 }
 
+
+// ─── Teach Intro Modal ────────────────────────────────────────────────────────
+
+function TeachIntroModal({ onClose }: { onClose: () => void }) {
+  const [dontShow, setDontShow] = React.useState(false);
+
+  const handleClose = () => {
+    if (dontShow) {
+      try { localStorage.setItem("teachIntroSeen", "true"); } catch {}
+    }
+    onClose();
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(26,28,46,0.45)",
+      zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center",
+      backdropFilter: "blur(4px)",
+    }} onClick={handleClose}>
+      <div style={{
+        background: "var(--surface-lowest)", maxWidth: 520, width: "90%",
+        boxShadow: "var(--shadow-float)", padding: 0, position: "relative",
+      }} onClick={e => e.stopPropagation()}>
+        {/* Header band */}
+        <div style={{
+          background: "var(--primary-gradient)", padding: "20px 28px 16px",
+        }}>
+          <div style={{
+            fontFamily: "var(--font-display)", fontSize: "0.625rem", fontWeight: 700,
+            letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.7)",
+            marginBottom: 6,
+          }}>Faculty dashboard</div>
+          <div style={{
+            fontFamily: "var(--font-display)", fontSize: "1.25rem", fontWeight: 700,
+            color: "#fff", letterSpacing: "-0.02em",
+          }}>Welcome to Teach</div>
+        </div>
+        {/* Body */}
+        <div style={{ padding: "24px 28px 0" }}>
+          <p style={{
+            fontFamily: "var(--font-body)", fontSize: "0.9375rem",
+            color: "var(--on-surface-variant)", lineHeight: 1.6, marginBottom: 20,
+          }}>
+            This is your instructor space. From here you can:
+          </p>
+          {[
+            ["◎", "Review and edit the MCQ bank generated from your course PDF"],
+            ["↕", "Order questions into a playlist for progressive sessions"],
+            ["⟳", "Share a course directly with your students — they see it instantly"],
+            ["◈", "Track student sessions and analyse performance signals"],
+          ].map(([icon, text]) => (
+            <div key={text} style={{
+              display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14,
+            }}>
+              <span style={{
+                fontFamily: "var(--font-display)", fontSize: "1rem",
+                color: "var(--primary)", flexShrink: 0, width: 20, textAlign: "center",
+              }}>{icon}</span>
+              <span style={{
+                fontFamily: "var(--font-body)", fontSize: "0.875rem",
+                color: "var(--on-surface)", lineHeight: 1.5,
+              }}>{text}</span>
+            </div>
+          ))}
+        </div>
+        {/* Footer */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "20px 28px 24px", marginTop: 8,
+          borderTop: "0.5px solid var(--outline-variant)",
+        }}>
+          <label style={{
+            display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+            fontFamily: "var(--font-body)", fontSize: "0.8125rem",
+            color: "var(--on-surface-variant)",
+          }}>
+            <input
+              type="checkbox"
+              checked={dontShow}
+              onChange={e => setDontShow(e.target.checked)}
+              style={{ width: 14, height: 14, cursor: "pointer", accentColor: "var(--primary)" }}
+            />
+            Don&apos;t show me this again
+          </label>
+          <button onClick={handleClose} style={{
+            fontFamily: "var(--font-display)", fontSize: "0.875rem", fontWeight: 700,
+            color: "#fff", background: "var(--primary)", border: "none",
+            padding: "10px 28px", cursor: "pointer",
+            transition: "opacity 0.15s",
+          }}
+            onMouseOver={e => (e.currentTarget.style.opacity = "0.85")}
+            onMouseOut={e => (e.currentTarget.style.opacity = "1")}
+          >
+            Got it →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function FacultyDashboard() {
@@ -440,6 +542,9 @@ export default function FacultyDashboard() {
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
   const [slideExpanded, setSlideExpanded]   = useState(true);
   const [facultyId, setFacultyId]           = useState("nicolas");
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    try { return localStorage.getItem("teachIntroSeen") !== "true"; } catch { return true; }
+  });
 
   // ── Share tab state ──
   const [shareAccess,  setShareAccess]  = useState<AccessEntry[]>([]);
@@ -625,7 +730,7 @@ export default function FacultyDashboard() {
 
   const handleVisibleProgressToggle = () => {
     if (!selectedCourse) return;
-    const next = !selectedCourse.visibleProgressTracking;
+    const next = !(selectedCourse.visibleProgressTracking ?? true);
     const updated = { ...selectedCourse, visibleProgressTracking: next };
     setSelectedCourse(updated);
     setCourses(prev => prev.map(c => c.id === selectedCourse.id ? updated : c));
@@ -919,10 +1024,10 @@ export default function FacultyDashboard() {
                     <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>Students see a banner indicating their sessions are reviewed by the instructor</div>
                   </div>
                   <button
-                    className={`${styles.toggleBtn} ${selectedCourse.visibleProgressTracking ? styles.toggleBtnOn : ""}`}
+                    className={`${styles.toggleBtn} ${(selectedCourse.visibleProgressTracking ?? true) ? styles.toggleBtnOn : ""}`}
                     onClick={handleVisibleProgressToggle}
                   >
-                    {selectedCourse.visibleProgressTracking ? "On" : "Off"}
+                    {(selectedCourse.visibleProgressTracking ?? true) ? "On" : "Off"}
                   </button>
                 </div>
               </div>
@@ -1186,6 +1291,7 @@ export default function FacultyDashboard() {
       </section>
     </>
     }
+      {showIntro && <TeachIntroModal onClose={() => setShowIntro(false)} />}
     </div>
   );
 }
