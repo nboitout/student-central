@@ -6,7 +6,7 @@ import styles from "./faculty.module.css";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type MCQFunction = "orient" | "understand" | "recognize" | "connect" | "evaluate";
-type RightPanel  = "empty" | "edit-q" | "new-q" | "student-detail" | "invite" | "generate-similar";
+type RightPanel  = "empty" | "edit-q" | "new-q" | "student-detail" | "invite";
 type Mode        = "questions" | "share" | "students" | "analytics";
 
 interface MCQOption { letter: string; text: string; }
@@ -24,22 +24,13 @@ interface MCQDoc {
 }
 
 interface Course {
-  id:            string;
-  title:         string;
-  mcqStatus:     "ready" | "generating" | "none" | "failed";
-  mcqCount:      number;
-  synthesis:     { thesis?: string; key_concepts?: string[] } | null;
-  allowDownload:     boolean;
-  progressMonitored: boolean;
+  id:        string;
+  title:     string;
+  mcqStatus: "ready" | "generating" | "none" | "failed";
+  mcqCount:  number;
+  synthesis: { thesis?: string; key_concepts?: string[] } | null;
   /* Real API may include additional fields — ignored here */
   [key: string]: unknown;
-}
-
-interface AccessEntry {
-  email:        string;
-  status:       "invited" | "active";
-  sharedAt:     string;
-  sessionCount: number;
 }
 
 interface MockStudent {
@@ -107,17 +98,10 @@ const SIGNAL_META = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function statusPillCls(status: MockStudent["status"] | AccessEntry["status"], s: Record<string, string>) {
+function statusPillCls(status: MockStudent["status"], s: Record<string, string>) {
   if (status === "active")  return `${s.pill} ${s.pillActive}`;
   if (status === "invited") return `${s.pill} ${s.pillInvited}`;
   return `${s.pill} ${s.pillPending}`;
-}
-
-function emailInitials(email: string): string {
-  const local = email.split("@")[0];
-  const parts = local.split(/[._-]/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return local.slice(0, 2).toUpperCase();
 }
 
 function blankDraft(): EditDraft {
@@ -220,8 +204,6 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
   const [reformulating,    setReformulating]    = useState<string | null>(null);
   const [pending,          setPending]          = useState<Record<string, ReformResult>>({});
   const [acceptedReforms,  setAcceptedReforms]  = useState<Record<string, AcceptedReform>>({});
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  useEffect(() => setConfirmingDelete(false), [draft.id]);
 
   const reformulate = async (field: string, text: string) => {
     if (!text.trim() || reformulating) return;
@@ -250,16 +232,16 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
       console.warn("Reformulate failed:", e);
       /* Endpoint not yet live — fall back to mock so the UI remains usable */
       const swaps: [RegExp, string][] = [
-        [/Which/,        "What"],
-        [/What is/,      "Identify the"],
-        [/illustrates/,  "depicts"],
-        [/describes/,    "outlines"],
-        [/primary/,      "main"],
-        [/relationship/, "connection"],
-        [/component/,    "element"],
-        [/strategy/,     "approach"],
-        [/addresses/,    "tackles"],
-        [/fundamental/,  "core"],
+        [/Which/,        "What"],
+        [/What is/,      "Identify the"],
+        [/illustrates/,  "depicts"],
+        [/describes/,    "outlines"],
+        [/primary/,      "main"],
+        [/relationship/, "connection"],
+        [/component/,    "element"],
+        [/strategy/,     "approach"],
+        [/addresses/,    "tackles"],
+        [/fundamental/,  "core"],
       ];
       let reformulated = text;
       for (const [pat, rep] of swaps) {
@@ -413,21 +395,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
         </button>
         <button className={styles.cancelBtn} onClick={onCancel}>Cancel</button>
         {onDelete && (
-          confirmingDelete ? (
-            <>
-              <span className={styles.deleteConfirmLabel}>Delete?</span>
-              <button className={styles.deleteBtn} onClick={() => { setConfirmingDelete(false); onDelete(); }}>
-                Confirm
-              </button>
-              <button className={styles.cancelBtn} onClick={() => setConfirmingDelete(false)}>
-                No
-              </button>
-            </>
-          ) : (
-            <button className={styles.deleteBtn} onClick={() => setConfirmingDelete(true)}>
-              Delete question
-            </button>
-          )
+          <button className={styles.deleteBtn} onClick={onDelete}>Delete question</button>
         )}
       </div>
     </div>
@@ -449,23 +417,8 @@ export default function FacultyDashboard() {
   const [editDraft, setEditDraft]           = useState<EditDraft | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<MockStudent | null>(null);
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
-  const [middleWidth,   setMiddleWidth]     = useState(340);
   const [slideExpanded, setSlideExpanded]   = useState(true);
-
-  // ── Generate-similar state ──
-  const [seedMode,       setSeedMode]       = useState(false);
-  const [seedIds,        setSeedIds]        = useState<string[]>([]);
-  const [genCount,       setGenCount]       = useState<1|3|5>(3);
-  const [genFn,          setGenFn]          = useState<MCQFunction|"same">("same");
-  const [genHint,        setGenHint]        = useState("");
-  const [genCandidates,  setGenCandidates]  = useState<MCQDoc[]>([]);
-  const [genLoading,     setGenLoading]     = useState(false);
   const [facultyId, setFacultyId]           = useState("nicolas");
-
-  // ── Share tab state ──
-  const [shareAccess,  setShareAccess]  = useState<AccessEntry[]>([]);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [shareEmail,   setShareEmail]   = useState("");
 
   const API = process.env.NEXT_PUBLIC_API_URL
     ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
@@ -524,17 +477,6 @@ export default function FacultyDashboard() {
       .finally(() => setMcqLoading(false));
   }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── Fetch access list for Share tab ── */
-  useEffect(() => {
-    if (!facultyReady || !selectedCourse || activeMode !== "share") return;
-    setShareLoading(true);
-    fetch(`${API}/api/courses/${selectedCourse.id}/access?userId=${facultyId}`)
-      .then(r => r.json())
-      .then(data => setShareAccess(data.access ?? []))
-      .catch(err => console.warn("Access fetch failed:", err))
-      .finally(() => setShareLoading(false));
-  }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const selectCourse = (c: Course) => {
     setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
   };
@@ -562,6 +504,8 @@ export default function FacultyDashboard() {
 
     /* Persist to backend — fire-and-forget, local state update is immediate */
     if (editDraft.id) {
+      const API = process.env.NEXT_PUBLIC_API_URL
+        ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
       const now = new Date().toISOString();
       const reformulations = Object.entries(acceptedReforms).map(([field, r]) => ({
         field,
@@ -600,165 +544,27 @@ export default function FacultyDashboard() {
     setRightPanel("empty"); setEditDraft(null);
   };
 
-  /* ── Generate-similar handlers ── */
-  const enterSeedMode = () => {
-    setSeedMode(true); setSeedIds([]); setRightPanel("empty"); setEditDraft(null);
-  };
-
-  const clearSeeds = () => {
-    setSeedMode(false); setSeedIds([]); setGenCandidates([]);
-    if (rightPanel === "generate-similar") setRightPanel("empty");
-  };
-
-  const toggleSeedSimple = (id: string) =>
-    setSeedIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id)
-      : prev.length >= 3 ? prev
-      : [...prev, id]
-    );
-
-  const openGeneratePanel = () => {
-    setGenCandidates([]); setGenHint(""); setRightPanel("generate-similar");
-  };
-
-  const handleGenerate = async () => {
-    if (!selectedCourse || seedIds.length === 0) return;
-    setGenLoading(true);
-    setGenCandidates([]);
-    const seeds = mcqBank.filter(q => seedIds.includes(q.id));
-    const targetFn = genFn === "same" ? (seeds[0]?.function ?? "understand") : genFn;
-    try {
-      const res = await fetch(`${API}/api/mcq/generate-similar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courseId:   selectedCourse.id,
-          userId:     facultyId,
-          seedIds,
-          count:      genCount,
-          function:   targetFn,
-          focusHint:  genHint.trim() || undefined,
-        }),
-      });
-      if (!res.ok) throw new Error(`${res.status}`);
-      const data = await res.json();
-      setGenCandidates((data.candidates ?? data.mcqs ?? []).map((q: MCQDoc) => ({
-        ...q, id: q.id ?? `cand-${Date.now()}-${Math.random()}`,
-      })));
-    } catch (e) {
-      console.warn("generate-similar failed, using mock:", e);
-      /* Mock fallback — mirrors the seed questions with light variation */
-      const mock: MCQDoc[] = seeds.slice(0, genCount).map((seed, i) => ({
-        id: `cand-${Date.now()}-${i}`,
-        function:     targetFn,
-        pageNumber:   seed.pageNumber,
-        hasVisual:    seed.hasVisual,
-        correctIndex: (seed.correctIndex + 1) % 4,
-        question:     `[Preview] ${seed.question.replace(/^(What|Which|How)/, m => m === "What" ? "Which" : m === "Which" ? "How" : "What")}`,
-        options:      seed.options.map((o, oi) => ({
-          ...o, text: oi === (seed.correctIndex + 1) % 4 ? seed.options[seed.correctIndex].text : o.text,
-        })),
-        explanation: `Generated in the same vein as: "${seed.question.slice(0, 60)}…"`,
-      }));
-      setGenCandidates(mock);
-    } finally {
-      setGenLoading(false);
-    }
-  };
-
-  const acceptCandidate = (q: MCQDoc) => {
-    const doc = { ...q, id: `q${Date.now()}` };
-    setMcqBank(prev => [...prev, doc]);
-    setGenCandidates(prev => prev.filter(c => c.id !== q.id));
-    /* fire-and-forget persist — treat same as new question */
-    fetch(`${API}/api/mcq`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ courseId: selectedCourse?.id, userId: facultyId, ...doc }),
-    }).catch(err => console.warn("candidate persist failed:", err));
-  };
-
-  const editCandidate = (q: MCQDoc) => {
-    setGenCandidates(prev => prev.filter(c => c.id !== q.id));
-    setEditDraft(draftFromDoc(q));
-    setRightPanel("new-q");
-  };
-
-  const discardCandidate = (id: string) =>
-    setGenCandidates(prev => prev.filter(c => c.id !== id));
-
-  /* ── Share tab handlers ── */
-  const handleShareAdd = () => {
-    const email = shareEmail.trim().toLowerCase();
-    if (!email || !selectedCourse) return;
-    setShareEmail("");
-    // Optimistic update — row appears immediately
-    setShareAccess(prev => {
-      if (prev.find(e => e.email === email)) return prev;
-      return [...prev, { email, status: "invited", sharedAt: new Date().toISOString(), sessionCount: 0 }];
-    });
-    fetch(`${API}/api/courses/${selectedCourse.id}/access`, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ studentEmail: email, userId: facultyId }),
-    }).catch(err => console.warn("Share add failed:", err));
-  };
-
-  const handleShareRemove = (email: string) => {
-    if (!selectedCourse) return;
-    setShareAccess(prev => prev.filter(e => e.email !== email));
-    fetch(`${API}/api/courses/${selectedCourse.id}/access/${encodeURIComponent(email)}?userId=${facultyId}`, {
-      method: "DELETE",
-    }).catch(err => console.warn("Share remove failed:", err));
-  };
-
-  const handleAllowDownloadToggle = () => {
-    if (!selectedCourse) return;
-    const next = !selectedCourse.allowDownload;
-    const updated = { ...selectedCourse, allowDownload: next };
-    setSelectedCourse(updated);
-    setCourses(prev => prev.map(c => c.id === selectedCourse.id ? updated : c));
-    fetch(`${API}/api/courses/${selectedCourse.id}?userId=${facultyId}`, {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ allowDownload: next }),
-    }).catch(err => console.warn("allowDownload update failed:", err));
-  };
-
-  const handleProgressMonitoredToggle = () => {
-    if (!selectedCourse) return;
-    const next = !selectedCourse.progressMonitored;
-    const updated = { ...selectedCourse, progressMonitored: next };
-    setSelectedCourse(updated);
-    setCourses(prev => prev.map(c => c.id === selectedCourse.id ? updated : c));
-    fetch(`${API}/api/courses/${selectedCourse.id}?userId=${facultyId}`, {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ progressMonitored: next }),
-    }).catch(err => console.warn("progressMonitored update failed:", err));
-  };
-
   /* ── Playlist mode handlers ── */
   const enterPlaylist = () => {
+    /* Sort by existing position if set, otherwise current bank order */
     const sorted = [...mcqBank].sort((a, b) =>
       (a.position ?? 9999) - (b.position ?? 9999)
     );
     setPlaylistOrder(sorted);
     setPlaylistMode(true);
-    setMiddleWidth(w => Math.round(w * 1.3));
     setRightPanel("empty"); setEditDraft(null);
   };
 
-  const cancelPlaylist = () => {
-    setPlaylistMode(false);
-    setMiddleWidth(w => Math.round(w / 1.3));
-  };
+  const cancelPlaylist = () => { setPlaylistMode(false); };
 
   const savePlaylist = () => {
+    const API = process.env.NEXT_PUBLIC_API_URL
+      ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+    /* Assign position 1-N based on drag order */
     const withPositions = playlistOrder.map((q, i) => ({ ...q, position: i + 1 }));
     setMcqBank(withPositions);
     setPlaylistMode(false);
-    setMiddleWidth(w => Math.round(w / 1.3));
+    /* Batch persist — fire and forget */
     fetch(`${API}/api/mcq/batch-positions`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
@@ -782,24 +588,6 @@ export default function FacultyDashboard() {
   };
 
   const onDrop = (e: React.DragEvent) => { e.preventDefault(); setDragIdx(null); };
-
-  /* ── Middle pane resize handler ── */
-  const onResizeMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startW = middleWidth;
-
-    const onMouseMove = (ev: MouseEvent) => {
-      const next = Math.max(220, Math.min(640, startW + ev.clientX - startX));
-      setMiddleWidth(next);
-    };
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup",   onMouseUp);
-    };
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup",   onMouseUp);
-  };
 
   const groupedMcqs = FN_ORDER.map(fn => ({ fn, qs: mcqBank.filter(q => q.function === fn) }));
 
@@ -859,7 +647,7 @@ export default function FacultyDashboard() {
 
       {/* MIDDLE + RIGHT — only render once a course is selected */}
       {selectedCourse && <>
-      <section className={styles.paneMiddle} style={{ width: middleWidth, minWidth: middleWidth }}>
+      <section className={styles.paneMiddle} style={playlistMode ? { flex: "1", maxWidth: "none", borderRight: "none" } : undefined}>
         <div className={styles.paneHd}>
           <span className={styles.eyebrow}>
             {!selectedCourse ? "Select a course" : selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
@@ -876,7 +664,7 @@ export default function FacultyDashboard() {
         </div>
 
         <div className={styles.modeTabs}>
-          {(["questions","students","share","analytics"] as Mode[]).map(m => (
+          {(["questions","share","students","analytics"] as Mode[]).map(m => (
             <button key={m}
               className={`${styles.tab} ${activeMode === m ? styles.tabActive : ""}`}
               onClick={() => switchMode(m)}>
@@ -890,7 +678,7 @@ export default function FacultyDashboard() {
           <div className={styles.panelShell}>
             <div className={styles.panelHd}>
               <span className={styles.eyebrow}>
-                {mcqLoading ? "Loading…" : playlistMode ? "Ordering playlist" : seedMode ? "Select seeds (max 3)" : `${mcqBank.length} questions`}
+                {mcqLoading ? "Loading…" : playlistMode ? "Ordering playlist" : `${mcqBank.length} questions`}
               </span>
               <div style={{ display:"flex", gap:6 }}>
                 {playlistMode ? (
@@ -898,17 +686,9 @@ export default function FacultyDashboard() {
                     <button className={styles.addBtn} onClick={savePlaylist}>Done</button>
                     <button className={styles.ghostBtn} onClick={cancelPlaylist}>Cancel</button>
                   </>
-                ) : seedMode ? (
-                  <>
-                    <button className={styles.sparkBtn} onClick={openGeneratePanel} disabled={seedIds.length === 0}>
-                      ✦ Generate ({seedIds.length})
-                    </button>
-                    <button className={styles.ghostBtn} onClick={clearSeeds}>Cancel</button>
-                  </>
                 ) : (
                   <>
-                    <button className={styles.sparkBtnGhost} onClick={enterSeedMode} disabled={mcqLoading || mcqBank.length === 0}>✦ Similar</button>
-                    <button className={styles.ghostBtn} onClick={enterPlaylist} disabled={mcqLoading || mcqBank.length === 0}>✎ Order</button>
+                    <button className={styles.ghostBtn} onClick={enterPlaylist} disabled={mcqLoading || mcqBank.length === 0}>✎ Order playlist</button>
                     <button className={styles.addBtn} onClick={openNew} disabled={mcqLoading}>+ New</button>
                   </>
                 )}
@@ -955,30 +735,18 @@ export default function FacultyDashboard() {
                     </div>
                     {qs.map(q => (
                       <div key={q.id}
-                        className={`${styles.qRow} ${editDraft?.id === q.id ? styles.qRowActive : ""} ${seedMode && seedIds.includes(q.id) ? styles.qRowSeed : ""}`}>
-                        {seedMode && (
-                          <button
-                            className={`${styles.seedCheck} ${seedIds.includes(q.id) ? styles.seedCheckOn : ""}`}
-                            onClick={() => toggleSeedSimple(q.id)}
-                            disabled={!seedIds.includes(q.id) && seedIds.length >= 3}
-                            title={seedIds.length >= 3 && !seedIds.includes(q.id) ? "Max 3 seeds" : ""}
-                          >
-                            {seedIds.includes(q.id) && "✓"}
-                          </button>
-                        )}
+                        className={`${styles.qRow} ${editDraft?.id === q.id ? styles.qRowActive : ""}`}>
                         {q.position !== undefined && (
                           <span className={styles.posPin} title={`Session position ${q.position}`}>{q.position}</span>
                         )}
-                        <div className={styles.qRowMain} onClick={() => !seedMode && openEdit(q)}>
+                        <div className={styles.qRowMain} onClick={() => openEdit(q)}>
                           <div className={styles.qText}>{q.question}</div>
                           {q.hasVisual && <span className={styles.visualFlag}>visual</span>}
                         </div>
-                        {!seedMode && (
-                          <div className={styles.qActions}>
-                            <button className={styles.editBtn} onClick={() => openEdit(q)}>Edit</button>
-                            <button className={styles.delBtnSm} onClick={() => deleteQuestion(q.id)}>Del</button>
-                          </div>
-                        )}
+                        <div className={styles.qActions}>
+                          <button className={styles.editBtn} onClick={() => openEdit(q)}>Edit</button>
+                          <button className={styles.delBtnSm} onClick={() => deleteQuestion(q.id)}>Del</button>
+                        </div>
                       </div>
                     ))}
                     {qs.length === 0 && (
@@ -995,52 +763,31 @@ export default function FacultyDashboard() {
         {activeMode === "share" && (
           <div className={styles.panelShell}>
             <div className={styles.shareInputRow}>
-              <input
-                className={styles.shareInput}
-                type="email"
-                placeholder="Student email address…"
-                value={shareEmail}
-                onChange={e => setShareEmail(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleShareAdd()}
-              />
-              <button className={styles.addBtn} onClick={handleShareAdd} disabled={!shareEmail.trim()}>
-                Share
-              </button>
+              <input className={styles.shareInput} type="email" placeholder="Student email address…" />
+              <button className={styles.addBtn}>Share</button>
             </div>
             <div className={styles.panelHd}>
-              <span className={styles.eyebrow}>
-                {shareLoading
-                  ? "Loading…"
-                  : `${shareAccess.length} student${shareAccess.length !== 1 ? "s" : ""} with access`}
-              </span>
+              <span className={styles.eyebrow}>{MOCK_STUDENTS.filter(s=>s.status!=="pending").length} students with access</span>
+              <button className={styles.ghostBtn}>Export</button>
             </div>
             <div className={styles.panelScroll}>
-              {shareAccess.map(s => (
-                <div key={s.email} className={styles.studentRow}>
-                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>
-                    {emailInitials(s.email)}
-                  </div>
+              {MOCK_STUDENTS.filter(s => s.status !== "pending").map(s => (
+                <div key={s.id} className={styles.studentRow}>
+                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>{s.initials}</div>
                   <div className={styles.studentInfo}>
                     <div className={styles.studentEmail}>{s.email}</div>
-                    <div className={styles.studentMeta}>
-                      {s.sessionCount > 0
-                        ? `${s.sessionCount} session${s.sessionCount > 1 ? "s" : ""}`
-                        : "No sessions yet"}
-                    </div>
+                    <div className={styles.studentMeta}>{s.sessions > 0 ? `${s.sessions} session${s.sessions>1?"s":""}` : "No sessions yet"}</div>
                   </div>
                   <span className={statusPillCls(s.status, styles)}>{s.status}</span>
-                  <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>Remove</button>
+                  <button className={styles.delBtnSm}>Remove</button>
                 </div>
               ))}
-              {!shareLoading && shareAccess.length === 0 && (
-                <div className={styles.emptyGroup}>No students yet — share this course using the input above.</div>
-              )}
               <div className={styles.courseSettingsBlock}>
-                <span className={styles.eyebrow} style={{ display: "block", marginBottom: 8 }}>Course settings</span>
+                <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>Course settings</span>
                 <div className={styles.settingRow}>
-                  <div className={styles.settingLabelGroup}>
+                  <div>
                     <span className={styles.settingLabel}>Allow PDF download</span>
-                    <span className={styles.settingHint}>Students can save the course document</span>
+                    <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>Students can save the course document</div>
                   </div>
                   <button
                     className={`${styles.toggleBtn} ${selectedCourse.allowDownload ? styles.toggleBtnOn : ""}`}
@@ -1050,15 +797,15 @@ export default function FacultyDashboard() {
                   </button>
                 </div>
                 <div className={styles.settingRow}>
-                  <div className={styles.settingLabelGroup}>
+                  <div>
                     <span className={styles.settingLabel}>Visible progress tracking</span>
-                    <span className={styles.settingHint}>Students see a banner indicating their sessions are reviewed by the instructor</span>
+                    <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>Students see a banner indicating their sessions are reviewed by the instructor</div>
                   </div>
                   <button
-                    className={`${styles.toggleBtn} ${selectedCourse.progressMonitored ? styles.toggleBtnOn : ""}`}
-                    onClick={handleProgressMonitoredToggle}
+                    className={`${styles.toggleBtn} ${selectedCourse.visibleProgressTracking ? styles.toggleBtnOn : ""}`}
+                    onClick={handleVisibleProgressToggle}
                   >
-                    {selectedCourse.progressMonitored ? "On" : "Off"}
+                    {selectedCourse.visibleProgressTracking ? "On" : "Off"}
                   </button>
                 </div>
               </div>
@@ -1138,11 +885,8 @@ export default function FacultyDashboard() {
         )}
       </section>
 
-      {/* RESIZE HANDLE — drag to adjust middle pane width */}
-      <div className={styles.resizeHandle} onMouseDown={onResizeMouseDown} />
-
       {/* RIGHT */}
-      <section className={styles.paneRight}>
+      <section className={styles.paneRight} style={playlistMode ? { display: "none" } : undefined}>
 
         {rightPanel === "empty" && (
           <div className={styles.emptyState}>
@@ -1237,121 +981,6 @@ export default function FacultyDashboard() {
           </>
         )}
 
-        {rightPanel==="generate-similar" && (
-          <>
-            <div className={styles.paneHd}>
-              <span style={{ color:"#7c3aed", fontSize:"0.75rem" }}>✦</span>
-              <span className={styles.eyebrow}>Generate similar</span>
-              <button className={styles.ghostBtn} style={{ marginLeft:"auto" }} onClick={clearSeeds}>✕ Exit</button>
-            </div>
-            <div className={styles.genScroll}>
-
-              {/* Seeds */}
-              <div className={styles.genSection}>
-                <span className={styles.fieldLabel}>Seeds — {seedIds.length} selected</span>
-                <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-                  {mcqBank.filter(q => seedIds.includes(q.id)).map(q => (
-                    <div key={q.id} className={styles.seedChip}>
-                      <span className={`${styles.fnChip} ${styles[`fn_${q.function}` as keyof typeof styles]}`} style={{ marginBottom:4, display:"inline-block" }}>
-                        {q.function}
-                      </span>
-                      <div className={styles.seedChipQ}>{q.question.length > 90 ? q.question.slice(0,90)+"…" : q.question}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Count */}
-              <div className={styles.genSection}>
-                <span className={styles.fieldLabel}>How many to generate</span>
-                <div style={{ display:"flex", gap:5 }}>
-                  {([1,3,5] as (1|3|5)[]).map(n => (
-                    <button key={n}
-                      className={`${styles.countBtn} ${genCount===n ? styles.countBtnOn : ""}`}
-                      onClick={() => setGenCount(n)}>{n}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Target function */}
-              <div className={styles.genSection}>
-                <span className={styles.fieldLabel}>Target function</span>
-                <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                  <button
-                    className={`${styles.countBtn} ${genFn==="same" ? styles.countBtnOn : ""}`}
-                    onClick={() => setGenFn("same")}>Same</button>
-                  {FN_ORDER.map(fn => (
-                    <button key={fn}
-                      className={`${styles.fnChip} ${styles[`fn_${fn}` as keyof typeof styles]} ${styles.fnSelBtn} ${genFn===fn ? styles.fnSelBtnOn : ""}`}
-                      onClick={() => setGenFn(fn)}>{fn}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Focus hint */}
-              <div className={styles.genSection}>
-                <span className={styles.fieldLabel}>Focus hint <span style={{ opacity:0.4, fontSize:"0.5rem" }}>(optional)</span></span>
-                <textarea
-                  className={styles.fieldTextarea}
-                  rows={2}
-                  placeholder="e.g. focus on chapter 3 diagrams, avoid overlap with existing questions…"
-                  value={genHint}
-                  onChange={e => setGenHint(e.target.value)}
-                />
-              </div>
-
-              <div className={styles.genSection} style={{ borderBottom:"none" }}>
-                <button
-                  className={styles.sparkBtn}
-                  onClick={handleGenerate}
-                  disabled={genLoading || seedIds.length === 0}
-                  style={{ alignSelf:"flex-start" }}
-                >
-                  {genLoading ? "Generating…" : `✦ Generate ${genCount} question${genCount>1?"s":""}`}
-                </button>
-              </div>
-
-              {/* Candidates */}
-              {genCandidates.length > 0 && (
-                <>
-                  <div style={{ borderTop:"1px solid var(--outline-variant)", margin:"0" }} />
-                  <div style={{ padding:"10px 14px 4px" }}>
-                    <span className={styles.fieldLabel}>{genCandidates.length} candidate{genCandidates.length>1?"s":""} — accept or discard each</span>
-                  </div>
-                  {genCandidates.map((q, i) => (
-                    <div key={q.id} className={styles.candidateCard}>
-                      <div className={styles.candidateHd}>
-                        <span className={styles.candidateN}>{i+1}</span>
-                        <span className={`${styles.fnChip} ${styles[`fn_${q.function}` as keyof typeof styles]}`}>{q.function}</span>
-                      </div>
-                      <div className={styles.candidateQ}>{q.question}</div>
-                      <div className={styles.candidateOpts}>
-                        {q.options.map((o, oi) => (
-                          <div key={o.letter} className={`${styles.candidateOptRow} ${oi===q.correctIndex ? styles.candidateOptCorrect : ""}`}>
-                            <span className={styles.candidateOptLetter}>{o.letter}</span>
-                            <span>{o.text}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className={styles.candidateActions}>
-                        <button className={styles.candidateAcceptBtn} onClick={() => acceptCandidate(q)}>✓ Add to bank</button>
-                        <button className={styles.editBtn} onClick={() => editCandidate(q)}>Edit first</button>
-                        <button className={styles.deleteBtn} onClick={() => discardCandidate(q.id)}>Discard</button>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-
-              {genLoading && (
-                <div style={{ padding:"20px 14px", textAlign:"center" }}>
-                  <span className={styles.eyebrow} style={{ opacity:0.5 }}>Generating questions…</span>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
         {rightPanel==="invite" && (
           <>
             <div className={styles.paneHd}><span className={styles.eyebrow}>Invitation preview</span></div>
@@ -1438,8 +1067,8 @@ export default function FacultyDashboard() {
           </>
         )}
       </section>
-      </>
-      }
+    </>
+    }
     </div>
   );
 }
