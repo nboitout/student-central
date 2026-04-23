@@ -226,12 +226,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
     setReformulating(field);
     setPending(prev => { const n = { ...prev }; delete n[field]; return n; });
     try {
-      // ── Share tab state ──
-  const [shareAccess,  setShareAccess]  = useState<AccessEntry[]>([]);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [shareEmail,   setShareEmail]   = useState("");
-
-  const API = process.env.NEXT_PUBLIC_API_URL
+      const API = process.env.NEXT_PUBLIC_API_URL
         ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
       const type = field === "question"    ? "question"
                  : field === "explanation" ? "explanation"
@@ -436,7 +431,7 @@ function TeachIntro({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
-  const TABS: [string, string, string][] = [
+  const TABS: [string, string][] = [
     ["Questions", "Review and edit the MCQ bank generated from your course PDF — reorder, reformulate, or add questions manually."],
     ["Share",     "Grant students access to your course in one click — they see it instantly in their workspace, no email needed."],
     ["Students",  "Manage your class roster, send bulk invitations, and track who has joined."],
@@ -644,12 +639,7 @@ export default function FacultyDashboard() {
 
     /* Persist to backend — fire-and-forget, local state update is immediate */
     if (editDraft.id) {
-      // ── Share tab state ──
-  const [shareAccess,  setShareAccess]  = useState<AccessEntry[]>([]);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [shareEmail,   setShareEmail]   = useState("");
-
-  const API = process.env.NEXT_PUBLIC_API_URL
+      const API = process.env.NEXT_PUBLIC_API_URL
         ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
       const now = new Date().toISOString();
       const reformulations = Object.entries(acceptedReforms).map(([field, r]) => ({
@@ -753,12 +743,7 @@ export default function FacultyDashboard() {
   const cancelPlaylist = () => { setPlaylistMode(false); };
 
   const savePlaylist = () => {
-    // ── Share tab state ──
-  const [shareAccess,  setShareAccess]  = useState<AccessEntry[]>([]);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [shareEmail,   setShareEmail]   = useState("");
-
-  const API = process.env.NEXT_PUBLIC_API_URL
+    const API = process.env.NEXT_PUBLIC_API_URL
       ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
     /* Assign position 1-N based on drag order */
     const withPositions = playlistOrder.map((q, i) => ({ ...q, position: i + 1 }));

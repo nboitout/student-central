@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/react";
 import AuthProvider from "@/components/AuthProvider";
 import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -38,6 +39,7 @@ export default function RootLayout({
         <AuthProvider>
           <LanguageProvider>{children}</LanguageProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
