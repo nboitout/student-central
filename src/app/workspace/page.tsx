@@ -15,8 +15,13 @@ import {
   attachPdf,
   triggerMCQGeneration,
   listSessions,
+  createGroup,
+  listGroups,
+  updateGroup as updateGroupApi,
+  deleteGroup,
   type Course,
   type StoredSession,
+  type Group,
 } from "@/lib/api";
 
 /* ── Constants ──────────────────────────────────────────── */
@@ -543,6 +548,7 @@ function CourseCard({
    MAIN PAGE
 ======================================================== */
 export default function WorkspacePage() {
+  // No-op change to trigger a fresh Vercel build/deploy from this commit.
   const { lang }  = useLanguage();
   const ui        = getT(lang).workspace;
   /* userId is resolved from the session cookie via the server layout.
@@ -589,6 +595,9 @@ export default function WorkspacePage() {
     loadSession()
       .then(id => {
         if (id) { setUserId(id); setCurrentUser(id); }
+        /* Groups load is fire-and-forget — a missing/failing endpoint
+           must never block courses from displaying.               */
+        if (id) listGroups(id).then(setGroups).catch(() => {});
         return listCourses(id || undefined);
       })
       .then(fresh => {
@@ -776,7 +785,7 @@ export default function WorkspacePage() {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-build-marker="workspace-grid-3col-2026-04-02">
       <header className={styles.topBar}>
         <div className={styles.topBarInner}>
           <div className={styles.topBarBrand}>
@@ -813,7 +822,17 @@ export default function WorkspacePage() {
       <main className={styles.main}>
         <div className={styles.mainInner}>
           <div className={styles.pageHeader}>
-            <h1 className={styles.pageTitle}>{ui.pageTitle}</h1>
+            <div className={styles.pageTitleGroup}>
+              <h1 className={styles.pageTitle}>{ui.pageTitle}</h1>
+              <a href="/faculty" className={styles.teachBtn}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                Teach
+              </a>
+            </div>
             <button className={styles.createNewBtn} onClick={() => setModal("create")}>
               <span className={styles.createPlus}>+</span>{ui.createNew}
             </button>

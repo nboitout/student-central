@@ -12,9 +12,16 @@ import { tx as getT } from "@/i18n/translations";
 import { createSession, getSession, setCurrentUser, getSessionQuestion, patchSessionAnswer, patchSessionExplanation, patchSessionChat, completeSession, updateCourse, tutorProbe, tutorReply, type MCQOption, type MCQQuestion, type ReasoningSignal, type SessionQuestion, type StoredSession, type TutorMessage } from "@/lib/api";
 
 /* ─── Constants ──────────────────────────────────────────── */
-const MAX_QUESTIONS = 5;
-const MAX_TURNS     = 10;
-const LETTERS       = ["A", "B", "C", "D"];
+const MAX_QUESTIONS      = 5;
+const MAX_TURNS          = 10;
+const LETTERS            = ["A", "B", "C", "D"];
+/* Voice conv silence detection & barge-in — tune these values if needed */
+const SILENCE_THRESHOLD  = 0.02; /* Float RMS (0–1) below which audio counts as silent   */
+const SILENCE_DURATION   = 2000; /* ms of continuous silence before auto-stop             */
+const SILENCE_GRACE      = 600;  /* ms before detection activates (lets AudioCtx warm up) */
+const BARGE_IN_THRESHOLD = 0.05; /* RMS level that triggers barge-in during TTS           */
+const BARGE_IN_GRACE     = 500;  /* ms after TTS starts before barge-in monitoring begins */
+const BARGE_IN_HOLD      = 300;  /* ms of sustained speech required to confirm barge-in   */
 /* ─── Types ──────────────────────────────────────────────── */
 type Mode   = "assessment" | "tutoring";
 type Screen = "loading" | "waiting" | "question" | "review" | "summary" | "chat";
@@ -59,6 +66,17 @@ function MCQContent() {
   const courseTitle = decodeURIComponent(params.get("title") ?? "Course");
   const pdfUrl      = decodeURIComponent(params.get("pdf")   ?? "");
   const tutorLang      = params.get("lang")         ?? "en";
+  /* Map short tutorLang code → full BCP-47 for Azure STT */
+  const STT_LANG_MAP: Record<string, string> = {
+    en: "en-US", fr: "fr-FR", de: "de-DE", es: "es-ES",
+    it: "it-IT", nl: "nl-NL", pt: "pt-PT", pl: "pl-PL",
+    ru: "ru-RU", uk: "uk-UA", hu: "hu-HU", hr: "hr-HR",
+    bg: "bg-BG", cs: "cs-CZ", sr: "sr-RS", tr: "tr-TR",
+    sv: "sv-SE", da: "da-DK", fi: "fi-FI", ro: "ro-RO",
+    el: "el-GR",
+  };
+  /* Use UI lang (always current) — tutorLang URL param may not be set */
+  const sttLang = STT_LANG_MAP[lang] ?? STT_LANG_MAP[tutorLang] ?? "en-US";
   const resumeSessionId = params.get("resumeSession") ?? null;
 
   /* ── Mode toggle ── */
@@ -97,6 +115,13 @@ function MCQContent() {
   const audioChunksRef   = useRef<Blob[]>([]);
   const [aiTyping,     setAiTyping]     = useState(false);
 
+  /* ── Voice conversation mode ─────────────────────────────── */
+  type ConvState = "idle" | "listening" | "transcribing" | "thinking" | "speaking";
+  const [convState,    setConvState]    = useState<ConvState>("idle");
+  const convActiveRef  = useRef(false);                        /* loop guard         */
+  const convAudioRef   = useRef<{ pause: () => void } | null>(null); /* stop fn for current TTS */
+  const chatMsgsRef    = useRef<TutorMessage[]>([]);           /* ref mirror — async loop reads fresh values */
+  const chatTurnsRef   = useRef(0);
 
   const [chatError,    setChatError]    = useState<string | null>(null);
   /* Which question the debrief is currently focused on */
@@ -241,12 +266,17 @@ function MCQContent() {
   const bodyRef    = useRef<HTMLDivElement>(null);
   const dragging   = useRef(false);
   const dividerRef    = useRef<HTMLDivElement>(null);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const chatBottomRef   = useRef<HTMLDivElement>(null);
+  const chatRestoredRef = useRef(false);  /* true while restoring history — suppresses probe */
 
   /* Auto-scroll chat to bottom whenever messages change */
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMsgs, aiTyping]);
+
+  /* Keep ref mirrors in sync so the async voice-conv loop always reads fresh state */
+  useEffect(() => { chatMsgsRef.current  = chatMsgs;  }, [chatMsgs]);
+  useEffect(() => { chatTurnsRef.current = chatTurns; }, [chatTurns]);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault(); dragging.current = true;
@@ -293,7 +323,7 @@ function MCQContent() {
     return opts as MCQOption[];
   };
 
-  const toMCQQuestion = (sq: SessionQuestion): MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string } => ({
+  const toMCQQuestion = (sq: SessionQuestion): MCQQuestion & { mcqId?: string; slideImageUrl?: string; courseId?: string; hasVisual?: boolean } => ({
     question:     sq.question,
     options:      normaliseOptions(sq.options),
     correctIndex: sq.correctIndex ?? sq.correct_index ?? 0,
@@ -302,6 +332,7 @@ function MCQContent() {
     slideImageUrl: sq.slideImageUrl ?? sq.slide_image_url ?? undefined,
     courseId:     sq.courseId ?? sq.course_id ?? courseId,
     pageNumber:   sq.pageNumber ?? sq.page_number ?? undefined,
+    hasVisual:    sq.hasVisual ?? sq.has_visual ?? false,
   });
 
   /* ── Load a question from the session into state ── */
@@ -327,7 +358,7 @@ function MCQContent() {
           }
         : null;
       /* Rebuild a minimal MCQQuestion from stored data */
-      const question: MCQQuestion & { mcqId?: string; pageNumber?: number; courseId?: string } = {
+      const question: MCQQuestion & { mcqId?: string; pageNumber?: number; courseId?: string; hasVisual?: boolean } = {
         question:     sq.question,
         options:      normaliseOptions(sq.options),
         correctIndex: corrIdx,
@@ -335,6 +366,7 @@ function MCQContent() {
         courseId:     courseId,
         mcqId:        sq.mcqId,
         pageNumber:   sq.pageNumber ?? sq.page_number ?? undefined,
+        hasVisual:    sq.hasVisual ?? sq.has_visual ?? false,
       };
       return {
         question,
@@ -349,21 +381,52 @@ function MCQContent() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      /* Prefer WAV (uncompressed, unambiguous for Azure STT).
+         Fall back to webm if WAV is not supported by this browser. */
+      const mimeType = MediaRecorder.isTypeSupported("audio/wav") ? "audio/wav" : "audio/webm";
+      console.log("[STT] using mimeType:", mimeType);
+      const recorder = new MediaRecorder(stream, { mimeType });
       audioChunksRef.current = [];
       recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       recorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         setVoiceState("transcribing");
-        /* ── Placeholder: Web Speech API transcription ──────────
-           Replace this block with Azure STT call when ready.
-           Azure STT: POST audioBlob to /api/stt → returns { text }  */
-        setTimeout(() => {
-          /* Simulate transcription delay — swap for real API call */
-          setVoiceState("ready");
-        }, 800);
+        try {
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          console.log("[STT] blob type:", audioBlob.type);
+          console.log("[STT] blob size:", audioBlob.size);
+
+          const formData = new FormData();
+          const ext = mimeType === "audio/wav" ? "recording.wav" : "recording.webm";
+          formData.append("file", audioBlob, ext);
+          const res = await fetch(
+            `https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io/api/stt?language=${sttLang}`,
+            { method: "POST", body: formData }
+          );
+          console.log("[STT] response status:", res.status);
+          /* Read as text first — backend may return plain text on 500 */
+          const raw = await res.text();
+          console.log("[STT] response raw:", raw);
+          if (!res.ok) {
+            setChatError("Voice transcription failed — please type your answer.");
+            setTimeout(() => setChatError(null), 4000);
+            setVoiceState("idle");
+            return;
+          }
+          const json = JSON.parse(raw);
+          const text: string = json.text ?? "";
+          if (text.trim()) {
+            setChatInput(text.trim());
+            setVoiceState("ready");
+          } else {
+            setVoiceState("idle");
+          }
+        } catch (err) {
+          console.error("[STT] error:", err);
+          setVoiceState("idle");
+        }
       };
-      recorder.start();
+      recorder.start(250);  /* timeslice: chunks accumulate during recording */
       mediaRecorderRef.current = recorder;
       setVoiceState("recording");
     } catch {
@@ -384,11 +447,323 @@ function MCQContent() {
     setVoiceState("idle");
   };
 
+  /* ═══════════════════════════════════════════════════════════
+     VOICE CONVERSATION MODE
+  ═══════════════════════════════════════════════════════════ */
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ||
+    "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+
+  /** Record audio — auto-stops after SILENCE_DURATION ms of quiet post-speech.
+   *  Fresh AudioContext per call so there is no shared state between turns.       */
+  const recordAudioForConv = (): Promise<Blob | null> =>
+    new Promise(async resolve => {
+      try {
+        const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported("audio/wav") ? "audio/wav" : "audio/webm";
+        const recorder = new MediaRecorder(stream, { mimeType });
+        audioChunksRef.current = [];
+
+        /* Fresh AudioContext — close after recording to avoid node accumulation */
+        const audioCtx = new AudioContext();
+        await audioCtx.resume();
+
+        const source     = audioCtx.createMediaStreamSource(stream);
+        const analyser   = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        const gain       = audioCtx.createGain();
+        gain.gain.value  = 0;   /* silent — keeps graph active without playing mic back */
+        source.connect(analyser);
+        analyser.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const pcmData = new Float32Array(analyser.fftSize);
+        const getRMS  = (): number => {
+          analyser.getFloatTimeDomainData(pcmData);
+          let sum = 0;
+          for (let i = 0; i < pcmData.length; i++) sum += pcmData[i] * pcmData[i];
+          return Math.sqrt(sum / pcmData.length);
+        };
+
+        let silenceStart:  number | null = null;
+        let speechDetected = false;
+        let intervalId:    ReturnType<typeof setInterval> | null = null;
+
+        const cleanup = () => {
+          if (intervalId !== null) { clearInterval(intervalId); intervalId = null; }
+          source.disconnect();
+          gain.disconnect();
+          audioCtx.close().catch(() => {});
+        };
+
+        recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+        recorder.onstop = () => {
+          cleanup();
+          stream.getTracks().forEach(t => t.stop());
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          audioChunksRef.current = [];
+          resolve(blob.size > 0 ? blob : null);
+        };
+        recorder.start(250);
+        mediaRecorderRef.current = recorder;
+
+        /* Let AudioContext and mic hardware initialise before sampling */
+        await new Promise<void>(r => setTimeout(r, SILENCE_GRACE));
+        if (!convActiveRef.current) { recorder.stop(); return; }
+
+        intervalId = setInterval(() => {
+          if (!convActiveRef.current) {
+            clearInterval(intervalId!); intervalId = null;
+            recorder.stop(); return;
+          }
+          const rms = getRMS();
+          if (rms > SILENCE_THRESHOLD) {
+            speechDetected = true;
+            silenceStart   = null;
+          } else if (speechDetected) {
+            if (silenceStart === null) silenceStart = Date.now();
+            else if (Date.now() - silenceStart >= SILENCE_DURATION) {
+              clearInterval(intervalId!); intervalId = null;
+              recorder.stop();
+            }
+          }
+        }, 50);
+
+      } catch { resolve(null); }
+    });
+
+  /** Stop the conv recorder — called by the ■ button during LISTENING state. */
+  const stopConvRecording = () => {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+  };
+
+  /** STT helper shared by voice conv loop. Returns trimmed text or "" on failure. */
+  const callSTT = async (audioBlob: Blob): Promise<string> => {
+    try {
+      const ext  = audioBlob.type.includes("wav") ? "recording.wav" : "recording.webm";
+      const form = new FormData();
+      form.append("file", audioBlob, ext);
+      const res = await fetch(`${API_URL}/api/stt?language=${sttLang}`, { method: "POST", body: form });
+      const raw = await res.text();
+      if (!res.ok) return "";
+      return (JSON.parse(raw).text ?? "").trim();
+    } catch { return ""; }
+  };
+
+  /**
+   * TTS playback via AudioBufferSourceNode — avoids blob URL range request errors.
+   * Barge-in monitoring via a separate fresh AudioContext + mic stream.
+   * On barge-in: audio stops immediately, loop returns to LISTENING.
+   */
+  const playTTS = (text: string): Promise<boolean> =>
+    new Promise(async resolve => {
+      try {
+        const res = await fetch(`${API_URL}/api/tutor/tts`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ text, language: lang }),
+        });
+        if (!res.ok) { resolve(false); return; }
+
+        const arrayBuffer = await res.arrayBuffer();
+
+        /* Dedicated AudioContext for TTS playback — closed when done */
+        const playCtx = new AudioContext();
+        await playCtx.resume();
+
+        let audioBuffer: AudioBuffer;
+        try {
+          audioBuffer = await playCtx.decodeAudioData(arrayBuffer);
+        } catch {
+          playCtx.close().catch(() => {});
+          resolve(false); return;
+        }
+
+        const bufSource = playCtx.createBufferSource();
+        bufSource.buffer = audioBuffer;
+        bufSource.connect(playCtx.destination);
+
+        let bargeInStream:   MediaStream | null = null;
+        let bargeInCtx:      AudioContext | null = null;
+        let bargeInInterval: ReturnType<typeof setInterval> | null = null;
+        let settled = false;
+
+        const done = (ok: boolean) => {
+          if (settled) return;
+          settled = true;
+          if (bargeInInterval) { clearInterval(bargeInInterval); bargeInInterval = null; }
+          if (bargeInStream)   { bargeInStream.getTracks().forEach(t => t.stop()); bargeInStream = null; }
+          if (bargeInCtx)      { bargeInCtx.close().catch(() => {}); bargeInCtx = null; }
+          try { bufSource.stop(); } catch { /* already ended */ }
+          playCtx.close().catch(() => {});
+          convAudioRef.current = null;
+          resolve(ok);
+        };
+
+        convAudioRef.current = { pause: () => done(true) };
+        bufSource.onended = () => done(true);
+        bufSource.start();
+
+        /* Barge-in: separate AudioContext + mic stream after BARGE_IN_GRACE ms.
+           Separate context avoids interference with the playback graph.
+           Headphone users get clean detection; speaker users may need a higher
+           BARGE_IN_THRESHOLD if TTS bleed-through triggers false positives.    */
+        setTimeout(async () => {
+          if (settled) return;
+          try {
+            bargeInCtx = new AudioContext();
+            await bargeInCtx.resume();
+            bargeInStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if (settled) { done(true); return; }
+
+            const src      = bargeInCtx.createMediaStreamSource(bargeInStream);
+            const analyser = bargeInCtx.createAnalyser();
+            analyser.fftSize = 2048;
+            src.connect(analyser);
+            const pcmData = new Float32Array(analyser.fftSize);
+            let speechStart: number | null = null;
+
+            bargeInInterval = setInterval(() => {
+              if (settled) return;
+              analyser.getFloatTimeDomainData(pcmData);
+              let sum = 0;
+              for (let i = 0; i < pcmData.length; i++) sum += pcmData[i] * pcmData[i];
+              const rms = Math.sqrt(sum / pcmData.length);
+              if (rms > BARGE_IN_THRESHOLD) {
+                if (speechStart === null) speechStart = Date.now();
+                else if (Date.now() - speechStart >= BARGE_IN_HOLD) {
+                  src.disconnect();
+                  done(true); /* barge-in confirmed — loop back to LISTENING */
+                }
+              } else {
+                speechStart = null;
+              }
+            }, 50);
+          } catch { /* mic unavailable during SPEAKING — play to completion */ }
+        }, BARGE_IN_GRACE);
+
+      } catch { resolve(false); }
+    });
+
+  /**
+   * One full voice conversation turn.
+   * Recurses after TTS playback ends until stopped or MAX_TURNS reached.
+   * Reads chatMsgsRef / chatTurnsRef to avoid stale React state in the async closure.
+   */
+  const doVoiceConvTurn = async () => {
+    if (!convActiveRef.current || chatTurnsRef.current >= MAX_TURNS) {
+      stopVoiceConv(); return;
+    }
+
+    /* LISTENING */
+    setConvState("listening");
+    const audioBlob = await recordAudioForConv();
+    if (!convActiveRef.current) return;
+    if (!audioBlob) { doVoiceConvTurn(); return; }   /* empty recording → re-listen */
+
+    /* TRANSCRIBING */
+    setConvState("transcribing");
+    const text = await callSTT(audioBlob);
+    if (!convActiveRef.current) return;
+    if (!text) { doVoiceConvTurn(); return; }         /* nothing heard → re-listen */
+
+    /* Add student message (mirrors sendChat) */
+    const newTurns = chatTurnsRef.current + 1;
+    chatTurnsRef.current = newTurns;
+    setChatTurns(newTurns);
+    const updatedHistory: TutorMessage[] = [
+      ...chatMsgsRef.current,
+      { role: "student", text },
+    ];
+    chatMsgsRef.current = updatedHistory;
+    setChatMsgs(updatedHistory);
+    if (sessionIdRef.current) {
+      patchSessionChat(
+        sessionIdRef.current,
+        { role: "student", text, questionPosition: debriefQIdx + 1 },
+        courseId
+      ).catch(() => {});
+    }
+    if (newTurns >= MAX_TURNS) { stopVoiceConv(); return; }
+
+    /* THINKING */
+    setConvState("thinking");
+    const focusR = results[debriefQIdx];
+    let aiMessage = "";
+    try {
+      const { message } = await tutorReply({
+        courseId,
+        question:      focusR.question.question,
+        options:       focusR.question.options.map(o => o.text),
+        correctIndex:  focusR.question.correctIndex,
+        selectedIndex: focusR.selected,
+        isCorrect:     focusR.selected === focusR.question.correctIndex,
+        explanation:   focusR.question.explanation,
+        hasVisual:     (focusR.question as any).hasVisual ?? false,
+        language:      lang,
+        history:       updatedHistory,
+      });
+      aiMessage = message;
+      const withAI: TutorMessage[] = [...updatedHistory, { role: "ai", text: message }];
+      chatMsgsRef.current = withAI;
+      setChatMsgs(withAI);
+      if (sessionIdRef.current) {
+        patchSessionChat(
+          sessionIdRef.current,
+          { role: "ai", text: message, questionPosition: debriefQIdx + 1 },
+          courseId
+        ).catch(() => {});
+      }
+    } catch {
+      setChatError("Voice reply failed — switching back to text.");
+      setTimeout(() => setChatError(null), 4000);
+      stopVoiceConv(); return;
+    }
+    if (!convActiveRef.current) return;
+
+    /* SPEAKING */
+    setConvState("speaking");
+    const ttsOk = await playTTS(aiMessage);
+    if (!convActiveRef.current) return;
+
+    if (!ttsOk) {
+      /* TTS failed (endpoint 404 / 500 / network) — exit voice conv.
+         The AI reply is already visible in the chat thread above. */
+      setChatError("Audio playback unavailable — AI reply shown in chat.");
+      setTimeout(() => setChatError(null), 5000);
+      stopVoiceConv(); return;
+    }
+
+    /* Loop */
+    doVoiceConvTurn();
+  };
+
+  /** Enter voice conversation mode. Double-tap guard via convActiveRef.
+   *  AudioContext created HERE — synchronously inside the click handler
+   *  (user-gesture context) so it is never auto-suspended.             */
+  const startVoiceConv = () => {
+    if (convActiveRef.current) return;
+    convActiveRef.current = true;
+    doVoiceConvTurn();
+  };
+
+  /** Exit voice conversation mode — stops recording, audio, and shared AudioContext. */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stopVoiceConv = useCallback(() => {
+    convActiveRef.current = false;
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    convAudioRef.current?.pause();
+    convAudioRef.current = null;
+    setConvState("idle");
+  }, []);
+
   const startSessionWithUser = async (uid: string) => {
     setScreen("loading"); setLoadError(null);
     try {
       const { sessionId: sid, question: firstQuestion } = await createSession({
-        courseId, mode, language: tutorLang, userId: uid || "unknown",
+        courseId, mode, language: lang, userId: uid || "unknown",
       });
       setSession(sid);
       applyQuestion(firstQuestion, 0);
@@ -408,19 +783,52 @@ function MCQContent() {
         const stored = await getSession(resumeSessionId, courseId, uid);
         setSession(resumeSessionId);
         const hydrated = hydrateResults(stored);
-        setResults(hydrated);
-        /* Populate questions array so slide pane works */
-        setQuestions(hydrated.map(r => r.question));
-        /* Focus on weakest signal or Q1 */
-        const worstIdx = hydrated.findIndex(r =>
-          r.signal?.signal === "Low mastery" || r.signal?.signal === "Partial misconception"
-        );
-        setDebriefQIdx(worstIdx >= 0 ? worstIdx : 0);
-        /* Launch debrief directly */
-        setQIndex(hydrated.length - 1);
-        startDebriefWithResults(hydrated);
+
+        /* ── Restore chat history ── */
+        const history = stored.chatHistory ?? [];
+
+        /* Derive which question the learner was on last */
+        const lastPos = history.length > 0
+          ? (history[history.length - 1].questionPosition ?? 1)
+          : 1;
+        const resumeQIdx = Math.max(0, lastPos - 1);
+
+        /* Normalise role: backend may store student messages as "user" */
+        const activeMsgs = history
+          .filter(m => m.questionPosition === lastPos)
+          .map(m => ({
+            role: (m.role === "user" ? "student" : m.role) as "ai" | "student",
+            text: m.text,
+          }));
+
+        const turns = activeMsgs.filter(m => m.role === "student").length;
+
+        if (activeMsgs.length > 0) {
+          /* Set the restored flag BEFORE any state updates so runDebrief
+             cannot fire between state flushes */
+          chatRestoredRef.current = true;
+
+          /* Batch all state in one synchronous pass */
+          setResults(hydrated);
+          setQuestions(hydrated.map(r => r.question));
+          setDebriefQIdx(resumeQIdx);
+          setChatMsgs(activeMsgs);
+          setChatTurns(turns);
+          setChatInput("");
+          setChatError(null);
+          setScreen("chat");
+
+          /* Release the guard after React has flushed and rendered */
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => { chatRestoredRef.current = false; });
+          });
+        } else {
+          /* No chat history — start a fresh debrief probe */
+          setResults(hydrated);
+          setQuestions(hydrated.map(r => r.question));
+          startDebriefWithResults(hydrated);
+        }
       } catch (err) {
-        /* If resume fails, fall through to a fresh session */
         setLoadError("Could not load previous session — starting fresh.");
         setTimeout(() => setLoadError(null), 3000);
       }
@@ -430,7 +838,7 @@ function MCQContent() {
     /* ── Normal path: create new session ── */
     try {
       const { sessionId: sid, question: firstQuestion } = await createSession({
-        courseId, mode, language: tutorLang,
+        courseId, mode, language: lang,
       });
       setSession(sid);
       applyQuestion(firstQuestion, 0);
@@ -469,6 +877,9 @@ function MCQContent() {
         }
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Stop voice conv if the student navigates away mid-recording */
+  useEffect(() => { return () => { stopVoiceConv(); }; }, [stopVoiceConv]);
 
   /* ── Submit answer ── */
   const handleSubmit = () => {
@@ -566,6 +977,7 @@ function MCQContent() {
 
   /* ── Start AI debrief (shared logic) ── */
   const runDebrief = async (allResults: QuestionResult[]) => {
+    if (chatRestoredRef.current) return;  /* restored session — don't overwrite chat */
     setChatMsgs([]); setChatInput(""); setChatTurns(0); setChatError(null);
     const worstIdx = allResults.findIndex(r =>
       r.signal?.signal === "Low mastery" || r.signal?.signal === "Partial misconception"
@@ -583,7 +995,8 @@ function MCQContent() {
         selectedIndex: allResults[focusIdx].selected,
         isCorrect:     allResults[focusIdx].selected === allResults[focusIdx].question.correctIndex,
         explanation:   allResults[focusIdx].question.explanation,
-        language:      tutorLang,
+        hasVisual:     (allResults[focusIdx].question as any).hasVisual ?? false,
+        language:      lang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
       if (sessionIdRef.current) {
@@ -633,7 +1046,8 @@ function MCQContent() {
         selectedIndex: focusR.selected,
         isCorrect:     focusR.selected === focusR.question.correctIndex,
         explanation:   focusR.question.explanation,
-        language:      tutorLang,
+        hasVisual:     (focusR.question as any).hasVisual ?? false,
+        language:      lang,
         history:       updatedHistory,
       });
       setChatMsgs(prev => [...prev, { role: "ai", text: message }]);
@@ -651,6 +1065,7 @@ function MCQContent() {
   /* ── Switch debrief question ── */
   const switchDebriefQ = async (idx: number) => {
     if (idx === debriefQIdx) return;
+    if (chatRestoredRef.current) return;  /* don't fire probe while restoring */
     setDebriefQIdx(idx);
     setChatMsgs([]); setChatInput(""); setChatTurns(0);
     setAiTyping(true);
@@ -664,7 +1079,8 @@ function MCQContent() {
         selectedIndex: r.selected,
         isCorrect:     r.selected === r.question.correctIndex,
         explanation:   r.question.explanation,
-        language:      tutorLang,
+        hasVisual:     (r.question as any).hasVisual ?? false,
+        language:      lang,
       });
       setChatMsgs([{ role: "ai", text: message }]);
       if (sessionIdRef.current) {
@@ -975,7 +1391,8 @@ function MCQContent() {
                   selectedIndex: r.selected,
                   isCorrect:     r.selected === r.question.correctIndex,
                   explanation:   r.question.explanation,
-                  language:      tutorLang,
+                  hasVisual:     (r.question as any).hasVisual ?? false,
+                  language:      lang,
                 })
                   .then(({ message }) => {
                     setChatMsgs([{ role: "ai", text: message }]);
@@ -1137,7 +1554,104 @@ function MCQContent() {
             {chatTurns < MAX_TURNS && (
               <div className={styles.chatInputWrap}>
 
-                {/* ── Recording state ── */}
+                {/* ══ VOICE CONVERSATION OVERLAY (all 4 active states) ══
+                    Sits above the dimmed input box — textarea stays visible for context. */}
+                {convState !== "idle" && (
+                  <>
+                    <div className={styles.voiceConvOverlay}>
+                      <div className={styles.voiceConvIndicator}>
+
+                        {convState === "listening" && (
+                          <>
+                            <div className={styles.voiceWaveform}>
+                              {[...Array(8)].map((_, i) => (
+                                <div key={i} className={styles.voiceBar}
+                                     style={{ animationDelay: `${i * 0.07}s` }} />
+                              ))}
+                            </div>
+                            <span className={styles.voiceConvLabel}>Listening…</span>
+                            <button className={styles.voiceConvStopBtn}
+                                    onClick={stopConvRecording}
+                                    aria-label="Stop speaking">
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="white">
+                                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                              </svg>
+                            </button>
+                          </>
+                        )}
+
+                        {(convState === "transcribing" || convState === "thinking") && (
+                          <>
+                            <div className={styles.voiceSpinner} />
+                            <span className={styles.voiceConvLabel}>
+                              {convState === "transcribing" ? "Transcribing…" : "Thinking…"}
+                            </span>
+                          </>
+                        )}
+
+                        {convState === "speaking" && (
+                          <>
+                            <div className={styles.voiceWaveform}>
+                              {[...Array(8)].map((_, i) => (
+                                <div key={i}
+                                     className={`${styles.voiceBar} ${styles.voiceBarSpeaking}`}
+                                     style={{ animationDelay: `${i * 0.07}s` }} />
+                              ))}
+                            </div>
+                            <span className={styles.voiceConvLabel}>AI Tutor speaking…</span>
+                          </>
+                        )}
+                      </div>
+
+                      <button className={styles.voiceConvExitBtn}
+                              onClick={stopVoiceConv}
+                              aria-label="Exit voice conversation">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        Exit
+                      </button>
+                    </div>
+
+                    {/* Dimmed input box — disabled but visible for spatial context */}
+                    <div className={styles.chatInputBox} style={{ opacity: 0.35, pointerEvents: "none" }}>
+                      <textarea
+                        className={styles.chatInput}
+                        placeholder="Reply to the AI tutor…"
+                        rows={1}
+                        disabled
+                      />
+                      <div className={styles.chatBtnGroup}>
+                        <button className={styles.voiceMicBtn} disabled aria-hidden="true">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+                            <path d="M19 10a7 7 0 0 1-14 0"/>
+                            <line x1="12" y1="19" x2="12" y2="22"/>
+                          </svg>
+                        </button>
+                        <button className={styles.voiceConvBtn} disabled aria-hidden="true">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <line x1="2"  y1="12" x2="2"  y2="12" strokeWidth="3"/>
+                            <line x1="6"  y1="8"  x2="6"  y2="16"/>
+                            <line x1="10" y1="5"  x2="10" y2="19"/>
+                            <line x1="14" y1="8"  x2="14" y2="16"/>
+                            <line x1="18" y1="10" x2="18" y2="14"/>
+                            <line x1="22" y1="12" x2="22" y2="12" strokeWidth="3"/>
+                          </svg>
+                        </button>
+                        <button className={styles.chatSendBtn} disabled aria-hidden="true">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ── Dictate: recording ── */}
                 {voiceState === "recording" && (
                   <div className={styles.voiceRecording}>
                     <div className={styles.voiceWaveform}>
@@ -1152,7 +1666,7 @@ function MCQContent() {
                   </div>
                 )}
 
-                {/* ── Transcribing state ── */}
+                {/* ── Dictate: transcribing ── */}
                 {voiceState === "transcribing" && (
                   <div className={styles.voiceTranscribing}>
                     <div className={styles.voiceSpinner} />
@@ -1160,8 +1674,13 @@ function MCQContent() {
                   </div>
                 )}
 
-                {/* ── Idle / ready: normal input box ── */}
-                {(voiceState === "idle" || voiceState === "ready") && (
+                {/* ── Normal input (idle / ready) ─────────────────────────
+                    Hidden while voice conv overlay is active.
+                    Three sub-states following ChatGPT input bar pattern:
+                      ready     → clear button + send
+                      idle+text → mic + send  (waveform replaced by send)
+                      idle+empty → mic + waveform + send(disabled)           */}
+                {convState === "idle" && (voiceState === "idle" || voiceState === "ready") && (
                   <div className={styles.chatInputBox}>
                     <textarea
                       className={styles.chatInput}
@@ -1183,36 +1702,90 @@ function MCQContent() {
                     />
                     <div className={styles.chatBtnGroup}>
                       {voiceState === "ready" ? (
-                        <button className={styles.voiceClearBtn} onClick={cancelVoice} aria-label="Clear transcript" title="Clear and re-record">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
+                        /* Transcript ready: clear + send */
+                        <>
+                          <button className={styles.voiceClearBtn} onClick={cancelVoice}
+                                  aria-label="Clear transcript" title="Clear and re-record">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                              <line x1="18" y1="6" x2="6" y2="18"/>
+                              <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                          <button
+                            className={styles.chatSendBtn}
+                            onClick={() => { setVoiceState("idle"); sendChat(); }}
+                            disabled={!chatInput.trim() || aiTyping}
+                            aria-label="Send"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="22" y1="2" x2="11" y2="13"/>
+                              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                          </button>
+                        </>
+                      ) : chatInput.trim() ? (
+                        /* Has text: mic + send. Waveform gone — ChatGPT pattern. */
+                        <>
+                          <button className={styles.voiceMicBtn} onClick={startRecording}
+                                  aria-label="Dictate" title="Dictate your answer">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+                              <path d="M19 10a7 7 0 0 1-14 0"/>
+                              <line x1="12" y1="19" x2="12" y2="22"/>
+                            </svg>
+                          </button>
+                          <button
+                            className={styles.chatSendBtn}
+                            onClick={() => { setVoiceState("idle"); sendChat(); }}
+                            disabled={aiTyping}
+                            aria-label="Send"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="22" y1="2" x2="11" y2="13"/>
+                              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                          </button>
+                        </>
                       ) : (
-                        <button className={styles.voiceMicBtn} onClick={startRecording} aria-label="Speak your answer" title="Speak your answer">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
-                            <path d="M19 10a7 7 0 0 1-14 0"/>
-                            <line x1="12" y1="19" x2="12" y2="22"/>
-                          </svg>
-                        </button>
+                        /* Empty field: mic + waveform. No send — ChatGPT pattern. */
+                        <>
+                          <button className={styles.voiceMicBtn} onClick={startRecording}
+                                  aria-label="Dictate" title="Dictate your answer">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+                              <path d="M19 10a7 7 0 0 1-14 0"/>
+                              <line x1="12" y1="19" x2="12" y2="22"/>
+                            </svg>
+                          </button>
+                          <button className={styles.voiceConvBtn} onClick={startVoiceConv}
+                                  aria-label="Voice conversation" title="Voice conversation mode">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                              <line x1="2"  y1="12" x2="2"  y2="12" strokeWidth="3"/>
+                              <line x1="6"  y1="8"  x2="6"  y2="16"/>
+                              <line x1="10" y1="5"  x2="10" y2="19"/>
+                              <line x1="14" y1="8"  x2="14" y2="16"/>
+                              <line x1="18" y1="10" x2="18" y2="14"/>
+                              <line x1="22" y1="12" x2="22" y2="12" strokeWidth="3"/>
+                            </svg>
+                          </button>
+                        </>
                       )}
-                      <button
-                        className={styles.chatSendBtn}
-                        onClick={() => { setVoiceState("idle"); sendChat(); }}
-                        disabled={!chatInput.trim() || aiTyping}
-                        aria-label="Send"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                        </svg>
-                      </button>
                     </div>
                   </div>
                 )}
 
                 <div className={styles.chatMeta}>
                   <span>{chatTurns}/{MAX_TURNS} exchanges</span>
-                  {voiceState === "ready"
-                    ? <span style={{ color: "#185FA5" }}>Edit transcript · ↵ to send</span>
+                  {convState !== "idle"
+                    ? <span style={{ color: "var(--primary)" }}>Voice conversation active</span>
+                    : voiceState === "ready"
+                    ? <span style={{ color: "var(--primary)" }}>Edit transcript · ↵ to send</span>
                     : <span>↵ to send · Shift+↵ new line</span>
                   }
                 </div>

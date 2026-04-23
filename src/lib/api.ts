@@ -16,6 +16,18 @@ const API_URL =
   "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
 
 /* ── Types ─────────────────────────────────────────────── */
+
+/* GPT-generated macro summary — present on courses with mcqStatus = "ready" */
+export interface CourseSynthesis {
+  title:        string;
+  domain:       string;
+  purpose:      string;   /* one sentence: what the document tries to do */
+  thesis:       string;   /* central claim in one sentence */
+  key_concepts: string[]; /* 5 concepts */
+  structure:    string;   /* 2-3 sentences on document organisation */
+  audience:     string;   /* e.g. "master's students in AI" */
+}
+
 export interface Course {
   id: string;
   userId: string;
@@ -36,6 +48,7 @@ export interface Course {
   exercisesTotal: number;
   exercisesDone: number;
   mcqCount?: number;           /* actual number of generated MCQs — updated after generation */
+  synthesis?: CourseSynthesis; /* available once mcqStatus = "ready" */
   createdAt: string;
   updatedAt: string;
 }
@@ -206,6 +219,7 @@ export interface TutorProbeRequest {
   selectedIndex: number;
   isCorrect:    boolean;
   explanation:  string;
+  hasVisual?:   boolean;
   language:     string;
 }
 
@@ -257,6 +271,8 @@ export interface SessionQuestion {
   slide_image_url?: string | null; /* snake_case — FastAPI default */
   courseId?:     string;
   course_id?:    string;
+  hasVisual?:    boolean;         /* camelCase — question grounded in diagram/chart */
+  has_visual?:   boolean;         /* snake_case fallback */
 }
 
 export interface SessionCreateResponse {
@@ -374,6 +390,7 @@ export async function completeSession(sessionId: string, courseId: string, userI
 export interface StoredSessionQuestion {
   position:           number;
   mcqId:              string;
+  function?:          "orient" | "understand" | "recognize" | "connect" | "evaluate";
   question:           string;
   options:            string[] | MCQOption[];
   correctIndex:       number;
@@ -393,6 +410,8 @@ export interface StoredSessionQuestion {
   evaluationConfidence?: string | null;
   facultyInsight?:    string | null;
   studentFeedback?:   string | null;
+  hasVisual?:         boolean;         /* camelCase — question grounded in diagram/chart */
+  has_visual?:        boolean;         /* snake_case fallback */
 }
 
 export interface StoredSession {
@@ -409,6 +428,12 @@ export interface StoredSession {
   completed_at?: string;
   questions:    StoredSessionQuestion[];
   summary?:     SessionSummary | null;
+  chatHistory?: {
+    role:              "ai" | "student" | "user";  /* backend may use "user" for student */
+    text:              string;
+    questionPosition:  number;
+    timestamp?:        string;
+  }[];
 }
 
 export async function listSessions(
@@ -426,4 +451,53 @@ export async function listSessions(
 export async function getSession(sessionId: string, courseId: string, userId?: string): Promise<StoredSession> {
   const uid = userId ?? await getCurrentUserId();
   return request<StoredSession>(`/api/sessions/${sessionId}?courseId=${courseId}&userId=${uid}`);
+}
+
+/* ── Groups ─────────────────────────────────────────────── */
+export type Group = {
+  id: string;
+  userId: string;
+  name: string;
+  courseIds: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listGroups(userId: string): Promise<Group[]> {
+  const data = await request<{ groups: Group[]; count: number }>(
+    `/api/groups?userId=${encodeURIComponent(userId)}`
+  );
+  return data.groups ?? [];
+}
+
+export async function createGroup(
+  name: string,
+  userId: string,
+  courseIds: string[]
+): Promise<Group> {
+  return request<Group>("/api/groups", {
+    method: "POST",
+    body: JSON.stringify({ name, userId, courseIds }),
+  });
+}
+
+export async function updateGroup(
+  id: string,
+  userId: string,
+  patch: { name?: string; courseIds?: string[] }
+): Promise<Group> {
+  return request<Group>(
+    `/api/groups/${id}?userId=${encodeURIComponent(userId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }
+  );
+}
+
+export async function deleteGroup(id: string, userId: string): Promise<void> {
+  await fetch(
+    `${API_URL}/api/groups/${id}?userId=${encodeURIComponent(userId)}`,
+    { method: "DELETE" }
+  );
 }
