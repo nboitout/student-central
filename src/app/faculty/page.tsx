@@ -151,6 +151,18 @@ function parseStudentEmails(text: string): string[] {
   return Array.from(new Set(emails));
 }
 
+function normalizeGroup(group: Partial<Group>): Group {
+  return {
+    id: group.id ?? `g${Date.now()}`,
+    name: group.name ?? "Untitled group",
+    facultyId: group.facultyId ?? "",
+    members: Array.isArray(group.members) ? group.members : [],
+    courseIds: Array.isArray(group.courseIds) ? group.courseIds : [],
+    createdAt: group.createdAt ?? new Date().toISOString(),
+    updatedAt: group.updatedAt,
+  };
+}
+
 function draftFromDoc(q: MCQDoc): EditDraft {
   return { id: q.id, question: q.question,
            options: [q.options[0].text, q.options[1].text, q.options[2].text, q.options[3].text],
@@ -625,7 +637,7 @@ export default function FacultyDashboard() {
     setGroupsLoading(true);
     fetch(`${API}/api/groups?facultyId=${facultyId}`)
       .then(r => r.json())
-      .then(d => setGroups(d.groups ?? []))
+      .then(d => setGroups((d.groups ?? []).map(normalizeGroup)))
       .catch(err => console.warn("Groups fetch failed:", err))
       .finally(() => setGroupsLoading(false));
   }, [facultyReady, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -840,9 +852,10 @@ export default function FacultyDashboard() {
     })
       .then(r => r.json())
       .then((real: Group) => {
-        setGroups(prev => prev.map(g => g.id === optimistic.id ? real : g));
-        setSelectedGroup(real);
-        setAnalyticsGroup(prev => prev?.id === optimistic.id ? real : prev);
+        const normalized = normalizeGroup(real);
+        setGroups(prev => prev.map(g => g.id === optimistic.id ? normalized : g));
+        setSelectedGroup(normalized);
+        setAnalyticsGroup(prev => prev?.id === optimistic.id ? normalized : prev);
       })
       .catch(console.warn);
   };
@@ -865,9 +878,9 @@ export default function FacultyDashboard() {
 
   const handleShareGroup = () => {
     if (!selectedGroup || !selectedCourse) return;
-    if (selectedGroup.courseIds.includes(selectedCourse.id)) return;
+    if ((selectedGroup.courseIds ?? []).includes(selectedCourse.id)) return;
 
-    const updated = { ...selectedGroup, courseIds: [...selectedGroup.courseIds, selectedCourse.id] };
+    const updated = { ...selectedGroup, courseIds: [...(selectedGroup.courseIds ?? []), selectedCourse.id] };
     setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
     setSelectedGroup(updated);
     setAnalyticsGroup(prev => prev?.id === selectedGroup.id ? updated : prev);
@@ -898,7 +911,7 @@ export default function FacultyDashboard() {
     if (!selectedGroup) return;
     const updated = {
       ...selectedGroup,
-      members: selectedGroup.members.filter(member => member !== email),
+      members: (selectedGroup.members ?? []).filter(member => member !== email),
     };
     setSelectedGroup(updated);
     setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
@@ -983,13 +996,13 @@ export default function FacultyDashboard() {
   const groupedMcqs = FN_ORDER.map(fn => ({ fn, qs: mcqBank.filter(q => q.function === fn) }));
 
   const analyticsStudents = analyticsView === "group" && analyticsGroup
-    ? MOCK_STUDENTS.filter(s => analyticsGroup.members.includes(s.email.toLowerCase()) || analyticsGroup.members.includes(s.email))
+    ? MOCK_STUDENTS.filter(s => (analyticsGroup.members ?? []).includes(s.email.toLowerCase()) || (analyticsGroup.members ?? []).includes(s.email))
     : MOCK_STUDENTS;
   const activeStudents = analyticsStudents.filter(s => s.status === "active");
   const classAvgScore  = activeStudents.length
     ? Math.round(activeStudents.reduce((s, st) => s + st.avgScore, 0) / activeStudents.length) : 0;
   const analyticsStudentCount = analyticsView === "group" && analyticsGroup
-    ? (groupAnalytics?.memberCount ?? analyticsGroup.members.length)
+    ? (groupAnalytics?.memberCount ?? (analyticsGroup.members ?? []).length)
     : analyticsStudents.length;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1286,9 +1299,9 @@ export default function FacultyDashboard() {
                     <span className={styles.groupInitial}>{g.name[0]?.toUpperCase() ?? "G"}</span>
                     <div className={styles.groupMeta}>
                       <span className={styles.groupName}>{g.name}</span>
-                      <span className={styles.groupCount}>{g.members.length} students</span>
+                      <span className={styles.groupCount}>{(g.members ?? []).length} students</span>
                     </div>
-                    {g.courseIds.includes(selectedCourse?.id ?? "") && (
+                    {(g.courseIds ?? []).includes(selectedCourse?.id ?? "") && (
                       <span className={styles.groupSharedChip}>Shared</span>
                     )}
                   </div>
@@ -1344,7 +1357,7 @@ export default function FacultyDashboard() {
                 >
                   <option value="">Select a group...</option>
                   {groups.map(g => (
-                    <option key={g.id} value={g.id}>{g.name} ({g.members.length})</option>
+                    <option key={g.id} value={g.id}>{g.name} ({(g.members ?? []).length})</option>
                   ))}
                 </select>
               )}
@@ -1580,8 +1593,8 @@ export default function FacultyDashboard() {
                   onBlur={persistRenameGroup}
                 />
                 <span className={styles.settingHint}>
-                  {selectedGroup.members.length} students
-                  {selectedGroup.courseIds.length > 0 && ` - shared with ${selectedGroup.courseIds.length} course(s)`}
+                  {(selectedGroup.members ?? []).length} students
+                  {(selectedGroup.courseIds ?? []).length > 0 && ` - shared with ${(selectedGroup.courseIds ?? []).length} course(s)`}
                 </span>
               </div>
 
@@ -1591,17 +1604,17 @@ export default function FacultyDashboard() {
                     <div className={styles.settingLabelGroup}>
                       <span className={styles.settingLabel}>Share with &quot;{selectedCourse.title}&quot;</span>
                       <span className={styles.settingHint}>
-                        {selectedGroup.courseIds.includes(selectedCourse.id)
+                        {(selectedGroup.courseIds ?? []).includes(selectedCourse.id)
                           ? "Already shared - students have access"
                           : "Adds all members to this course"}
                       </span>
                     </div>
                     <button
                       className={styles.saveBtn}
-                      disabled={selectedGroup.courseIds.includes(selectedCourse.id)}
+                      disabled={(selectedGroup.courseIds ?? []).includes(selectedCourse.id)}
                       onClick={handleShareGroup}
                     >
-                      {selectedGroup.courseIds.includes(selectedCourse.id) ? "Shared" : "Share"}
+                      {(selectedGroup.courseIds ?? []).includes(selectedCourse.id) ? "Shared" : "Share"}
                     </button>
                   </div>
                 </div>
@@ -1609,7 +1622,7 @@ export default function FacultyDashboard() {
 
               <div className={styles.editorSection}>
                 <label className={styles.fieldLabel}>Members</label>
-                {selectedGroup.members.map(email => (
+                {(selectedGroup.members ?? []).map(email => (
                   <div key={email} className={styles.memberRow}>
                     <span className={styles.avatar}>{email[0].toUpperCase()}</span>
                     <span className={styles.memberEmail}>{email}</span>
