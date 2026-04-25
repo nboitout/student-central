@@ -932,7 +932,6 @@ export default function WorkspacePage() {
                 form.submit();
               }}
             >Sign out</button>
-            <a href="/" className={styles.backLink}>{ui.backToSite}</a>
           </div>
         </div>
       </header>
