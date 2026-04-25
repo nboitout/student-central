@@ -573,7 +573,7 @@ export default function FacultyDashboard() {
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
   const [slideExpanded, setSlideExpanded]   = useState(true);
   const [facultyId, setFacultyId]           = useState("nicolas");
-  const [middleWidth, setMiddleWidth]       = useState(520);
+  const [middleWidth, setMiddleWidth]       = useState(380);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useState<boolean>(() => {
@@ -611,7 +611,7 @@ export default function FacultyDashboard() {
     const startWidth = middleWidth;
     const leftWidth = leftCollapsed ? 48 : 210;
     const minWidth = 280;
-    const minRightWidth = 340;
+    const minRightWidth = 460;
 
     const onMove = (event: MouseEvent) => {
       const maxWidth = Math.max(minWidth, window.innerWidth - leftWidth - minRightWidth);
@@ -1089,7 +1089,11 @@ export default function FacultyDashboard() {
         className={styles.paneMiddle}
         style={playlistMode
           ? { flex: "1", maxWidth: "none", borderRight: "none" }
-          : { width: middleWidth, flexBasis: middleWidth }
+          : {
+              width: middleWidth,
+              flexBasis: middleWidth,
+              maxWidth: `calc(100vw - ${leftCollapsed ? 48 : 210}px - 460px)`,
+            }
         }
       >
         <div className={styles.paneHd}>

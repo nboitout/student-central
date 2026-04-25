@@ -47,7 +47,7 @@
 
 .paneRight {
   flex: 1;
-  min-width: 0;
+  min-width: 460px;
   border-right: none;
 }
 
