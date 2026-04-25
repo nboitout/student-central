@@ -1828,3 +1828,90 @@
   border-top: 1px solid var(--outline-variant);
   background: var(--surface-lowest);
 }
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(26, 28, 46, 0.28);
+}
+
+.confirmDialog {
+  width: min(420px, 100%);
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  box-shadow: var(--shadow-float);
+  padding: 22px 24px 20px;
+}
+
+.confirmEyebrow {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  margin-bottom: 8px;
+}
+
+.confirmTitle {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  margin: 0 0 8px;
+}
+
+.confirmBody {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--on-surface-variant);
+  margin: 0 0 18px;
+}
+
+.confirmCheckRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--on-surface);
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.confirmCheckbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.deleteConfirmBtn {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  background: var(--error);
+  color: var(--on-error);
+  border: none;
+  cursor: pointer;
+}
+
+.deleteConfirmBtn:hover {
+  opacity: 0.88;
+}

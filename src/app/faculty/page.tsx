@@ -536,6 +536,11 @@ export default function FacultyDashboard() {
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
   const [slideExpanded, setSlideExpanded]   = useState(true);
   const [facultyId, setFacultyId]           = useState("nicolas");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [skipDeleteConfirm, setSkipDeleteConfirm] = useState<boolean>(() => {
+    try { return localStorage.getItem("skipQuestionDeleteConfirm") === "true"; } catch { return false; }
+  });
+  const [dontShowDeleteConfirm, setDontShowDeleteConfirm] = useState(false);
   const [showIntro, setShowIntro] = useState<boolean>(() => {
     try { return localStorage.getItem("teachIntroSeen") !== "true"; } catch { return true; }
   });
@@ -677,13 +682,32 @@ export default function FacultyDashboard() {
   };
 
   const deleteQuestion = (id: string) => {
-    const question = mcqBank.find(q => q.id === id);
-    const label = question?.question ? `"${question.question}"` : "this question";
-    const confirmed = window.confirm(`Delete ${label}? This cannot be undone.`);
-    if (!confirmed) return;
-
     setMcqBank(prev => prev.filter(q => q.id !== id));
     setRightPanel("empty"); setEditDraft(null);
+  };
+
+  const requestDeleteQuestion = (id: string) => {
+    if (skipDeleteConfirm) {
+      deleteQuestion(id);
+      return;
+    }
+    setDontShowDeleteConfirm(false);
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeleteQuestion = () => {
+    if (!deleteConfirmId) return;
+    if (dontShowDeleteConfirm) {
+      try { localStorage.setItem("skipQuestionDeleteConfirm", "true"); } catch {}
+      setSkipDeleteConfirm(true);
+    }
+    deleteQuestion(deleteConfirmId);
+    setDeleteConfirmId(null);
+  };
+
+  const cancelDeleteQuestion = () => {
+    setDeleteConfirmId(null);
+    setDontShowDeleteConfirm(false);
   };
 
   /* ── Share tab handlers ── */
@@ -937,7 +961,7 @@ export default function FacultyDashboard() {
                         </div>
                         <div className={styles.qActions}>
                           <button className={styles.editBtn} onClick={() => openEdit(q)}>Edit</button>
-                          <button className={styles.delBtnSm} onClick={() => deleteQuestion(q.id)}>Del</button>
+                          <button className={styles.delBtnSm} onClick={() => requestDeleteQuestion(q.id)}>Del</button>
                         </div>
                       </div>
                     ))}
@@ -1193,7 +1217,7 @@ export default function FacultyDashboard() {
             <QuestionEditor draft={editDraft} onChange={setEditDraft}
               onSave={saveQuestion} onCancel={cancelEdit}
               courseTitle={selectedCourse?.title ?? ""}
-              onDelete={rightPanel==="edit-q" && editDraft.id ? ()=>deleteQuestion(editDraft.id!) : undefined} />
+              onDelete={rightPanel==="edit-q" && editDraft.id ? ()=>requestDeleteQuestion(editDraft.id!) : undefined} />
           </>
         )}
 
@@ -1283,6 +1307,31 @@ export default function FacultyDashboard() {
           </>
         )}
       </section>
+
+      {deleteConfirmId && (
+        <div className={styles.confirmOverlay} onClick={cancelDeleteQuestion}>
+          <div className={styles.confirmDialog} onClick={e => e.stopPropagation()}>
+            <div className={styles.confirmEyebrow}>Delete question</div>
+            <h2 className={styles.confirmTitle}>Delete this question?</h2>
+            <p className={styles.confirmBody}>
+              This removes the question from the course bank immediately.
+            </p>
+            <label className={styles.confirmCheckRow}>
+              <input
+                className={styles.confirmCheckbox}
+                type="checkbox"
+                checked={dontShowDeleteConfirm}
+                onChange={e => setDontShowDeleteConfirm(e.target.checked)}
+              />
+              <span>Don&apos;t show me this again</span>
+            </label>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelBtn} onClick={cancelDeleteQuestion}>Cancel</button>
+              <button className={styles.deleteConfirmBtn} onClick={confirmDeleteQuestion}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
     }
     </div>
