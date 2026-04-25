@@ -660,6 +660,17 @@ export default function WorkspacePage() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [groupDraftName, setGroupDraftName] = useState("");
   const [openGroupMenuId, setOpenGroupMenuId] = useState<string | null>(null);
+  const [teachCalloutDismissed, setTeachCalloutDismissed] = useState<boolean>(() => {
+    try { return localStorage.getItem("teachCalloutDismissed") === "true"; } catch { return false; }
+  });
+  const [teachCalloutDontShow, setTeachCalloutDontShow] = useState(false);
+
+  const dismissTeachCallout = () => {
+    if (teachCalloutDontShow) {
+      try { localStorage.setItem("teachCalloutDismissed", "true"); } catch {}
+    }
+    setTeachCalloutDismissed(true);
+  };
 
   const applyCourses = useCallback((fresh: Course[], resolvedUserId: string) => {
     setCourses(fresh);
@@ -929,19 +940,61 @@ export default function WorkspacePage() {
           <div className={styles.pageHeader}>
             <div className={styles.pageTitleGroup}>
               <h1 className={styles.pageTitle}>{ui.pageTitle}</h1>
-              <a href="/faculty" className={styles.teachBtn}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                </svg>
-                Teach
-              </a>
+              {courses.length > 0 ? (
+                <a href="/faculty" className={styles.teachBtn}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                  Teach
+                </a>
+              ) : (
+                <div className={styles.teachBtnWrap}>
+                  <span
+                    className={styles.teachBtnDisabled}
+                    aria-disabled="true"
+                    title="Create a course first to unlock Teach mode"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
+                    Teach
+                  </span>
+                  <div className={styles.teachTooltip}>Create a course first to unlock Teach mode</div>
+                </div>
+              )}
             </div>
             <button className={styles.createNewBtn} onClick={() => setModal("create")}>
               <span className={styles.createPlus}>+</span>{ui.createNew}
             </button>
           </div>
+
+          {courses.length === 0 && !teachCalloutDismissed && (
+            <div className={styles.teachCallout}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.teachCalloutIcon}>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <div className={styles.teachCalloutBody}>
+                <strong>Teach mode is locked</strong> — create your first course to unlock it. Once a course exists, the Teach button will become active.
+                <label className={styles.teachCalloutCheck}>
+                  <input
+                    type="checkbox"
+                    checked={teachCalloutDontShow}
+                    onChange={e => setTeachCalloutDontShow(e.target.checked)}
+                  />
+                  Don&apos;t show this again
+                </label>
+              </div>
+              <button className={styles.teachCalloutClose} onClick={dismissTeachCallout} aria-label="Dismiss">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          )}
 
           <div className={styles.statsRibbon}>
             <div className={styles.stat}><div className={styles.statValue}>{courses.length}</div><div className={styles.statLabel}>{ui.statCourses}</div></div>
