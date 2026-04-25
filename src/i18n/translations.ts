@@ -114,7 +114,7 @@ export const t = {
       ribbon:   "Insight",
       headline: "AI assistants give answers. AI tutors build understanding",
       kicker:   "Assistants optimize for speed. Tutors optimize for learning.",
-      body:     "StudentCentral does not just provide answers. It asks questions, guides thinking, and evaluates reasoning.",
+      body:     "AI assistants give answers. AI tutors build understanding. StudentCentral does not just provide answers - it asks questions, guides thinking, and evaluates reasoning.",
       summaryTitle: "From answers to understanding",
       summary: [
         { from: "Correct + strong explanation",     to: "Robust understanding" },
