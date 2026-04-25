@@ -3,22 +3,15 @@ import styles from "./Approach.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
 
-const COMPARISON_ROWS = [
-  { assistant: "Provides answers", tutor: "Asks questions" },
-  {
-    assistant: "Reactive",
-    assistantNote: "Waits for user input",
-    tutor: "Proactive",
-    tutorNote: "Initiates interactions",
-  },
-  { assistant: "Task-oriented", tutor: "Learning plan" },
-  { assistant: "Optimizes for speed", tutor: "Optimizes for learning" },
-  { assistant: "Solves the problem", tutor: "Teaches" },
-];
-
 export default function Approach() {
   const { lang } = useLanguage();
   const tx = getT(lang).approach;
+  const comparisonRows = tx.comparisonRows as ReadonlyArray<{
+    assistant: string;
+    assistantNote?: string;
+    tutor: string;
+    tutorNote?: string;
+  }>;
 
   return (
     <section id="approach" className={styles.section}>
@@ -27,7 +20,7 @@ export default function Approach() {
           <div>
             <div className={styles.eyebrow}><span className="ribbon">{tx.ribbon}</span></div>
             <h2 className={`${styles.headline} reveal`}>
-              What&apos;s the difference with ChatGPT?
+              {tx.insightHeadline}
             </h2>
           </div>
           <div>
@@ -39,7 +32,7 @@ export default function Approach() {
 
         <div className={`${styles.dividerLabel} reveal d1`}>
           <div className={styles.dividerLine} />
-          <span className={styles.dividerText}>AI assistant vs AI tutor</span>
+          <span className={styles.dividerText}>{tx.dividerText}</span>
           <div className={styles.dividerLine} />
         </div>
 
@@ -48,15 +41,15 @@ export default function Approach() {
             <thead>
               <tr>
                 <th className={`${styles.colHeader} ${styles.colAssistant}`}>
-                  <span>AI</span> Assistant
+                  {tx.assistantLabel}
                 </th>
                 <th className={`${styles.colHeader} ${styles.colTutor}`}>
-                  <span>AI</span> Tutor
+                  {tx.tutorLabel}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {COMPARISON_ROWS.map((row) => (
+              {comparisonRows.map((row) => (
                 <tr key={`${row.assistant}-${row.tutor}`}>
                   <td className={styles.leftCell}>
                     {row.assistant}
@@ -72,10 +65,10 @@ export default function Approach() {
           </table>
 
           <div className={styles.footer}>
-            <div className={styles.footerLeft}>ChatGPT</div>
+            <div className={styles.footerLeft}>{tx.footerLeft}</div>
             <div className={styles.footerRight}>
-              StudentCentral provides live feedback to professors
-              <span>Real-time learning signals</span>
+              {tx.footerRight}
+              <span>{tx.footerTag}</span>
             </div>
           </div>
         </div>

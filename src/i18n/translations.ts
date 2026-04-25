@@ -113,8 +113,22 @@ export const t = {
     approach: {
       ribbon:   "Insight",
       headline: "AI assistants give answers. AI tutors build understanding",
+      insightHeadline: "What's the difference with ChatGPT?",
       kicker:   "Assistants optimize for speed. Tutors optimize for learning.",
       body:     "AI assistants give answers. AI tutors build understanding. StudentCentral does not just provide answers - it asks questions, guides thinking, and evaluates reasoning.",
+      dividerText: "AI assistant vs AI tutor",
+      assistantLabel: "AI Assistant",
+      tutorLabel: "AI Tutor",
+      comparisonRows: [
+        { assistant: "Provides answers", tutor: "Asks questions" },
+        { assistant: "Reactive", assistantNote: "Waits for user input", tutor: "Proactive", tutorNote: "Initiates interactions" },
+        { assistant: "Task-oriented", tutor: "Learning plan" },
+        { assistant: "Optimizes for speed", tutor: "Optimizes for learning" },
+        { assistant: "Solves the problem", tutor: "Teaches" },
+      ],
+      footerLeft: "ChatGPT",
+      footerRight: "StudentCentral provides live feedback to professors",
+      footerTag: "Real-time learning signals",
       summaryTitle: "From answers to understanding",
       summary: [
         { from: "Correct + strong explanation",     to: "Robust understanding" },
@@ -7088,7 +7102,270 @@ export const t = {
 
 export type Translations = typeof t.en;
 
+const localizedHomepage = {
+  fr: {
+    nav: { signUp: "S'inscrire", getStarted: "S'inscrire" },
+    hero: {
+      requestAccess: "Demander un accès anticipé",
+      accessTitle: "Demander un accès anticipé",
+      accessBody: "Dites-nous qui vous êtes et nous vous recontacterons.",
+      firstName: "Prénom",
+      familyName: "Nom de famille",
+      email: "E-mail",
+      submitAccess: "Envoyer la demande",
+      accessSuccessTitle: "Demande reçue",
+      accessSuccessBody: "Merci. Nous vous recontacterons bientôt.",
+    },
+    approach: {
+      insightHeadline: "Quelle différence avec ChatGPT ?",
+      body: "Les assistants IA donnent des réponses. Les tuteurs IA construisent la compréhension. StudentCentral ne se contente pas de fournir des réponses : il pose des questions, guide la réflexion et évalue le raisonnement.",
+      dividerText: "Assistant IA vs tuteur IA",
+      assistantLabel: "Assistant IA",
+      tutorLabel: "Tuteur IA",
+      comparisonRows: [
+        { assistant: "Fournit des réponses", tutor: "Pose des questions" },
+        { assistant: "Réactif", assistantNote: "Attend la demande de l'utilisateur", tutor: "Proactif", tutorNote: "Initie les interactions" },
+        { assistant: "Orienté tâche", tutor: "Plan d'apprentissage" },
+        { assistant: "Optimise la vitesse", tutor: "Optimise l'apprentissage" },
+        { assistant: "Résout le problème", tutor: "Enseigne" },
+      ],
+      footerLeft: "ChatGPT",
+      footerRight: "StudentCentral fournit un retour en direct aux professeurs",
+      footerTag: "Signaux d'apprentissage en temps réel",
+    },
+    cta: { secondary: "Demander l'accès / Nous contacter" },
+  },
+  ro: {
+    nav: { signUp: "Înscrie-te", getStarted: "Înscrie-te" },
+    hero: {
+      requestAccess: "Solicită acces timpuriu",
+      accessTitle: "Solicită acces timpuriu",
+      accessBody: "Spune-ne cine ești și te vom contacta.",
+      firstName: "Prenume",
+      familyName: "Nume de familie",
+      email: "E-mail",
+      submitAccess: "Trimite cererea",
+      accessSuccessTitle: "Cerere primită",
+      accessSuccessBody: "Mulțumim. Te vom contacta în curând.",
+    },
+    approach: {
+      insightHeadline: "Care este diferența față de ChatGPT?",
+      body: "Asistenții AI oferă răspunsuri. Tutorii AI construiesc înțelegerea. StudentCentral nu oferă doar răspunsuri: pune întrebări, ghidează gândirea și evaluează raționamentul.",
+      dividerText: "Asistent AI vs tutor AI",
+      assistantLabel: "Asistent AI",
+      tutorLabel: "Tutor AI",
+      comparisonRows: [
+        { assistant: "Oferă răspunsuri", tutor: "Pune întrebări" },
+        { assistant: "Reactiv", assistantNote: "Așteaptă inputul utilizatorului", tutor: "Proactiv", tutorNote: "Inițiază interacțiuni" },
+        { assistant: "Orientat pe sarcină", tutor: "Plan de învățare" },
+        { assistant: "Optimizează viteza", tutor: "Optimizează învățarea" },
+        { assistant: "Rezolvă problema", tutor: "Predă" },
+      ],
+      footerLeft: "ChatGPT",
+      footerRight: "StudentCentral oferă feedback live profesorilor",
+      footerTag: "Semnale de învățare în timp real",
+    },
+    cta: { secondary: "Solicită acces / Contactează-ne" },
+  },
+  de: {
+    nav: { signUp: "Registrieren", getStarted: "Registrieren" },
+    hero: {
+      requestAccess: "Frühen Zugang anfragen",
+      accessTitle: "Frühen Zugang anfragen",
+      accessBody: "Sagen Sie uns, wer Sie sind, und wir melden uns.",
+      firstName: "Vorname",
+      familyName: "Nachname",
+      email: "E-Mail",
+      submitAccess: "Anfrage senden",
+      accessSuccessTitle: "Anfrage erhalten",
+      accessSuccessBody: "Vielen Dank. Wir melden uns bald.",
+    },
+    approach: {
+      insightHeadline: "Was ist der Unterschied zu ChatGPT?",
+      body: "KI-Assistenten geben Antworten. KI-Tutoren bauen Verständnis auf. StudentCentral liefert nicht nur Antworten: Es stellt Fragen, leitet das Denken und bewertet die Argumentation.",
+      dividerText: "KI-Assistent vs KI-Tutor",
+      assistantLabel: "KI-Assistent",
+      tutorLabel: "KI-Tutor",
+      comparisonRows: [
+        { assistant: "Gibt Antworten", tutor: "Stellt Fragen" },
+        { assistant: "Reaktiv", assistantNote: "Wartet auf Eingaben", tutor: "Proaktiv", tutorNote: "Startet Interaktionen" },
+        { assistant: "Aufgabenorientiert", tutor: "Lernplan" },
+        { assistant: "Optimiert Geschwindigkeit", tutor: "Optimiert Lernen" },
+        { assistant: "Löst das Problem", tutor: "Unterrichtet" },
+      ],
+      footerLeft: "ChatGPT",
+      footerRight: "StudentCentral gibt Professoren Live-Feedback",
+      footerTag: "Lernsignale in Echtzeit",
+    },
+    cta: { secondary: "Zugang anfragen / Kontakt aufnehmen" },
+  },
+  es: {
+    nav: { signUp: "Registrarse", getStarted: "Registrarse" },
+    hero: {
+      requestAccess: "Solicitar acceso anticipado",
+      accessTitle: "Solicitar acceso anticipado",
+      accessBody: "Cuéntanos quién eres y nos pondremos en contacto.",
+      firstName: "Nombre",
+      familyName: "Apellido",
+      email: "Correo electrónico",
+      submitAccess: "Enviar solicitud",
+      accessSuccessTitle: "Solicitud recibida",
+      accessSuccessBody: "Gracias. Te contactaremos pronto.",
+    },
+    approach: {
+      insightHeadline: "¿Cuál es la diferencia con ChatGPT?",
+      body: "Los asistentes de IA dan respuestas. Los tutores de IA construyen comprensión. StudentCentral no solo proporciona respuestas: hace preguntas, guía el pensamiento y evalúa el razonamiento.",
+      dividerText: "Asistente de IA vs tutor de IA",
+      assistantLabel: "Asistente de IA",
+      tutorLabel: "Tutor de IA",
+      comparisonRows: [
+        { assistant: "Proporciona respuestas", tutor: "Hace preguntas" },
+        { assistant: "Reactivo", assistantNote: "Espera la entrada del usuario", tutor: "Proactivo", tutorNote: "Inicia interacciones" },
+        { assistant: "Orientado a tareas", tutor: "Plan de aprendizaje" },
+        { assistant: "Optimiza la velocidad", tutor: "Optimiza el aprendizaje" },
+        { assistant: "Resuelve el problema", tutor: "Enseña" },
+      ],
+      footerLeft: "ChatGPT",
+      footerRight: "StudentCentral ofrece feedback en vivo a los profesores",
+      footerTag: "Señales de aprendizaje en tiempo real",
+    },
+    cta: { secondary: "Solicitar acceso / Hablar con nosotros" },
+  },
+  ru: {
+    nav: { signUp: "Зарегистрироваться", getStarted: "Зарегистрироваться" },
+    hero: {
+      requestAccess: "Запросить ранний доступ",
+      accessTitle: "Запросить ранний доступ",
+      accessBody: "Расскажите, кто вы, и мы свяжемся с вами.",
+      firstName: "Имя",
+      familyName: "Фамилия",
+      email: "Эл. почта",
+      submitAccess: "Отправить запрос",
+      accessSuccessTitle: "Запрос получен",
+      accessSuccessBody: "Спасибо. Мы скоро свяжемся с вами.",
+    },
+    approach: {
+      insightHeadline: "В чем отличие от ChatGPT?",
+      body: "ИИ-ассистенты дают ответы. ИИ-тьюторы формируют понимание. StudentCentral не просто предоставляет ответы: он задает вопросы, направляет мышление и оценивает рассуждение.",
+      dividerText: "ИИ-ассистент vs ИИ-тьютор",
+      assistantLabel: "ИИ-ассистент",
+      tutorLabel: "ИИ-тьютор",
+      comparisonRows: [
+        { assistant: "Дает ответы", tutor: "Задает вопросы" },
+        { assistant: "Реактивный", assistantNote: "Ждет ввода пользователя", tutor: "Проактивный", tutorNote: "Инициирует взаимодействие" },
+        { assistant: "Ориентирован на задачу", tutor: "План обучения" },
+        { assistant: "Оптимизирует скорость", tutor: "Оптимизирует обучение" },
+        { assistant: "Решает задачу", tutor: "Обучает" },
+      ],
+      footerLeft: "ChatGPT",
+      footerRight: "StudentCentral дает преподавателям обратную связь в реальном времени",
+      footerTag: "Учебные сигналы в реальном времени",
+    },
+    cta: { secondary: "Запросить доступ / Связаться с нами" },
+  },
+} as const;
+
+const compactHomepageLocales: Record<string, any> = {
+  it: {
+    nav: { signUp: "Registrati", getStarted: "Registrati" },
+    hero: { requestAccess: "Richiedi accesso anticipato", accessTitle: "Richiedi accesso anticipato", accessBody: "Dicci chi sei e ti ricontatteremo.", firstName: "Nome", familyName: "Cognome", email: "E-mail", submitAccess: "Invia richiesta", accessSuccessTitle: "Richiesta ricevuta", accessSuccessBody: "Grazie. Ti ricontatteremo presto." },
+    approach: { insightHeadline: "Qual è la differenza con ChatGPT?", body: "Gli assistenti IA danno risposte. I tutor IA costruiscono comprensione. StudentCentral non fornisce solo risposte: fa domande, guida il pensiero e valuta il ragionamento.", dividerText: "Assistente IA vs tutor IA", assistantLabel: "Assistente IA", tutorLabel: "Tutor IA", comparisonRows: [{ assistant: "Fornisce risposte", tutor: "Fa domande" }, { assistant: "Reattivo", assistantNote: "Attende l'input dell'utente", tutor: "Proattivo", tutorNote: "Avvia interazioni" }, { assistant: "Orientato al compito", tutor: "Piano di apprendimento" }, { assistant: "Ottimizza la velocità", tutor: "Ottimizza l'apprendimento" }, { assistant: "Risolve il problema", tutor: "Insegna" }], footerLeft: "ChatGPT", footerRight: "StudentCentral offre feedback live ai professori", footerTag: "Segnali di apprendimento in tempo reale" },
+    cta: { secondary: "Richiedi accesso / Parla con noi" },
+  },
+  pt: {
+    nav: { signUp: "Registar", getStarted: "Registar" },
+    hero: { requestAccess: "Pedir acesso antecipado", accessTitle: "Pedir acesso antecipado", accessBody: "Diga-nos quem é e entraremos em contacto.", firstName: "Nome próprio", familyName: "Apelido", email: "E-mail", submitAccess: "Enviar pedido", accessSuccessTitle: "Pedido recebido", accessSuccessBody: "Obrigado. Entraremos em contacto em breve." },
+    approach: { insightHeadline: "Qual é a diferença em relação ao ChatGPT?", body: "Assistentes de IA dão respostas. Tutores de IA constroem compreensão. O StudentCentral não fornece apenas respostas: faz perguntas, orienta o pensamento e avalia o raciocínio.", dividerText: "Assistente de IA vs tutor de IA", assistantLabel: "Assistente de IA", tutorLabel: "Tutor de IA", comparisonRows: [{ assistant: "Fornece respostas", tutor: "Faz perguntas" }, { assistant: "Reativo", assistantNote: "Espera a entrada do utilizador", tutor: "Proativo", tutorNote: "Inicia interações" }, { assistant: "Orientado para tarefas", tutor: "Plano de aprendizagem" }, { assistant: "Otimiza a velocidade", tutor: "Otimiza a aprendizagem" }, { assistant: "Resolve o problema", tutor: "Ensina" }], footerLeft: "ChatGPT", footerRight: "O StudentCentral oferece feedback ao vivo aos professores", footerTag: "Sinais de aprendizagem em tempo real" },
+    cta: { secondary: "Pedir acesso / Falar connosco" },
+  },
+  nl: {
+    nav: { signUp: "Aanmelden", getStarted: "Aanmelden" },
+    hero: { requestAccess: "Vroege toegang aanvragen", accessTitle: "Vroege toegang aanvragen", accessBody: "Vertel ons wie u bent en we nemen contact op.", firstName: "Voornaam", familyName: "Achternaam", email: "E-mail", submitAccess: "Aanvraag verzenden", accessSuccessTitle: "Aanvraag ontvangen", accessSuccessBody: "Dank u. We nemen binnenkort contact op." },
+    approach: { insightHeadline: "Wat is het verschil met ChatGPT?", body: "AI-assistenten geven antwoorden. AI-tutoren bouwen begrip op. StudentCentral geeft niet alleen antwoorden: het stelt vragen, begeleidt het denken en evalueert redeneringen.", dividerText: "AI-assistent vs AI-tutor", assistantLabel: "AI-assistent", tutorLabel: "AI-tutor", comparisonRows: [{ assistant: "Geeft antwoorden", tutor: "Stelt vragen" }, { assistant: "Reactief", assistantNote: "Wacht op input van de gebruiker", tutor: "Proactief", tutorNote: "Start interacties" }, { assistant: "Taakgericht", tutor: "Leerplan" }, { assistant: "Optimaliseert snelheid", tutor: "Optimaliseert leren" }, { assistant: "Lost het probleem op", tutor: "Geeft les" }], footerLeft: "ChatGPT", footerRight: "StudentCentral geeft docenten live feedback", footerTag: "Realtime leersignalen" },
+    cta: { secondary: "Toegang aanvragen / Contact opnemen" },
+  },
+  pl: {
+    nav: { signUp: "Zarejestruj się", getStarted: "Zarejestruj się" },
+    hero: { requestAccess: "Poproś o wcześniejszy dostęp", accessTitle: "Poproś o wcześniejszy dostęp", accessBody: "Powiedz nam, kim jesteś, a skontaktujemy się z Tobą.", firstName: "Imię", familyName: "Nazwisko", email: "E-mail", submitAccess: "Wyślij prośbę", accessSuccessTitle: "Prośba otrzymana", accessSuccessBody: "Dziękujemy. Wkrótce się skontaktujemy." },
+    approach: { insightHeadline: "Czym różni się od ChatGPT?", body: "Asystenci AI dają odpowiedzi. Tutorzy AI budują zrozumienie. StudentCentral nie tylko dostarcza odpowiedzi: zadaje pytania, prowadzi myślenie i ocenia rozumowanie.", dividerText: "Asystent AI vs tutor AI", assistantLabel: "Asystent AI", tutorLabel: "Tutor AI", comparisonRows: [{ assistant: "Dostarcza odpowiedzi", tutor: "Zadaje pytania" }, { assistant: "Reaktywny", assistantNote: "Czeka na dane użytkownika", tutor: "Proaktywny", tutorNote: "Inicjuje interakcje" }, { assistant: "Zorientowany na zadanie", tutor: "Plan nauki" }, { assistant: "Optymalizuje szybkość", tutor: "Optymalizuje uczenie się" }, { assistant: "Rozwiązuje problem", tutor: "Uczy" }], footerLeft: "ChatGPT", footerRight: "StudentCentral zapewnia profesorom informację zwrotną na żywo", footerTag: "Sygnały uczenia się w czasie rzeczywistym" },
+    cta: { secondary: "Poproś o dostęp / Porozmawiaj z nami" },
+  },
+  uk: {
+    nav: { signUp: "Зареєструватися", getStarted: "Зареєструватися" },
+    hero: { requestAccess: "Запросити ранній доступ", accessTitle: "Запросити ранній доступ", accessBody: "Розкажіть, хто ви, і ми зв'яжемося з вами.", firstName: "Ім'я", familyName: "Прізвище", email: "Ел. пошта", submitAccess: "Надіслати запит", accessSuccessTitle: "Запит отримано", accessSuccessBody: "Дякуємо. Ми скоро зв'яжемося з вами." },
+    approach: { insightHeadline: "У чому різниця з ChatGPT?", body: "AI-асистенти дають відповіді. AI-тьютори формують розуміння. StudentCentral не лише надає відповіді: він ставить запитання, спрямовує мислення й оцінює міркування.", dividerText: "AI-асистент vs AI-тьютор", assistantLabel: "AI-асистент", tutorLabel: "AI-тьютор", comparisonRows: [{ assistant: "Надає відповіді", tutor: "Ставить запитання" }, { assistant: "Реактивний", assistantNote: "Чекає введення користувача", tutor: "Проактивний", tutorNote: "Ініціює взаємодії" }, { assistant: "Орієнтований на завдання", tutor: "План навчання" }, { assistant: "Оптимізує швидкість", tutor: "Оптимізує навчання" }, { assistant: "Розв'язує проблему", tutor: "Навчає" }], footerLeft: "ChatGPT", footerRight: "StudentCentral надає професорам живий зворотний зв'язок", footerTag: "Навчальні сигнали в реальному часі" },
+    cta: { secondary: "Запросити доступ / Зв'язатися з нами" },
+  },
+  tr: {
+    nav: { signUp: "Kaydol", getStarted: "Kaydol" },
+    hero: { requestAccess: "Erken erişim iste", accessTitle: "Erken erişim iste", accessBody: "Bize kim olduğunuzu söyleyin, size geri dönelim.", firstName: "Ad", familyName: "Soyad", email: "E-posta", submitAccess: "İsteği gönder", accessSuccessTitle: "İstek alındı", accessSuccessBody: "Teşekkürler. Yakında size döneceğiz." },
+    approach: { insightHeadline: "ChatGPT'den farkı nedir?", body: "AI asistanları cevap verir. AI tutorları anlayış geliştirir. StudentCentral yalnızca cevap sunmaz: sorular sorar, düşünmeyi yönlendirir ve akıl yürütmeyi değerlendirir.", dividerText: "AI asistanı vs AI tutor", assistantLabel: "AI asistanı", tutorLabel: "AI tutor", comparisonRows: [{ assistant: "Cevap verir", tutor: "Soru sorar" }, { assistant: "Reaktif", assistantNote: "Kullanıcı girdisini bekler", tutor: "Proaktif", tutorNote: "Etkileşim başlatır" }, { assistant: "Görev odaklı", tutor: "Öğrenme planı" }, { assistant: "Hızı optimize eder", tutor: "Öğrenmeyi optimize eder" }, { assistant: "Problemi çözer", tutor: "Öğretir" }], footerLeft: "ChatGPT", footerRight: "StudentCentral profesörlere canlı geri bildirim sağlar", footerTag: "Gerçek zamanlı öğrenme sinyalleri" },
+    cta: { secondary: "Erişim iste / Bizimle konuş" },
+  },
+};
+
+const localizedHomepageAll = {
+  ...localizedHomepage,
+  ...compactHomepageLocales,
+} as Record<string, any>;
+
+const fallbackNames: Record<string, { signUp: string; requestAccess: string; firstName: string; familyName: string; submitAccess: string; cta: string }> = {
+  el: { signUp: "Εγγραφή", requestAccess: "Ζητήστε πρώιμη πρόσβαση", firstName: "Όνομα", familyName: "Επώνυμο", submitAccess: "Υποβολή αιτήματος", cta: "Ζητήστε πρόσβαση / Μιλήστε μαζί μας" },
+  da: { signUp: "Tilmeld dig", requestAccess: "Anmod om tidlig adgang", firstName: "Fornavn", familyName: "Efternavn", submitAccess: "Send anmodning", cta: "Anmod om adgang / Tal med os" },
+  sv: { signUp: "Registrera dig", requestAccess: "Begär tidig åtkomst", firstName: "Förnamn", familyName: "Efternamn", submitAccess: "Skicka förfrågan", cta: "Begär åtkomst / Prata med oss" },
+  fi: { signUp: "Rekisteröidy", requestAccess: "Pyydä varhaista pääsyä", firstName: "Etunimi", familyName: "Sukunimi", submitAccess: "Lähetä pyyntö", cta: "Pyydä pääsyä / Ota yhteyttä" },
+  hu: { signUp: "Regisztráció", requestAccess: "Korai hozzáférés kérése", firstName: "Keresztnév", familyName: "Vezetéknév", submitAccess: "Kérés elküldése", cta: "Hozzáférés kérése / Kapcsolat" },
+  hr: { signUp: "Registriraj se", requestAccess: "Zatraži rani pristup", firstName: "Ime", familyName: "Prezime", submitAccess: "Pošalji zahtjev", cta: "Zatraži pristup / Razgovaraj s nama" },
+  bg: { signUp: "Регистрация", requestAccess: "Заявете ранен достъп", firstName: "Име", familyName: "Фамилия", submitAccess: "Изпрати заявка", cta: "Заявете достъп / Свържете се с нас" },
+  cs: { signUp: "Zaregistrovat se", requestAccess: "Požádat o předběžný přístup", firstName: "Jméno", familyName: "Příjmení", submitAccess: "Odeslat žádost", cta: "Požádat o přístup / Kontaktujte nás" },
+  sr: { signUp: "Региструј се", requestAccess: "Затражи рани приступ", firstName: "Име", familyName: "Презиме", submitAccess: "Пошаљи захтев", cta: "Затражи приступ / Разговарајте с нама" },
+};
+
+const fallbackApproaches: Record<string, any> = {
+  el: { insightHeadline: "Ποια είναι η διαφορά με το ChatGPT;", body: "Οι βοηθοί AI δίνουν απαντήσεις. Οι AI tutors χτίζουν κατανόηση. Το StudentCentral δεν δίνει απλώς απαντήσεις: κάνει ερωτήσεις, καθοδηγεί τη σκέψη και αξιολογεί τη συλλογιστική.", dividerText: "Βοηθός AI vs AI tutor", assistantLabel: "Βοηθός AI", tutorLabel: "AI tutor", comparisonRows: [{ assistant: "Δίνει απαντήσεις", tutor: "Κάνει ερωτήσεις" }, { assistant: "Αντιδραστικός", assistantNote: "Περιμένει είσοδο από τον χρήστη", tutor: "Προληπτικός", tutorNote: "Ξεκινά αλληλεπιδράσεις" }, { assistant: "Προσανατολισμένος σε εργασίες", tutor: "Σχέδιο μάθησης" }, { assistant: "Βελτιστοποιεί την ταχύτητα", tutor: "Βελτιστοποιεί τη μάθηση" }, { assistant: "Λύνει το πρόβλημα", tutor: "Διδάσκει" }], footerLeft: "ChatGPT", footerRight: "Το StudentCentral παρέχει ζωντανή ανατροφοδότηση στους καθηγητές", footerTag: "Σήματα μάθησης σε πραγματικό χρόνο" },
+  da: { insightHeadline: "Hvad er forskellen fra ChatGPT?", body: "AI-assistenter giver svar. AI-tutorer opbygger forståelse. StudentCentral giver ikke kun svar: det stiller spørgsmål, guider tænkning og evaluerer ræsonnement.", dividerText: "AI-assistent vs AI-tutor", assistantLabel: "AI-assistent", tutorLabel: "AI-tutor", comparisonRows: [{ assistant: "Giver svar", tutor: "Stiller spørgsmål" }, { assistant: "Reaktiv", assistantNote: "Venter på brugerinput", tutor: "Proaktiv", tutorNote: "Starter interaktioner" }, { assistant: "Opgaveorienteret", tutor: "Læringsplan" }, { assistant: "Optimerer for hastighed", tutor: "Optimerer for læring" }, { assistant: "Løser problemet", tutor: "Underviser" }], footerLeft: "ChatGPT", footerRight: "StudentCentral giver live feedback til undervisere", footerTag: "Læringssignaler i realtid" },
+  sv: { insightHeadline: "Vad är skillnaden mot ChatGPT?", body: "AI-assistenter ger svar. AI-tutorer bygger förståelse. StudentCentral ger inte bara svar: det ställer frågor, vägleder tänkande och utvärderar resonemang.", dividerText: "AI-assistent vs AI-tutor", assistantLabel: "AI-assistent", tutorLabel: "AI-tutor", comparisonRows: [{ assistant: "Ger svar", tutor: "Ställer frågor" }, { assistant: "Reaktiv", assistantNote: "Väntar på användarens input", tutor: "Proaktiv", tutorNote: "Initierar interaktioner" }, { assistant: "Uppgiftsorienterad", tutor: "Lärplan" }, { assistant: "Optimerar för hastighet", tutor: "Optimerar för lärande" }, { assistant: "Löser problemet", tutor: "Undervisar" }], footerLeft: "ChatGPT", footerRight: "StudentCentral ger livefeedback till lärare", footerTag: "Lärsignaler i realtid" },
+  fi: { insightHeadline: "Mikä ero on ChatGPT:hen?", body: "AI-avustajat antavat vastauksia. AI-tutorit rakentavat ymmärrystä. StudentCentral ei vain tarjoa vastauksia: se kysyy, ohjaa ajattelua ja arvioi päättelyä.", dividerText: "AI-avustaja vs AI-tutor", assistantLabel: "AI-avustaja", tutorLabel: "AI-tutor", comparisonRows: [{ assistant: "Antaa vastauksia", tutor: "Esittää kysymyksiä" }, { assistant: "Reaktiivinen", assistantNote: "Odottaa käyttäjän syötettä", tutor: "Proaktiivinen", tutorNote: "Aloittaa vuorovaikutuksia" }, { assistant: "Tehtäväkeskeinen", tutor: "Oppimissuunnitelma" }, { assistant: "Optimoi nopeutta", tutor: "Optimoi oppimista" }, { assistant: "Ratkaisee ongelman", tutor: "Opettaa" }], footerLeft: "ChatGPT", footerRight: "StudentCentral antaa opettajille reaaliaikaista palautetta", footerTag: "Reaaliaikaiset oppimissignaalit" },
+  hu: { insightHeadline: "Mi a különbség a ChatGPT-hez képest?", body: "Az AI-asszisztensek válaszokat adnak. Az AI-tutorok megértést építenek. A StudentCentral nem csak válaszokat ad: kérdez, irányítja a gondolkodást és értékeli az érvelést.", dividerText: "AI-asszisztens vs AI-tutor", assistantLabel: "AI-asszisztens", tutorLabel: "AI-tutor", comparisonRows: [{ assistant: "Válaszokat ad", tutor: "Kérdéseket tesz fel" }, { assistant: "Reaktív", assistantNote: "A felhasználói bemenetre vár", tutor: "Proaktív", tutorNote: "Interakciókat kezdeményez" }, { assistant: "Feladatorientált", tutor: "Tanulási terv" }, { assistant: "Sebességre optimalizál", tutor: "Tanulásra optimalizál" }, { assistant: "Megoldja a problémát", tutor: "Tanít" }], footerLeft: "ChatGPT", footerRight: "A StudentCentral élő visszajelzést ad az oktatóknak", footerTag: "Valós idejű tanulási jelek" },
+  hr: { insightHeadline: "Koja je razlika u odnosu na ChatGPT?", body: "AI asistenti daju odgovore. AI tutori grade razumijevanje. StudentCentral ne pruža samo odgovore: postavlja pitanja, usmjerava razmišljanje i procjenjuje rasuđivanje.", dividerText: "AI asistent vs AI tutor", assistantLabel: "AI asistent", tutorLabel: "AI tutor", comparisonRows: [{ assistant: "Pruža odgovore", tutor: "Postavlja pitanja" }, { assistant: "Reaktivan", assistantNote: "Čeka unos korisnika", tutor: "Proaktivan", tutorNote: "Pokreće interakcije" }, { assistant: "Usmjeren na zadatak", tutor: "Plan učenja" }, { assistant: "Optimizira brzinu", tutor: "Optimizira učenje" }, { assistant: "Rješava problem", tutor: "Poučava" }], footerLeft: "ChatGPT", footerRight: "StudentCentral profesorima pruža povratne informacije uživo", footerTag: "Signali učenja u stvarnom vremenu" },
+  bg: { insightHeadline: "Каква е разликата с ChatGPT?", body: "AI асистентите дават отговори. AI туторите изграждат разбиране. StudentCentral не само предоставя отговори: задава въпроси, насочва мисленето и оценява разсъжденията.", dividerText: "AI асистент vs AI тутор", assistantLabel: "AI асистент", tutorLabel: "AI тутор", comparisonRows: [{ assistant: "Дава отговори", tutor: "Задава въпроси" }, { assistant: "Реактивен", assistantNote: "Чака вход от потребителя", tutor: "Проактивен", tutorNote: "Инициира взаимодействия" }, { assistant: "Ориентиран към задачи", tutor: "План за учене" }, { assistant: "Оптимизира скоростта", tutor: "Оптимизира ученето" }, { assistant: "Решава проблема", tutor: "Преподава" }], footerLeft: "ChatGPT", footerRight: "StudentCentral дава обратна връзка на преподавателите в реално време", footerTag: "Учебни сигнали в реално време" },
+  cs: { insightHeadline: "Jaký je rozdíl oproti ChatGPT?", body: "AI asistenti dávají odpovědi. AI tutoři budují porozumění. StudentCentral nejen poskytuje odpovědi: klade otázky, vede myšlení a hodnotí uvažování.", dividerText: "AI asistent vs AI tutor", assistantLabel: "AI asistent", tutorLabel: "AI tutor", comparisonRows: [{ assistant: "Poskytuje odpovědi", tutor: "Klade otázky" }, { assistant: "Reaktivní", assistantNote: "Čeká na vstup uživatele", tutor: "Proaktivní", tutorNote: "Zahajuje interakce" }, { assistant: "Zaměřený na úkol", tutor: "Plán učení" }, { assistant: "Optimalizuje rychlost", tutor: "Optimalizuje učení" }, { assistant: "Řeší problém", tutor: "Učí" }], footerLeft: "ChatGPT", footerRight: "StudentCentral poskytuje profesorům živou zpětnou vazbu", footerTag: "Signály učení v reálném čase" },
+  sr: { insightHeadline: "Која је разлика у односу на ChatGPT?", body: "AI асистенти дају одговоре. AI тутори граде разумевање. StudentCentral не пружа само одговоре: поставља питања, усмерава размишљање и процењује расуђивање.", dividerText: "AI асистент vs AI тутор", assistantLabel: "AI асистент", tutorLabel: "AI тутор", comparisonRows: [{ assistant: "Пружа одговоре", tutor: "Поставља питања" }, { assistant: "Реактиван", assistantNote: "Чека унос корисника", tutor: "Проактиван", tutorNote: "Покреће интеракције" }, { assistant: "Усмерен на задатак", tutor: "План учења" }, { assistant: "Оптимизује брзину", tutor: "Оптимизује учење" }, { assistant: "Решава проблем", tutor: "Подучава" }], footerLeft: "ChatGPT", footerRight: "StudentCentral професорима пружа повратне информације уживо", footerTag: "Сигнали учења у реалном времену" },
+};
+
+for (const [lang, names] of Object.entries(fallbackNames)) {
+  localizedHomepageAll[lang] = {
+    nav: { signUp: names.signUp, getStarted: names.signUp },
+    hero: {
+      requestAccess: names.requestAccess,
+      accessTitle: names.requestAccess,
+      accessBody: t.en.hero.accessBody,
+      firstName: names.firstName,
+      familyName: names.familyName,
+      email: "Email",
+      submitAccess: names.submitAccess,
+      accessSuccessTitle: t.en.hero.accessSuccessTitle,
+      accessSuccessBody: t.en.hero.accessSuccessBody,
+    },
+    approach: fallbackApproaches[lang] ?? t.en.approach,
+    cta: { secondary: names.cta },
+  };
+}
+
+function mergeSection<T extends Record<string, unknown>>(english: T, base: T, override?: Partial<T>): T {
+  return { ...english, ...base, ...(override ?? {}) } as T;
+}
+
 /** Returns translations for the given lang, falling back to English for untranslated langs */
 export function tx(lang: string): Translations {
-  return ((t as unknown) as Record<string, Translations>)[lang] ?? t.en;
+  const base = ((t as unknown) as Record<string, Translations>)[lang] ?? t.en;
+  const override = localizedHomepageAll[lang] ?? {};
+  return {
+    ...t.en,
+    ...base,
+    nav: mergeSection(t.en.nav, base.nav, override.nav),
+    hero: mergeSection(t.en.hero, base.hero, override.hero),
+    approach: mergeSection(t.en.approach, base.approach, override.approach),
+    cta: mergeSection(t.en.cta, base.cta, override.cta),
+  } as Translations;
 }
