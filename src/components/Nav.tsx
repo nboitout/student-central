@@ -87,14 +87,9 @@ export default function Nav() {
           )}
         </div>
         <div className={styles.navBtnPair}>
-          <a className={styles.navLogin} href={isLoggedIn ? "/workspace" : "/login"}>
-            {isLoggedIn ? (tx.myWorkspace ?? "My workspace") : (tx.logIn ?? "Log in")}
+          <a className={isLoggedIn ? styles.navLogin : styles.navGetStarted} href={isLoggedIn ? "/workspace" : "/login"}>
+            {isLoggedIn ? (tx.myWorkspace ?? "My workspace") : (tx.signUp ?? "Sign up")}
           </a>
-          {!isLoggedIn && (
-            <a className={styles.navGetStarted} href="/login">
-              {tx.getStarted ?? "Get started"}
-            </a>
-          )}
         </div>
       </div>
     </nav>

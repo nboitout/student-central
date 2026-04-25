@@ -22,8 +22,8 @@ export default function Home() {
         <Problem />
         <Approach />
         <Workflow />
-        <Faculty />
         <Pedagogy />
+        <Faculty />
         <Trust />
         <Institutional />
         <CTA />

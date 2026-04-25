@@ -26,7 +26,7 @@
   margin: 0 auto;
   padding: 0 80px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 2px;
   background: var(--surface-high);
 }
@@ -100,6 +100,10 @@
 
 @media (max-width: 960px) {
   .header { padding: 0 24px 48px; }
-  .cols { grid-template-columns: 1fr; padding: 0 24px; }
+  .cols { grid-template-columns: repeat(2, 1fr); padding: 0 24px; }
   .punchStrip { padding: 40px 24px; flex-direction: column; align-items: flex-start; gap: 16px; }
+}
+
+@media (max-width: 640px) {
+  .cols { grid-template-columns: 1fr; }
 }

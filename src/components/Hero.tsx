@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import type { FormEvent } from "react";
 import styles from "./Hero.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
@@ -8,6 +9,8 @@ export default function Hero() {
   const { lang } = useLanguage();
   const tx = getT(lang).hero;
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showAccessForm, setShowAccessForm] = useState(false);
+  const [accessSubmitted, setAccessSubmitted] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -16,6 +19,11 @@ export default function Hero() {
       .catch(() => {});
   }, []);
   const [active, setActive] = useState(0);
+
+  const handleAccessSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setAccessSubmitted(true);
+  };
 
   return (
     <section id="hero" className={styles.hero}>
@@ -33,9 +41,9 @@ export default function Hero() {
               {isLoggedIn ? (tx.myWorkspace ?? "My Workspace") : (tx.tryIt ?? "Try it")}
             </a>
             {!isLoggedIn && (
-              <a className="btn-s" href="#cta">
+              <button className="btn-s" type="button" onClick={() => { setShowAccessForm(true); setAccessSubmitted(false); }}>
                 {tx.requestAccess ?? "Request early access"}
-              </a>
+              </button>
             )}
           </div>
           <div className={styles.trustStrip}>
@@ -127,6 +135,43 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      {showAccessForm && (
+        <div className={styles.modalBackdrop} role="presentation" onMouseDown={() => setShowAccessForm(false)}>
+          <div className={styles.accessModal} role="dialog" aria-modal="true" aria-labelledby="access-title" onMouseDown={(e) => e.stopPropagation()}>
+            <button className={styles.modalClose} type="button" aria-label="Close early access form" onClick={() => setShowAccessForm(false)}>
+              X
+            </button>
+            {accessSubmitted ? (
+              <div className={styles.accessSuccess}>
+                <h2 id="access-title" className={styles.modalTitle}>{tx.accessSuccessTitle ?? "Request received"}</h2>
+                <p className={styles.modalCopy}>{tx.accessSuccessBody ?? "Thank you. We will get back to you soon."}</p>
+              </div>
+            ) : (
+              <>
+                <h2 id="access-title" className={styles.modalTitle}>{tx.accessTitle ?? "Request early access"}</h2>
+                <p className={styles.modalCopy}>{tx.accessBody ?? "Tell us who you are and we will follow up."}</p>
+                <form className={styles.accessForm} onSubmit={handleAccessSubmit}>
+                  <label className={styles.fieldLabel}>
+                    {tx.firstName ?? "First name"}
+                    <input className={styles.fieldInput} name="firstName" type="text" autoComplete="given-name" required />
+                  </label>
+                  <label className={styles.fieldLabel}>
+                    {tx.familyName ?? "Family name"}
+                    <input className={styles.fieldInput} name="familyName" type="text" autoComplete="family-name" required />
+                  </label>
+                  <label className={styles.fieldLabel}>
+                    {tx.email ?? "Email"}
+                    <input className={styles.fieldInput} name="email" type="email" autoComplete="email" required />
+                  </label>
+                  <button className={styles.submitAccess} type="submit">
+                    {tx.submitAccess ?? "Submit request"}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

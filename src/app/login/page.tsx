@@ -71,9 +71,9 @@ function LoginContent() {
       <div className={styles.form}>
         <div className={styles.formInner}>
 
-          <h1 className={styles.heading}>Sign in</h1>
+          <h1 className={styles.heading}>Sign up</h1>
           <p className={styles.sub}>
-            Enter your email to access your workspace.
+            Enter your email to create or access your workspace.
           </p>
 
           <form onSubmit={handleContinue} className={styles.emailForm}>
