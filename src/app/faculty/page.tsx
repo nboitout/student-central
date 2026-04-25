@@ -677,6 +677,11 @@ export default function FacultyDashboard() {
   };
 
   const deleteQuestion = (id: string) => {
+    const question = mcqBank.find(q => q.id === id);
+    const label = question?.question ? `"${question.question}"` : "this question";
+    const confirmed = window.confirm(`Delete ${label}? This cannot be undone.`);
+    if (!confirmed) return;
+
     setMcqBank(prev => prev.filter(q => q.id !== id));
     setRightPanel("empty"); setEditDraft(null);
   };
