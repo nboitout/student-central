@@ -880,7 +880,7 @@ export default function FacultyDashboard() {
         </div>
 
         <div className={styles.modeTabs}>
-          {(["questions","share","students","analytics"] as Mode[]).map(m => (
+          {(["questions","students","share","analytics"] as Mode[]).map(m => (
             <button key={m}
               className={`${styles.tab} ${activeMode === m ? styles.tabActive : ""}`}
               onClick={() => switchMode(m)}>
