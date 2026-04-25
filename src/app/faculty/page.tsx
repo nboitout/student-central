@@ -584,6 +584,9 @@ export default function FacultyDashboard() {
   const [selectedStudent, setSelectedStudent] = useState<MockStudent | null>(null);
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
   const [slideExpanded, setSlideExpanded]   = useState(true);
+  const [coursePdfUrl, setCoursePdfUrl]     = useState<string | null>(null);
+  const [coursePdfLoading, setCoursePdfLoading] = useState(false);
+  const [coursePdfError, setCoursePdfError] = useState<string | null>(null);
   const [facultyId, setFacultyId]           = useState("nicolas");
   const [middleWidth, setMiddleWidth]       = useState(380);
   const csvInputRef = useRef<HTMLInputElement>(null);
@@ -681,6 +684,46 @@ export default function FacultyDashboard() {
       .catch(err => console.warn("Groups fetch failed:", err))
       .finally(() => setGroupsLoading(false));
   }, [facultyReady, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!facultyReady || !selectedCourse?.id) {
+      setCoursePdfUrl(null);
+      setCoursePdfError(null);
+      setCoursePdfLoading(false);
+      return;
+    }
+
+    setCoursePdfUrl(null);
+    setCoursePdfLoading(true);
+    setCoursePdfError(null);
+    let cancelled = false;
+    const controller = new AbortController();
+    fetch(`${API}/api/courses/${selectedCourse.id}/pdf-url?userId=${encodeURIComponent(facultyId)}`, {
+      signal: controller.signal,
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error(`PDF URL fetch failed with ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        if (!cancelled) setCoursePdfUrl(data.url ?? null);
+      })
+      .catch(err => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.warn("PDF URL fetch failed:", err);
+        if (cancelled) return;
+        setCoursePdfUrl(null);
+        setCoursePdfError(err instanceof Error ? err.message : "PDF unavailable");
+      })
+      .finally(() => {
+        if (!cancelled) setCoursePdfLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [facultyReady, selectedCourse?.id, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Fetch MCQ bank — waits for facultyId to be resolved ── */
   useEffect(() => {
@@ -1531,19 +1574,28 @@ export default function FacultyDashboard() {
                 {slideExpanded && (
                   <div className={styles.slideBody}>
                     <div className={styles.slideImgArea}>
-                      {/* TODO: replace with <img src={sasUrl}> from getSlideSasUrl(selectedCourse?.id, editDraft.id) */}
-                      <div className={styles.slidePlaceholder}>
-                        <div className={styles.slidePlaceholderTitle} />
-                        {editDraft.hasVisual
-                          ? <div className={styles.slidePlaceholderDiagram} />
-                          : null}
-                        <div className={styles.slidePlaceholderLines}>
-                          <div className={styles.slidePlaceholderLine} />
-                          <div className={`${styles.slidePlaceholderLine} ${styles.slidePlaceholderLineShort}`} />
-                          <div className={styles.slidePlaceholderLine} />
-                          <div className={`${styles.slidePlaceholderLine} ${styles.slidePlaceholderLineShort}`} />
+                      {coursePdfUrl ? (
+                        <iframe
+                          className={styles.pdfFrame}
+                          src={`${coursePdfUrl}#page=${editDraftPage > 0 ? editDraftPage : 1}`}
+                          title={`PDF preview for ${selectedCourse?.title ?? "course"}`}
+                        />
+                      ) : (
+                        <div className={styles.slidePlaceholder}>
+                          <div className={styles.slidePlaceholderTitle} />
+                          {editDraft.hasVisual
+                            ? <div className={styles.slidePlaceholderDiagram} />
+                            : null}
+                          <div className={styles.slidePlaceholderLines}>
+                            <div className={styles.slidePlaceholderLine} />
+                            <div className={`${styles.slidePlaceholderLine} ${styles.slidePlaceholderLineShort}`} />
+                            <div className={styles.slidePlaceholderLine} />
+                            <div className={`${styles.slidePlaceholderLine} ${styles.slidePlaceholderLineShort}`} />
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      {coursePdfLoading && <div className={styles.pdfState}>Loading PDF</div>}
+                      {!coursePdfLoading && coursePdfError && <div className={styles.pdfState}>PDF unavailable</div>}
                       <div className={styles.pageBadge}>{editDraftPage > 0 ? `p. ${editDraftPage}` : "p. -"}</div>
                     </div>
                     <div className={styles.slideMeta}>
@@ -1561,14 +1613,20 @@ export default function FacultyDashboard() {
                         <span className={styles.fieldLabel}>Source</span>
                         <span className={styles.slideMetaSource}>{selectedCourse?.title}.pdf</span>
                       </div>
-                      <a
-                        href={`/api/courses/${selectedCourse?.id}/pdf-url`}
-                        className={styles.pdfLink}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Open full PDF →
-                      </a>
+                      {coursePdfUrl ? (
+                        <a
+                          href={coursePdfUrl}
+                          className={styles.pdfLink}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open full PDF →
+                        </a>
+                      ) : (
+                        <span className={styles.pdfUnavailable}>
+                          {coursePdfLoading ? "Loading PDF" : "PDF unavailable"}
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
