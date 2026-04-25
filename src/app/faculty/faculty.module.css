@@ -1915,3 +1915,127 @@
 .deleteConfirmBtn:hover {
   opacity: 0.88;
 }
+
+.fileInput {
+  display: none;
+}
+
+.uploadZoneHidden {
+  display: none;
+}
+
+.groupsSection {
+  margin-top: 12px;
+  border-top: 1px solid var(--outline-variant);
+  padding-top: 12px;
+}
+
+.groupsSectionHd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 6px;
+}
+
+.groupRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.groupRow:hover {
+  background: var(--surface-low);
+}
+
+.groupRowActive {
+  background: var(--surface-low);
+  border-left: 2px solid var(--primary);
+  padding-left: 10px;
+}
+
+.groupInitial {
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  background: var(--surface-high);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  flex-shrink: 0;
+}
+
+.groupMeta {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.groupName {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupCount {
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  color: var(--on-surface-variant);
+  opacity: 0.6;
+}
+
+.groupSharedChip {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--outline-variant);
+  padding: 2px 6px;
+  color: var(--on-surface-variant);
+  flex-shrink: 0;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.memberEmail {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analyticsControls {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--outline-variant);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.analyticsToggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--outline-variant);
+  width: fit-content;
+  flex-shrink: 0;
+}

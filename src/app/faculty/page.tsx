@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "./faculty.module.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type MCQFunction = "orient" | "understand" | "recognize" | "connect" | "evaluate";
-type RightPanel  = "empty" | "edit-q" | "new-q" | "student-detail" | "invite";
+type RightPanel  =
+  | "empty" | "edit-q" | "new-q" | "student-detail"
+  | "invite" | "generate-similar" | "group-detail" | "group-create";
 type Mode        = "questions" | "share" | "students" | "analytics";
 
 interface MCQOption { letter: string; text: string; }
@@ -54,6 +56,21 @@ interface AccessEntry {
   status:       "invited" | "pending" | "active" | "declined";
   sharedAt:     string;
   sessionCount: number;
+}
+
+interface Group {
+  id:        string;
+  name:      string;
+  facultyId: string;
+  members:   string[];
+  courseIds: string[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface GroupAnalytics {
+  sessions: unknown[];
+  memberCount: number;
 }
 
 interface EditDraft {
@@ -124,6 +141,14 @@ function emailInitials(email: string): string {
 function blankDraft(): EditDraft {
   return { question: "", options: ["", "", "", ""], correctIndex: 0,
            explanation: "", function: "orient", pageNumber: "", hasVisual: false };
+}
+
+function parseStudentEmails(text: string): string[] {
+  const emails = text
+    .split(/\r?\n/)
+    .map(line => line.trim().split(/[;,]/)[0]?.trim().toLowerCase() ?? "")
+    .filter(line => line.includes("@"));
+  return Array.from(new Set(emails));
 }
 
 function draftFromDoc(q: MCQDoc): EditDraft {
@@ -434,8 +459,8 @@ function TeachIntro({ onClose }: { onClose: () => void }) {
 
   const TABS: [string, string][] = [
     ["Questions", "Review and edit the MCQ bank generated from your course PDF — reorder, reformulate, or add questions manually."],
-    ["Share",     "Grant students access to your course in one click — they see it instantly in their workspace, no email needed."],
     ["Students",  "Manage your class roster, send bulk invitations, and track who has joined."],
+    ["Share",     "Grant students access to your course in one click — they see it instantly in their workspace, no email needed."],
     ["Analytics", "Monitor session performance, signal breakdowns, and weak concepts across your whole class."],
   ];
 
@@ -536,6 +561,7 @@ export default function FacultyDashboard() {
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
   const [slideExpanded, setSlideExpanded]   = useState(true);
   const [facultyId, setFacultyId]           = useState("nicolas");
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useState<boolean>(() => {
     try { return localStorage.getItem("skipQuestionDeleteConfirm") === "true"; } catch { return false; }
@@ -544,6 +570,19 @@ export default function FacultyDashboard() {
   const [showIntro, setShowIntro] = useState<boolean>(() => {
     try { return localStorage.getItem("teachIntroSeen") !== "true"; } catch { return true; }
   });
+
+  // Groups
+  const [groups,         setGroups]         = useState<Group[]>([]);
+  const [groupsLoading,  setGroupsLoading]  = useState(false);
+  const [selectedGroup,  setSelectedGroup]  = useState<Group | null>(null);
+  const [pendingCsv,     setPendingCsv]     = useState<string[] | null>(null);
+  const [newGroupName,   setNewGroupName]   = useState("");
+
+  // Analytics view toggle
+  const [analyticsView,  setAnalyticsView]  = useState<"students" | "group">("students");
+  const [analyticsGroup, setAnalyticsGroup] = useState<Group | null>(null);
+  const [groupAnalytics, setGroupAnalytics] = useState<GroupAnalytics | null>(null);
+  const [groupAnalyticsLoading, setGroupAnalyticsLoading] = useState(false);
 
   // ── Share tab state ──
   const [shareAccess,  setShareAccess]  = useState<AccessEntry[]>([]);
@@ -579,6 +618,16 @@ export default function FacultyDashboard() {
         setSelectedCourse(list[0] ?? null);
       })
       .catch(err => console.warn("Course fetch failed:", err));
+  }, [facultyReady, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!facultyReady) return;
+    setGroupsLoading(true);
+    fetch(`${API}/api/groups?facultyId=${facultyId}`)
+      .then(r => r.json())
+      .then(d => setGroups(d.groups ?? []))
+      .catch(err => console.warn("Groups fetch failed:", err))
+      .finally(() => setGroupsLoading(false));
   }, [facultyReady, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Fetch MCQ bank — waits for facultyId to be resolved ── */
@@ -619,8 +668,26 @@ export default function FacultyDashboard() {
       .finally(() => setShareLoading(false));
   }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (activeMode !== "analytics") return;
+    if (analyticsView !== "group" || !analyticsGroup || !selectedCourse) return;
+
+    setGroupAnalyticsLoading(true);
+    fetch(`${API}/api/analytics/group/${analyticsGroup.id}?courseId=${selectedCourse.id}`)
+      .then(r => r.json())
+      .then(data => setGroupAnalytics({
+        sessions: data.sessions ?? [],
+        memberCount: data.memberCount ?? analyticsGroup.members.length,
+      }))
+      .catch(err => {
+        console.warn("Group analytics fetch failed:", err);
+        setGroupAnalytics(null);
+      })
+      .finally(() => setGroupAnalyticsLoading(false));
+  }, [analyticsView, analyticsGroup?.id, selectedCourse?.id, activeMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const selectCourse = (c: Course) => {
-    setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null);
+    setSelectedCourse(c); setRightPanel("empty"); setEditDraft(null); setSelectedStudent(null); setSelectedGroup(null);
   };
 
   const switchMode = (m: Mode) => {
@@ -734,6 +801,114 @@ export default function FacultyDashboard() {
     }).catch(err => console.warn("Share remove failed:", err));
   };
 
+  const handleCsvFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const emails = parseStudentEmails(text);
+      if (emails.length === 0) return;
+      setPendingCsv(emails);
+      setNewGroupName("");
+      setRightPanel("group-create");
+    };
+    reader.readAsText(file);
+  };
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim() || !pendingCsv?.length) return;
+    const optimistic: Group = {
+      id: `g${Date.now()}`,
+      name: newGroupName.trim(),
+      facultyId,
+      members: pendingCsv,
+      courseIds: [],
+      createdAt: new Date().toISOString(),
+    };
+    setGroups(prev => [optimistic, ...prev]);
+    setSelectedGroup(optimistic);
+    setRightPanel("group-detail");
+    setPendingCsv(null);
+
+    fetch(`${API}/api/groups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: optimistic.name,
+        facultyId,
+        members: optimistic.members,
+      }),
+    })
+      .then(r => r.json())
+      .then((real: Group) => {
+        setGroups(prev => prev.map(g => g.id === optimistic.id ? real : g));
+        setSelectedGroup(real);
+        setAnalyticsGroup(prev => prev?.id === optimistic.id ? real : prev);
+      })
+      .catch(console.warn);
+  };
+
+  const handleRenameGroup = (name: string) => {
+    if (!selectedGroup) return;
+    const updated = { ...selectedGroup, name };
+    setSelectedGroup(updated);
+    setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
+  };
+
+  const persistRenameGroup = () => {
+    if (!selectedGroup || !selectedGroup.name.trim()) return;
+    fetch(`${API}/api/groups/${selectedGroup.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: selectedGroup.name.trim() }),
+    }).catch(console.warn);
+  };
+
+  const handleShareGroup = () => {
+    if (!selectedGroup || !selectedCourse) return;
+    if (selectedGroup.courseIds.includes(selectedCourse.id)) return;
+
+    const updated = { ...selectedGroup, courseIds: [...selectedGroup.courseIds, selectedCourse.id] };
+    setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
+    setSelectedGroup(updated);
+    setAnalyticsGroup(prev => prev?.id === selectedGroup.id ? updated : prev);
+    fetch(`${API}/api/groups/${selectedGroup.id}/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId: selectedCourse.id, facultyId }),
+    }).catch(console.warn);
+  };
+
+  const handleDeleteGroup = () => {
+    if (!selectedGroup) return;
+    const groupId = selectedGroup.id;
+    setGroups(prev => prev.filter(g => g.id !== groupId));
+    setSelectedGroup(null);
+    setAnalyticsGroup(prev => prev?.id === groupId ? null : prev);
+    setRightPanel("empty");
+    fetch(`${API}/api/groups/${groupId}?facultyId=${facultyId}`, {
+      method: "DELETE",
+    }).catch(console.warn);
+  };
+
+  const handleRemovePendingEmail = (email: string) => {
+    setPendingCsv(prev => prev?.filter(e => e !== email) ?? []);
+  };
+
+  const handleRemoveGroupMember = (email: string) => {
+    if (!selectedGroup) return;
+    const updated = {
+      ...selectedGroup,
+      members: selectedGroup.members.filter(member => member !== email),
+    };
+    setSelectedGroup(updated);
+    setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
+    fetch(`${API}/api/groups/${selectedGroup.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ members: updated.members }),
+    }).catch(console.warn);
+  };
+
   const handleAllowDownloadToggle = () => {
     if (!selectedCourse) return;
     const next = !selectedCourse.allowDownload;
@@ -807,9 +982,15 @@ export default function FacultyDashboard() {
 
   const groupedMcqs = FN_ORDER.map(fn => ({ fn, qs: mcqBank.filter(q => q.function === fn) }));
 
-  const activeStudents = MOCK_STUDENTS.filter(s => s.status === "active");
+  const analyticsStudents = analyticsView === "group" && analyticsGroup
+    ? MOCK_STUDENTS.filter(s => analyticsGroup.members.includes(s.email.toLowerCase()) || analyticsGroup.members.includes(s.email))
+    : MOCK_STUDENTS;
+  const activeStudents = analyticsStudents.filter(s => s.status === "active");
   const classAvgScore  = activeStudents.length
     ? Math.round(activeStudents.reduce((s, st) => s + st.avgScore, 0) / activeStudents.length) : 0;
+  const analyticsStudentCount = analyticsView === "group" && analyticsGroup
+    ? (groupAnalytics?.memberCount ?? analyticsGroup.members.length)
+    : analyticsStudents.length;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -1056,9 +1237,29 @@ export default function FacultyDashboard() {
               <span className={styles.eyebrow}>Roster — {MOCK_STUDENTS.length}</span>
               <button className={styles.addBtn} onClick={() => setRightPanel("invite")}>+ Invite</button>
             </div>
-            <div className={styles.uploadZone}>
+            <div
+              className={`${styles.uploadZone} ${styles.uploadZoneHidden}`}
+              onClick={() => csvInputRef.current?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => {
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+                if (file) handleCsvFile(file);
+              }}
+            >
               <p>Drop a .csv of student emails</p>
-              <span className={styles.uploadHint}>one email per line · sends invite to each</span>
+              <span className={styles.uploadHint}>one email per line</span>
+              <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv,text/csv,text/plain"
+                className={styles.fileInput}
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleCsvFile(file);
+                  e.currentTarget.value = "";
+                }}
+              />
             </div>
             <div className={styles.panelScroll}>
               {MOCK_STUDENTS.map(s => (
@@ -1071,6 +1272,44 @@ export default function FacultyDashboard() {
                   <span className={statusPillCls(s.status, styles)}>{s.status}</span>
                 </div>
               ))}
+              <div className={styles.groupsSection}>
+                <div className={styles.groupsSectionHd}>
+                  <span className={styles.eyebrow}>{groupsLoading ? "Groups loading" : `Groups - ${groups.length}`}</span>
+                  <button className={styles.addBtn} onClick={() => csvInputRef.current?.click()}>+ Group</button>
+                </div>
+                {groups.map(g => (
+                  <div
+                    key={g.id}
+                    className={`${styles.groupRow} ${selectedGroup?.id === g.id ? styles.groupRowActive : ""}`}
+                    onClick={() => { setSelectedGroup(g); setRightPanel("group-detail"); }}
+                  >
+                    <span className={styles.groupInitial}>{g.name[0]?.toUpperCase() ?? "G"}</span>
+                    <div className={styles.groupMeta}>
+                      <span className={styles.groupName}>{g.name}</span>
+                      <span className={styles.groupCount}>{g.members.length} students</span>
+                    </div>
+                    {g.courseIds.includes(selectedCourse?.id ?? "") && (
+                      <span className={styles.groupSharedChip}>Shared</span>
+                    )}
+                  </div>
+                ))}
+                {!groupsLoading && groups.length === 0 && (
+                  <div className={styles.emptyGroup}>No groups yet - upload a CSV to create one.</div>
+                )}
+                <div
+                  className={styles.uploadZone}
+                  onClick={() => csvInputRef.current?.click()}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleCsvFile(file);
+                  }}
+                >
+                  <p>Drop a .csv of student emails</p>
+                  <span className={styles.uploadHint}>one email per line</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1078,13 +1317,51 @@ export default function FacultyDashboard() {
         {/* ── Analytics ── */}
         {activeMode === "analytics" && (
           <div className={styles.panelShell}>
+            <div className={styles.analyticsControls}>
+              <div className={styles.analyticsToggle}>
+                <button
+                  className={`${styles.toggleBtn} ${analyticsView === "students" ? styles.toggleBtnOn : ""}`}
+                  onClick={() => setAnalyticsView("students")}
+                >
+                  Students
+                </button>
+                <button
+                  className={`${styles.toggleBtn} ${analyticsView === "group" ? styles.toggleBtnOn : ""}`}
+                  onClick={() => setAnalyticsView("group")}
+                  disabled={groups.length === 0}
+                >
+                  Groups
+                </button>
+              </div>
+              {analyticsView === "group" && (
+                <select
+                  className={styles.fieldSelect}
+                  value={analyticsGroup?.id ?? ""}
+                  onChange={e => {
+                    const g = groups.find(group => group.id === e.target.value) ?? null;
+                    setAnalyticsGroup(g);
+                  }}
+                >
+                  <option value="">Select a group...</option>
+                  {groups.map(g => (
+                    <option key={g.id} value={g.id}>{g.name} ({g.members.length})</option>
+                  ))}
+                </select>
+              )}
+            </div>
             <div className={styles.statRow}>
-              <div className={styles.statBox}><div className={styles.statN}>{activeStudents.length}</div><div className={styles.statLbl}>Students</div></div>
-              <div className={styles.statBox}><div className={styles.statN}>{activeStudents.reduce((s,st)=>s+st.sessions,0)}</div><div className={styles.statLbl}>Sessions</div></div>
+              <div className={styles.statBox}><div className={styles.statN}>{analyticsStudentCount}</div><div className={styles.statLbl}>Students</div></div>
+              <div className={styles.statBox}><div className={styles.statN}>{analyticsView === "group" && analyticsGroup ? (groupAnalytics?.sessions.length ?? 0) : activeStudents.reduce((s,st)=>s+st.sessions,0)}</div><div className={styles.statLbl}>Sessions</div></div>
               <div className={styles.statBox}><div className={styles.statN}>{classAvgScore}%</div><div className={styles.statLbl}>Avg score</div></div>
             </div>
             <div className={styles.panelScroll}>
-              {MOCK_STUDENTS.map(s => (
+              {analyticsView === "group" && !analyticsGroup && (
+                <div className={styles.emptyGroup}>Select a group to view class analytics.</div>
+              )}
+              {groupAnalyticsLoading && (
+                <div className={styles.emptyGroup}>Loading group analytics...</div>
+              )}
+              {analyticsStudents.map(s => (
                 <div key={s.id}
                   className={`${styles.analyticsRow} ${selectedStudent?.id===s.id ? styles.analyticsRowActive : ""}`}
                   onClick={() => { setSelectedStudent(s); setRightPanel("student-detail"); }}>
@@ -1246,6 +1523,106 @@ export default function FacultyDashboard() {
               </div>
             </div>
           </>
+        )}
+
+        {rightPanel==="group-create" && (
+          <div className={styles.editorShell}>
+            <div className={styles.paneHd}><span className={styles.eyebrow}>Create group</span></div>
+            <div className={styles.editorScroll}>
+              <div className={styles.editorSection}>
+                <label className={styles.fieldLabel}>Group name</label>
+                <input
+                  className={styles.fieldInput}
+                  value={newGroupName}
+                  onChange={e => setNewGroupName(e.target.value)}
+                  placeholder="e.g. M2 Data Science 2026"
+                  autoFocus
+                />
+              </div>
+
+              <div className={styles.editorSection}>
+                <label className={styles.fieldLabel}>Members - {pendingCsv?.length ?? 0}</label>
+                {pendingCsv?.map(email => (
+                  <div key={email} className={styles.memberRow}>
+                    <span className={styles.avatar}>{email[0].toUpperCase()}</span>
+                    <span className={styles.memberEmail}>{email}</span>
+                    <button className={styles.delBtnSm} onClick={() => handleRemovePendingEmail(email)}>x</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.editorActions}>
+              <button
+                className={styles.saveBtn}
+                disabled={!newGroupName.trim() || !pendingCsv?.length}
+                onClick={handleCreateGroup}
+              >
+                Create group
+              </button>
+              <button className={styles.cancelBtn} onClick={() => { setPendingCsv(null); setRightPanel("empty"); }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {rightPanel==="group-detail" && selectedGroup && (
+          <div className={styles.editorShell}>
+            <div className={styles.paneHd}><span className={styles.eyebrow}>Group</span></div>
+            <div className={styles.editorScroll}>
+              <div className={styles.editorSection}>
+                <label className={styles.fieldLabel}>Group name</label>
+                <input
+                  className={styles.fieldInput}
+                  value={selectedGroup.name}
+                  onChange={e => handleRenameGroup(e.target.value)}
+                  onBlur={persistRenameGroup}
+                />
+                <span className={styles.settingHint}>
+                  {selectedGroup.members.length} students
+                  {selectedGroup.courseIds.length > 0 && ` - shared with ${selectedGroup.courseIds.length} course(s)`}
+                </span>
+              </div>
+
+              {selectedCourse && (
+                <div className={styles.editorSection}>
+                  <div className={styles.settingRow}>
+                    <div className={styles.settingLabelGroup}>
+                      <span className={styles.settingLabel}>Share with &quot;{selectedCourse.title}&quot;</span>
+                      <span className={styles.settingHint}>
+                        {selectedGroup.courseIds.includes(selectedCourse.id)
+                          ? "Already shared - students have access"
+                          : "Adds all members to this course"}
+                      </span>
+                    </div>
+                    <button
+                      className={styles.saveBtn}
+                      disabled={selectedGroup.courseIds.includes(selectedCourse.id)}
+                      onClick={handleShareGroup}
+                    >
+                      {selectedGroup.courseIds.includes(selectedCourse.id) ? "Shared" : "Share"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.editorSection}>
+                <label className={styles.fieldLabel}>Members</label>
+                {selectedGroup.members.map(email => (
+                  <div key={email} className={styles.memberRow}>
+                    <span className={styles.avatar}>{email[0].toUpperCase()}</span>
+                    <span className={styles.memberEmail}>{email}</span>
+                    <button className={styles.delBtnSm} onClick={() => handleRemoveGroupMember(email)}>Remove</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.editorActions}>
+              <button className={styles.deleteBtn} onClick={handleDeleteGroup}>Delete group</button>
+            </div>
+          </div>
         )}
 
         {rightPanel==="student-detail" && selectedStudent && (
