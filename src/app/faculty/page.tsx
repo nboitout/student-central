@@ -808,7 +808,7 @@ export default function FacultyDashboard() {
       const emails = parseStudentEmails(text);
       if (emails.length === 0) return;
       setPendingCsv(emails);
-      setNewGroupName("");
+      setNewGroupName(`Imported group ${new Date().toISOString().slice(0, 10)}`);
       setRightPanel("group-create");
     };
     reader.readAsText(file);
