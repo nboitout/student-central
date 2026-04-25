@@ -15,12 +15,14 @@ interface LangCtx {
 const LanguageContext = createContext<LangCtx>({ lang: "en", setLang: () => {} });
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  /* Read from localStorage on first render (client only) */
-  const [lang, setLangState] = useState<Lang>(() => {
-    if (typeof window === "undefined") return "en";
+  const [lang, setLangState] = useState<Lang>("en");
+
+  useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Lang | null;
-    return stored && VALID_LANGS.includes(stored) ? stored : "en";
-  });
+    if (stored && VALID_LANGS.includes(stored)) {
+      setLangState(stored);
+    }
+  }, []);
 
   /* Persist every change */
   const setLang = (l: Lang) => {

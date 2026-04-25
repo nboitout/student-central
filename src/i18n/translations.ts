@@ -88,6 +88,44 @@ export const t = {
       "Professor Feedback",
       "Learning Signals",
     ],
+    bloom: {
+      ribbon: "Why it matters",
+      h2a: "AI handles the foundation.",
+      h2em: "Professors focus on what matters most.",
+      sub: "StudentCentral automates foundational learning so professors can invest their time in higher-order thinking - where their expertise creates the most value.",
+      visualLabel: "Bloom taxonomy diagram showing AI tutor support and professor-led higher-order thinking",
+      levels: [
+        { label: "create" },
+        { label: "evaluate" },
+        { label: "analyze" },
+        { label: "apply" },
+        { label: "understand" },
+        { label: "remember" },
+      ],
+      professorZone: {
+        title: "Led by professors",
+        items: ["critical thinking", "projects & presentations", "original work"],
+      },
+      guidedZone: {
+        title: "Guided by AI Tutor",
+        items: ["solve problems", "structure thinking"],
+      },
+      aiZone: {
+        title: "Handled by AI Tutor",
+        items: ["recall concepts", "explain basics"],
+      },
+      flowLabel: "LEARNING FLOW",
+      flow: {
+        professor: { short: "Prof", title: "Professor", action: "leads" },
+        student: { short: "Stu", title: "Student", action: "progresses" },
+        ai: { short: "AI", title: "AI Tutor", action: "handles" },
+      },
+      quote: "\"AI handles practice. Professors develop thinking.\"",
+      aiListTitle: "StudentCentral automates and guides",
+      aiList: ["Understanding concepts", "Practicing exercises", "Structuring reasoning"],
+      profListTitle: "Professors focus on",
+      profList: ["Critical thinking", "Applied learning", "Teamwork and projects", "Creativity and evaluation"],
+    },
     problem: {
       ribbon:    "Why it matters",
       headline:  "AI is everywhere in education - but learning is at risk",
@@ -7104,8 +7142,24 @@ export type Translations = typeof t.en;
 
 const localizedHomepage = {
   fr: {
-    nav: { signUp: "S'inscrire", getStarted: "S'inscrire" },
+    nav: {
+      whyItMatters: "Pourquoi c'est important",
+      howItWorks: "Comment ça fonctionne",
+      whatFacultySee: "Pour les professeurs",
+      academicIntegrity: "Confiance & contrôle",
+      forInstitutions: "Universités",
+      myWorkspace: "Mon espace",
+      tryIt: "Essayer maintenant",
+      logIn: "Se connecter",
+      signUp: "S'inscrire",
+      getStarted: "S'inscrire",
+    },
     hero: {
+      ribbon: "Tuteur IA pour l'enseignement supérieur",
+      h1a: "Voir comment les étudiants réfléchissent - pas seulement",
+      h1em: "ce qu'ils répondent",
+      sub: "StudentCentral transforme l'IA en système d'apprentissage. Les étudiants expliquent leur raisonnement. Les professeurs comprennent comment ils apprennent. Des supports de cours à l'apprentissage guidé, à l'évaluation et au feedback - dans une seule plateforme.",
+      tryIt: "Essayer avec votre propre document",
       requestAccess: "Demander un accès anticipé",
       accessTitle: "Demander un accès anticipé",
       accessBody: "Dites-nous qui vous êtes et nous vous recontacterons.",
@@ -7115,9 +7169,54 @@ const localizedHomepage = {
       submitAccess: "Envoyer la demande",
       accessSuccessTitle: "Demande reçue",
       accessSuccessBody: "Merci. Nous vous recontacterons bientôt.",
+      getStarted: "Demander l'accès",
+      myWorkspace: "Mon espace",
+      trust: [
+        "Conçu pour les universités",
+        "Ancré dans les supports de cours",
+        "Apprentissage guidé, évaluation et feedback",
+        "Conçu pour la visibilité et le contrôle des professeurs",
+      ],
+      steps: [
+        { num: "01", label: "Répondre à partir du contenu du cours" },
+        { num: "02", label: "Expliquer son raisonnement" },
+        { num: "03", label: "Le professeur voit la compréhension" },
+      ],
+    },
+    divider: [
+      "Supports de cours",
+      "Apprentissage guidé",
+      "Évaluation du raisonnement",
+      "Feedback professeur",
+      "Signaux d'apprentissage",
+    ],
+    problem: {
+      ribbon: "Pourquoi c'est important",
+      headline: "L'IA est partout dans l'éducation - mais l'apprentissage est en risque",
+      body: "Des outils comme ChatGPT donnent des réponses instantanées. Mais apprendre demande de l'effort, du raisonnement et du feedback. Le résultat est moins de visibilité, moins de contrôle et des résultats d'apprentissage plus faibles.",
+      cards: [
+        {
+          num: "01",
+          title: "Les professeurs ne peuvent pas voir comment les étudiants réfléchissent",
+          body: "Une réponse finale cache le chemin de raisonnement, l'effort et l'incertitude qui la précèdent.",
+        },
+        {
+          num: "02",
+          title: "Il est difficile de distinguer la compréhension de la supposition",
+          body: "Une bonne réponse peut venir d'une vraie compréhension, d'une intuition chanceuse ou d'une sortie copiée.",
+        },
+        {
+          num: "03",
+          title: "Les étudiants AI-native ont besoin d'outils adaptés",
+          body: "Les professeurs ont besoin de systèmes d'apprentissage qui guident le raisonnement, pas de moteurs de réponses qui le contournent.",
+        },
+      ],
     },
     approach: {
+      ribbon: "Insight",
+      headline: "Les assistants IA donnent des réponses. Les tuteurs IA construisent la compréhension",
       insightHeadline: "Quelle différence avec ChatGPT ?",
+      kicker: "Les assistants optimisent la vitesse. Les tuteurs optimisent l'apprentissage.",
       body: "Les assistants IA donnent des réponses. Les tuteurs IA construisent la compréhension. StudentCentral ne se contente pas de fournir des réponses : il pose des questions, guide la réflexion et évalue le raisonnement.",
       dividerText: "Assistant IA vs tuteur IA",
       assistantLabel: "Assistant IA",
@@ -7132,8 +7231,106 @@ const localizedHomepage = {
       footerLeft: "ChatGPT",
       footerRight: "StudentCentral fournit un retour en direct aux professeurs",
       footerTag: "Signaux d'apprentissage en temps réel",
+      summaryTitle: "Des réponses vers la compréhension",
+      summary: [
+        { from: "Correct + explication solide", to: "Compréhension robuste" },
+        { from: "Correct + explication faible", to: "Connaissance fragile" },
+        { from: "Incorrect + explication partielle", to: "Idée fausse à traiter" },
+        { from: "Incorrect + explication confuse", to: "Besoin d'un soutien plus approfondi" },
+      ],
+      quads: [
+        { badge: "Robuste", answer: "Correct", state: "Correct + explication solide", body: "Compréhension robuste." },
+        { badge: "Fragile", answer: "Correct", state: "Correct + explication faible", body: "Connaissance fragile." },
+        { badge: "Partiel", answer: "Incorrect", state: "Incorrect + explication partielle", body: "Idée fausse à traiter." },
+        { badge: "Faible maîtrise", answer: "Incorrect", state: "Incorrect + explication confuse", body: "Besoin d'un soutien plus approfondi." },
+      ],
     },
-    cta: { secondary: "Demander l'accès / Nous contacter" },
+    workflow: {
+      ribbon: "Ce que fait StudentCentral",
+      headline: "Un workflow simple pour les professeurs et les étudiants",
+      steps: [
+        { idx: "Étape 01", title: "Créer des activités d'apprentissage", body: "Importez vos supports de cours et générez des QCM, des questions ouvertes et des exercices." },
+        { idx: "Étape 02", title: "Guider la pensée des étudiants", body: "Les étudiants répondent aux questions, puis l'IA pose des questions de suivi et les étudiants expliquent leur raisonnement." },
+        { idx: "Étape 03", title: "Comprendre l'apprentissage en profondeur", body: "Les professeurs voient la qualité du raisonnement, les idées fausses, les niveaux de confiance et l'engagement dans le temps." },
+        { idx: "Étape 04", title: "Voir la compréhension, pas seulement les réponses", body: "StudentCentral transforme chaque réponse en signal d'apprentissage exploitable par les professeurs." },
+      ],
+    },
+    faculty: {
+      ribbon: "Pour les professeurs",
+      headline: "Se concentrer sur ce qui compte",
+      body: "StudentCentral vous aide à détecter les signaux faibles tôt, identifier l'apprentissage superficiel et soutenir une compréhension plus profonde à grande échelle.",
+      tiles: [
+        { label: "Qualité du raisonnement", value: "68%" },
+        { label: "Idées fausses détectées", value: "31" },
+        { label: "Niveau de confiance", value: "Élevé" },
+        { label: "Étudiants ayant besoin de soutien", value: "14" },
+      ],
+      rows: [
+        { label: "Signaux faibles détectés tôt", value: "Modèles de régression - règlement en stablecoin" },
+        { label: "Schémas d'apprentissage superficiel", value: "Voir le rapport complet" },
+      ],
+      insights: [
+        {
+          topic: "Signal d'enseignement",
+          title: "Passez moins de temps à corriger",
+          body: "La plateforme met en évidence où le raisonnement est solide, fragile ou confus afin que vous concentriez la revue là où elle compte.",
+        },
+        {
+          topic: "Signal d'apprentissage",
+          title: "Passez plus de temps à enseigner",
+          body: "Les idées fausses récurrentes et les écarts de confiance deviennent visibles avant de se transformer en problèmes d'évaluation finale.",
+        },
+      ],
+    },
+    pedagogy: {
+      ribbon: "Pourquoi c'est important",
+      headline: "Aller au-delà du correct vs incorrect",
+      cols: [
+        { title: "Connaissances robustes", body: "Les étudiants peuvent expliquer clairement le concept et l'appliquer au-delà de la question immédiate." },
+        { title: "Connaissances fragiles", body: "Les étudiants choisissent la bonne réponse mais peinent à la justifier par un raisonnement stable." },
+        { title: "Compréhension partielle", body: "Les étudiants manquent la réponse mais révèlent des concepts utiles sur lesquels construire." },
+        { title: "Idées fausses", body: "Les étudiants exposent des schémas de raisonnement incorrects récurrents que les professeurs peuvent traiter tôt." },
+      ],
+      punchText: "Une bonne réponse ne signifie pas toujours une compréhension.",
+      punchSub: "La couche manquante dans l'éducation pilotée par l'IA",
+    },
+    trust: {
+      ribbon: "Confiance & contrôle",
+      headline: "Une IA alignée avec la pédagogie",
+      body: "StudentCentral garde les interactions ancrées dans le contenu du cours, guide les étudiants au lieu de remplacer l'effort, et réduit la copie de réponses et les usages détournés.",
+      blocks: [
+        { title: "Ancrée dans le contenu du cours", body: "Les questions, relances et évaluations restent alignées sur les supports fournis par les professeurs." },
+        { title: "Guide l'effort", body: "Les étudiants sont amenés à raisonner, expliquer et réviser plutôt qu'à contourner le processus d'apprentissage." },
+        { title: "Réduit les usages détournés", body: "Les contrôles de raisonnement rendent la copie de réponses moins utile et aident à repérer l'apprentissage superficiel." },
+        { title: "Alliée pédagogique", body: "L'IA devient une alliée pédagogique, pas un raccourci." },
+      ],
+    },
+    institutional: {
+      ribbon: "Conçu pour les universités",
+      headline: "Conçu avec les professeurs. Adapté aux vrais cours.",
+      body: "StudentCentral est conçu pour les équipes de l'enseignement supérieur qui ont besoin d'une approche contrôlée, compatible avec les institutions, de l'IA dans l'éducation et les environnements académiques européens.",
+      bullets: [
+        "Conçu avec les professeurs",
+        "Adapté aux vrais supports de cours",
+        "Prêt pour les environnements académiques européens",
+        "Une IA éducative contrôlée et compatible avec les institutions",
+      ],
+      whoHeadline: "Conçu pour les universités qui veulent que l'IA améliore l'apprentissage, sans le remplacer",
+      who: [
+        "Professeurs qui enseignent de vrais cours",
+        "Départements qui pilotent l'apprentissage guidé par l'IA",
+        "Programmes axés sur la qualité de l'apprentissage",
+        "Institutions cherchant une adoption responsable de l'IA",
+      ],
+    },
+    cta: {
+      h2a: "Commencez à explorer",
+      h2em: "StudentCentral.",
+      sub: "Essayez le tuteur avec votre propre support et voyez comment il révèle la pensée des étudiants.",
+      primary: "Essayer maintenant",
+      secondary: "Demander l'accès / Nous contacter",
+      myWorkspace: "Mon espace",
+    },
   },
   ro: {
     nav: { signUp: "Înscrie-te", getStarted: "Înscrie-te" },
@@ -7333,6 +7530,40 @@ const fallbackApproaches: Record<string, any> = {
   sr: { insightHeadline: "Која је разлика у односу на ChatGPT?", body: "AI асистенти дају одговоре. AI тутори граде разумевање. StudentCentral не пружа само одговоре: поставља питања, усмерава размишљање и процењује расуђивање.", dividerText: "AI асистент vs AI тутор", assistantLabel: "AI асистент", tutorLabel: "AI тутор", comparisonRows: [{ assistant: "Пружа одговоре", tutor: "Поставља питања" }, { assistant: "Реактиван", assistantNote: "Чека унос корисника", tutor: "Проактиван", tutorNote: "Покреће интеракције" }, { assistant: "Усмерен на задатак", tutor: "План учења" }, { assistant: "Оптимизује брзину", tutor: "Оптимизује учење" }, { assistant: "Решава проблем", tutor: "Подучава" }], footerLeft: "ChatGPT", footerRight: "StudentCentral професорима пружа повратне информације уживо", footerTag: "Сигнали учења у реалном времену" },
 };
 
+const bloomLocales: Record<string, any> = {
+  fr: { ribbon: "Pourquoi c'est essentiel", h2a: "L'IA prend en charge les bases.", h2em: "Les professeurs se concentrent sur ce qui compte le plus.", sub: "StudentCentral automatise les apprentissages fondamentaux afin que les professeurs puissent consacrer leur temps à la pensée de haut niveau, là où leur expertise crée le plus de valeur.", visualLabel: "Diagramme de la taxonomie de Bloom montrant le soutien du tuteur IA et les apprentissages avancés guidés par les professeurs", levels: [{ label: "créer" }, { label: "évaluer" }, { label: "analyser" }, { label: "appliquer" }, { label: "comprendre" }, { label: "mémoriser" }], professorZone: { title: "Guidé par les professeurs", items: ["pensée critique", "projets & présentations", "travail original"] }, guidedZone: { title: "Guidé par le tuteur IA", items: ["résoudre des problèmes", "structurer la pensée"] }, aiZone: { title: "Pris en charge par le tuteur IA", items: ["rappeler les concepts", "expliquer les bases"] }, flowLabel: "PARCOURS D'APPRENTISSAGE", flow: { professor: { short: "Prof", title: "Professeur", action: "guide" }, student: { short: "Étud", title: "Étudiant", action: "progresse" }, ai: { short: "IA", title: "Tuteur IA", action: "prend en charge" } }, quote: "\"L'IA prend en charge la pratique. Les professeurs développent la pensée.\"", aiListTitle: "StudentCentral automatise et guide", aiList: ["Comprendre les concepts", "S'exercer", "Structurer le raisonnement"], profListTitle: "Les professeurs se concentrent sur", profList: ["Pensée critique", "Apprentissage appliqué", "Travail d'équipe et projets", "Créativité et évaluation"] },
+  ro: { ribbon: "De ce contează", h2a: "AI gestionează fundația.", h2em: "Profesorii se concentrează pe ce contează cel mai mult.", sub: "StudentCentral automatizează învățarea de bază, astfel încât profesorii să își investească timpul în gândirea de nivel superior, acolo unde expertiza lor creează cea mai mare valoare.", visualLabel: "Diagramă a taxonomiei Bloom care arată sprijinul tutorului AI și gândirea de ordin superior condusă de profesori", levels: [{ label: "creează" }, { label: "evaluează" }, { label: "analizează" }, { label: "aplică" }, { label: "înțelege" }, { label: "memorează" }], professorZone: { title: "Condus de profesori", items: ["gândire critică", "proiecte și prezentări", "muncă originală"] }, guidedZone: { title: "Ghidat de tutorul AI", items: ["rezolvă probleme", "structurează gândirea"] }, aiZone: { title: "Gestionat de tutorul AI", items: ["reamintește concepte", "explică bazele"] }, flowLabel: "FLUX DE ÎNVĂȚARE", flow: { professor: { short: "Prof", title: "Profesor", action: "conduce" }, student: { short: "Stud", title: "Student", action: "progresează" }, ai: { short: "AI", title: "Tutor AI", action: "gestionează" } }, quote: "\"AI gestionează practica. Profesorii dezvoltă gândirea.\"", aiListTitle: "StudentCentral automatizează și ghidează", aiList: ["Înțelegerea conceptelor", "Exersarea", "Structurarea raționamentului"], profListTitle: "Profesorii se concentrează pe", profList: ["Gândire critică", "Învățare aplicată", "Lucru în echipă și proiecte", "Creativitate și evaluare"] },
+  de: { ribbon: "Warum es wichtig ist", h2a: "KI übernimmt die Grundlagen.", h2em: "Professoren konzentrieren sich auf das Wesentliche.", sub: "StudentCentral automatisiert grundlegendes Lernen, damit Professoren ihre Zeit in höherwertiges Denken investieren können, wo ihre Expertise den größten Wert schafft.", visualLabel: "Bloom-Taxonomie-Diagramm mit KI-Tutor-Unterstützung und professorengeführtem Denken höherer Ordnung", levels: [{ label: "erschaffen" }, { label: "bewerten" }, { label: "analysieren" }, { label: "anwenden" }, { label: "verstehen" }, { label: "erinnern" }], professorZone: { title: "Von Professoren geleitet", items: ["kritisches Denken", "Projekte & Präsentationen", "originelle Arbeit"] }, guidedZone: { title: "Vom KI-Tutor geführt", items: ["Probleme lösen", "Denken strukturieren"] }, aiZone: { title: "Vom KI-Tutor übernommen", items: ["Konzepte abrufen", "Grundlagen erklären"] }, flowLabel: "LERNFLUSS", flow: { professor: { short: "Prof", title: "Professor", action: "leitet" }, student: { short: "Stud", title: "Student", action: "macht Fortschritte" }, ai: { short: "KI", title: "KI-Tutor", action: "übernimmt" } }, quote: "\"KI übernimmt die Übung. Professoren entwickeln Denken.\"", aiListTitle: "StudentCentral automatisiert und führt", aiList: ["Konzepte verstehen", "Übungen trainieren", "Argumentation strukturieren"], profListTitle: "Professoren konzentrieren sich auf", profList: ["Kritisches Denken", "Angewandtes Lernen", "Teamarbeit und Projekte", "Kreativität und Bewertung"] },
+  es: { ribbon: "Por qué importa", h2a: "La IA se encarga de la base.", h2em: "Los profesores se centran en lo más importante.", sub: "StudentCentral automatiza el aprendizaje fundamental para que los profesores inviertan su tiempo en el pensamiento de orden superior, donde su experiencia crea más valor.", visualLabel: "Diagrama de la taxonomía de Bloom que muestra el apoyo del tutor de IA y el pensamiento avanzado liderado por profesores", levels: [{ label: "crear" }, { label: "evaluar" }, { label: "analizar" }, { label: "aplicar" }, { label: "comprender" }, { label: "recordar" }], professorZone: { title: "Liderado por profesores", items: ["pensamiento crítico", "proyectos y presentaciones", "trabajo original"] }, guidedZone: { title: "Guiado por el tutor de IA", items: ["resolver problemas", "estructurar el pensamiento"] }, aiZone: { title: "Gestionado por el tutor de IA", items: ["recordar conceptos", "explicar bases"] }, flowLabel: "FLUJO DE APRENDIZAJE", flow: { professor: { short: "Prof", title: "Profesor", action: "lidera" }, student: { short: "Est", title: "Estudiante", action: "progresa" }, ai: { short: "IA", title: "Tutor IA", action: "gestiona" } }, quote: "\"La IA se encarga de la práctica. Los profesores desarrollan el pensamiento.\"", aiListTitle: "StudentCentral automatiza y guía", aiList: ["Comprender conceptos", "Practicar ejercicios", "Estructurar el razonamiento"], profListTitle: "Los profesores se centran en", profList: ["Pensamiento crítico", "Aprendizaje aplicado", "Trabajo en equipo y proyectos", "Creatividad y evaluación"] },
+  ru: { ribbon: "Почему это важно", h2a: "ИИ берет на себя основу.", h2em: "Преподаватели фокусируются на самом важном.", sub: "StudentCentral автоматизирует базовое обучение, чтобы преподаватели могли вкладывать время в мышление высокого уровня — там, где их экспертиза создает наибольшую ценность.", visualLabel: "Диаграмма таксономии Блума, показывающая поддержку ИИ-тьютора и мышление высокого уровня под руководством преподавателей", levels: [{ label: "создавать" }, { label: "оценивать" }, { label: "анализировать" }, { label: "применять" }, { label: "понимать" }, { label: "запоминать" }], professorZone: { title: "Ведут преподаватели", items: ["критическое мышление", "проекты и презентации", "оригинальная работа"] }, guidedZone: { title: "Направляет ИИ-тьютор", items: ["решать задачи", "структурировать мышление"] }, aiZone: { title: "Выполняет ИИ-тьютор", items: ["вспоминать понятия", "объяснять основы"] }, flowLabel: "ПОТОК ОБУЧЕНИЯ", flow: { professor: { short: "Преп", title: "Преподаватель", action: "ведет" }, student: { short: "Студ", title: "Студент", action: "продвигается" }, ai: { short: "ИИ", title: "ИИ-тьютор", action: "помогает" } }, quote: "\"ИИ берет на себя практику. Преподаватели развивают мышление.\"", aiListTitle: "StudentCentral автоматизирует и направляет", aiList: ["Понимание понятий", "Практика упражнений", "Структурирование рассуждения"], profListTitle: "Преподаватели фокусируются на", profList: ["Критическое мышление", "Прикладное обучение", "Командная работа и проекты", "Творчество и оценивание"] },
+};
+
+const compactBloomLocales: Record<string, any> = {
+  it: { ribbon: "Perché conta", h2a: "L'IA gestisce le basi.", h2em: "I professori si concentrano su ciò che conta di più.", sub: "StudentCentral automatizza l'apprendimento di base così i professori possono dedicare tempo al pensiero di ordine superiore, dove la loro competenza crea più valore.", visualLabel: "Diagramma della tassonomia di Bloom con supporto del tutor IA e pensiero avanzato guidato dai professori", levels: [{ label: "creare" }, { label: "valutare" }, { label: "analizzare" }, { label: "applicare" }, { label: "comprendere" }, { label: "ricordare" }], professorZone: { title: "Guidato dai professori", items: ["pensiero critico", "progetti e presentazioni", "lavoro originale"] }, guidedZone: { title: "Guidato dal tutor IA", items: ["risolvere problemi", "strutturare il pensiero"] }, aiZone: { title: "Gestito dal tutor IA", items: ["richiamare concetti", "spiegare le basi"] }, flowLabel: "FLUSSO DI APPRENDIMENTO", flow: { professor: { short: "Prof", title: "Professore", action: "guida" }, student: { short: "Stud", title: "Studente", action: "progredisce" }, ai: { short: "IA", title: "Tutor IA", action: "gestisce" } }, quote: "\"L'IA gestisce la pratica. I professori sviluppano il pensiero.\"", aiListTitle: "StudentCentral automatizza e guida", aiList: ["Comprendere concetti", "Fare esercizi", "Strutturare il ragionamento"], profListTitle: "I professori si concentrano su", profList: ["Pensiero critico", "Apprendimento applicato", "Lavoro di squadra e progetti", "Creatività e valutazione"] },
+  pt: { ribbon: "Por que importa", h2a: "A IA trata da base.", h2em: "Os professores focam-se no que mais importa.", sub: "O StudentCentral automatiza a aprendizagem fundamental para que os professores invistam o seu tempo no pensamento de ordem superior, onde a sua experiência cria mais valor.", visualLabel: "Diagrama da taxonomia de Bloom com apoio do tutor de IA e pensamento avançado orientado por professores", levels: [{ label: "criar" }, { label: "avaliar" }, { label: "analisar" }, { label: "aplicar" }, { label: "compreender" }, { label: "recordar" }], professorZone: { title: "Liderado por professores", items: ["pensamento crítico", "projetos e apresentações", "trabalho original"] }, guidedZone: { title: "Guiado pelo tutor de IA", items: ["resolver problemas", "estruturar o pensamento"] }, aiZone: { title: "Tratado pelo tutor de IA", items: ["recordar conceitos", "explicar bases"] }, flowLabel: "FLUXO DE APRENDIZAGEM", flow: { professor: { short: "Prof", title: "Professor", action: "lidera" }, student: { short: "Est", title: "Estudante", action: "progride" }, ai: { short: "IA", title: "Tutor IA", action: "trata" } }, quote: "\"A IA trata da prática. Os professores desenvolvem o pensamento.\"", aiListTitle: "StudentCentral automatiza e guia", aiList: ["Compreender conceitos", "Praticar exercícios", "Estruturar o raciocínio"], profListTitle: "Os professores focam-se em", profList: ["Pensamento crítico", "Aprendizagem aplicada", "Trabalho em equipa e projetos", "Criatividade e avaliação"] },
+  nl: { ribbon: "Waarom het telt", h2a: "AI behandelt de basis.", h2em: "Docenten focussen op wat het belangrijkst is.", sub: "StudentCentral automatiseert fundamenteel leren zodat docenten hun tijd kunnen investeren in hogere-orde denken, waar hun expertise de meeste waarde creëert.", visualLabel: "Bloom-taxonomiediagram met AI-tutorondersteuning en door docenten geleid hogere-orde denken", levels: [{ label: "creëren" }, { label: "evalueren" }, { label: "analyseren" }, { label: "toepassen" }, { label: "begrijpen" }, { label: "onthouden" }], professorZone: { title: "Geleid door docenten", items: ["kritisch denken", "projecten en presentaties", "origineel werk"] }, guidedZone: { title: "Begeleid door AI-tutor", items: ["problemen oplossen", "denken structureren"] }, aiZone: { title: "Afgehandeld door AI-tutor", items: ["concepten oproepen", "basis uitleggen"] }, flowLabel: "LEERSTROOM", flow: { professor: { short: "Doc", title: "Docent", action: "leidt" }, student: { short: "Stud", title: "Student", action: "boekt vooruitgang" }, ai: { short: "AI", title: "AI-tutor", action: "handelt af" } }, quote: "\"AI behandelt oefening. Docenten ontwikkelen denken.\"", aiListTitle: "StudentCentral automatiseert en begeleidt", aiList: ["Concepten begrijpen", "Oefeningen maken", "Redenering structureren"], profListTitle: "Docenten focussen op", profList: ["Kritisch denken", "Toegepast leren", "Teamwerk en projecten", "Creativiteit en evaluatie"] },
+  pl: { ribbon: "Dlaczego to ważne", h2a: "AI przejmuje podstawy.", h2em: "Profesorowie skupiają się na tym, co najważniejsze.", sub: "StudentCentral automatyzuje podstawowe uczenie się, aby profesorowie mogli poświęcić czas myśleniu wyższego rzędu, gdzie ich ekspertyza tworzy największą wartość.", visualLabel: "Diagram taksonomii Blooma pokazujący wsparcie tutora AI i myślenie wyższego rzędu prowadzone przez profesorów", levels: [{ label: "tworzyć" }, { label: "oceniać" }, { label: "analizować" }, { label: "stosować" }, { label: "rozumieć" }, { label: "pamiętać" }], professorZone: { title: "Prowadzone przez profesorów", items: ["myślenie krytyczne", "projekty i prezentacje", "praca oryginalna"] }, guidedZone: { title: "Prowadzone przez tutora AI", items: ["rozwiązywać problemy", "strukturyzować myślenie"] }, aiZone: { title: "Obsługiwane przez tutora AI", items: ["przypominać pojęcia", "wyjaśniać podstawy"] }, flowLabel: "PRZEPŁYW NAUKI", flow: { professor: { short: "Prof", title: "Profesor", action: "prowadzi" }, student: { short: "Stud", title: "Student", action: "postępuje" }, ai: { short: "AI", title: "Tutor AI", action: "obsługuje" } }, quote: "\"AI przejmuje ćwiczenia. Profesorowie rozwijają myślenie.\"", aiListTitle: "StudentCentral automatyzuje i prowadzi", aiList: ["Rozumienie pojęć", "Ćwiczenie zadań", "Strukturyzowanie rozumowania"], profListTitle: "Profesorowie skupiają się na", profList: ["Myśleniu krytycznym", "Uczeniu stosowanym", "Pracy zespołowej i projektach", "Kreatywności i ocenie"] },
+  uk: { ribbon: "Чому це важливо", h2a: "AI бере на себе основу.", h2em: "Викладачі зосереджуються на найважливішому.", sub: "StudentCentral автоматизує базове навчання, щоб викладачі могли інвестувати час у мислення вищого рівня, де їхня експертиза створює найбільшу цінність.", visualLabel: "Діаграма таксономії Блума з підтримкою AI-тьютора та мисленням вищого рівня під керівництвом викладачів", levels: [{ label: "створювати" }, { label: "оцінювати" }, { label: "аналізувати" }, { label: "застосовувати" }, { label: "розуміти" }, { label: "пам'ятати" }], professorZone: { title: "Ведуть викладачі", items: ["критичне мислення", "проєкти та презентації", "оригінальна робота"] }, guidedZone: { title: "Спрямовує AI-тьютор", items: ["розв'язувати задачі", "структурувати мислення"] }, aiZone: { title: "Виконує AI-тьютор", items: ["пригадувати поняття", "пояснювати основи"] }, flowLabel: "ПОТІК НАВЧАННЯ", flow: { professor: { short: "Викл", title: "Викладач", action: "веде" }, student: { short: "Студ", title: "Студент", action: "просувається" }, ai: { short: "AI", title: "AI-тьютор", action: "підтримує" } }, quote: "\"AI бере на себе практику. Викладачі розвивають мислення.\"", aiListTitle: "StudentCentral автоматизує і спрямовує", aiList: ["Розуміння понять", "Практика вправ", "Структурування міркування"], profListTitle: "Викладачі зосереджуються на", profList: ["Критичному мисленні", "Прикладному навчанні", "Командній роботі та проєктах", "Креативності й оцінюванні"] },
+};
+
+const genericBloomLocales: Record<string, any> = {
+  el: { ribbon: "Γιατί έχει σημασία", h2a: "Η AI αναλαμβάνει τα θεμέλια.", h2em: "Οι καθηγητές εστιάζουν σε ό,τι έχει μεγαλύτερη σημασία.", sub: "Το StudentCentral αυτοματοποιεί τη βασική μάθηση ώστε οι καθηγητές να αφιερώνουν χρόνο στη σκέψη υψηλότερου επιπέδου.", visualLabel: "Διάγραμμα ταξινομίας Bloom", levels: [{ label: "δημιουργία" }, { label: "αξιολόγηση" }, { label: "ανάλυση" }, { label: "εφαρμογή" }, { label: "κατανόηση" }, { label: "μνήμη" }], professorZone: { title: "Με καθοδήγηση καθηγητών", items: ["κριτική σκέψη", "έργα & παρουσιάσεις", "πρωτότυπη εργασία"] }, guidedZone: { title: "Με καθοδήγηση AI tutor", items: ["επίλυση προβλημάτων", "δόμηση σκέψης"] }, aiZone: { title: "Αναλαμβάνει ο AI tutor", items: ["ανάκληση εννοιών", "εξήγηση βάσεων"] }, flowLabel: "ΡΟΗ ΜΑΘΗΣΗΣ", flow: { professor: { short: "Καθ", title: "Καθηγητής", action: "καθοδηγεί" }, student: { short: "Φοιτ", title: "Φοιτητής", action: "προοδεύει" }, ai: { short: "AI", title: "AI tutor", action: "υποστηρίζει" } }, quote: "\"Η AI αναλαμβάνει την εξάσκηση. Οι καθηγητές αναπτύσσουν τη σκέψη.\"", aiListTitle: "Το StudentCentral αυτοματοποιεί και καθοδηγεί", aiList: ["Κατανόηση εννοιών", "Εξάσκηση", "Δόμηση συλλογισμού"], profListTitle: "Οι καθηγητές εστιάζουν σε", profList: ["Κριτική σκέψη", "Εφαρμοσμένη μάθηση", "Ομαδική εργασία και έργα", "Δημιουργικότητα και αξιολόγηση"] },
+  da: { ribbon: "Hvorfor det betyder noget", h2a: "AI håndterer fundamentet.", h2em: "Undervisere fokuserer på det vigtigste.", sub: "StudentCentral automatiserer grundlæggende læring, så undervisere kan bruge tiden på tænkning på højere niveau.", visualLabel: "Bloom-taksonomidiagram", levels: [{ label: "skabe" }, { label: "evaluere" }, { label: "analysere" }, { label: "anvende" }, { label: "forstå" }, { label: "huske" }], professorZone: { title: "Ledet af undervisere", items: ["kritisk tænkning", "projekter & præsentationer", "originalt arbejde"] }, guidedZone: { title: "Guidet af AI-tutor", items: ["løse problemer", "strukturere tænkning"] }, aiZone: { title: "Håndteret af AI-tutor", items: ["genkalde begreber", "forklare grundlag"] }, flowLabel: "LÆRINGSFLOW", flow: { professor: { short: "Und", title: "Underviser", action: "leder" }, student: { short: "Stu", title: "Studerende", action: "gør fremskridt" }, ai: { short: "AI", title: "AI-tutor", action: "håndterer" } }, quote: "\"AI håndterer øvelse. Undervisere udvikler tænkning.\"", aiListTitle: "StudentCentral automatiserer og guider", aiList: ["Forstå begreber", "Øve opgaver", "Strukturere ræsonnement"], profListTitle: "Undervisere fokuserer på", profList: ["Kritisk tænkning", "Anvendt læring", "Teamwork og projekter", "Kreativitet og evaluering"] },
+  sv: { ribbon: "Varför det spelar roll", h2a: "AI hanterar grunden.", h2em: "Lärare fokuserar på det viktigaste.", sub: "StudentCentral automatiserar grundläggande lärande så att lärare kan lägga tid på högre tänkande.", visualLabel: "Bloom-taxonomidiagram", levels: [{ label: "skapa" }, { label: "utvärdera" }, { label: "analysera" }, { label: "tillämpa" }, { label: "förstå" }, { label: "minnas" }], professorZone: { title: "Leds av lärare", items: ["kritiskt tänkande", "projekt & presentationer", "originellt arbete"] }, guidedZone: { title: "Väglett av AI-tutor", items: ["lösa problem", "strukturera tänkande"] }, aiZone: { title: "Hanteras av AI-tutor", items: ["återkalla begrepp", "förklara grunder"] }, flowLabel: "LÄRANDEFLÖDE", flow: { professor: { short: "Lär", title: "Lärare", action: "leder" }, student: { short: "Stud", title: "Student", action: "går framåt" }, ai: { short: "AI", title: "AI-tutor", action: "hanterar" } }, quote: "\"AI hanterar övning. Lärare utvecklar tänkande.\"", aiListTitle: "StudentCentral automatiserar och vägleder", aiList: ["Förstå begrepp", "Öva uppgifter", "Strukturera resonemang"], profListTitle: "Lärare fokuserar på", profList: ["Kritiskt tänkande", "Tillämpat lärande", "Teamarbete och projekt", "Kreativitet och utvärdering"] },
+  fi: { ribbon: "Miksi sillä on merkitystä", h2a: "AI hoitaa perustan.", h2em: "Opettajat keskittyvät olennaiseen.", sub: "StudentCentral automatisoi perustason oppimista, jotta opettajat voivat käyttää aikaa korkeamman tason ajatteluun.", visualLabel: "Bloomin taksonomian kaavio", levels: [{ label: "luoda" }, { label: "arvioida" }, { label: "analysoida" }, { label: "soveltaa" }, { label: "ymmärtää" }, { label: "muistaa" }], professorZone: { title: "Opettajien ohjaama", items: ["kriittinen ajattelu", "projektit & esitykset", "alkuperäinen työ"] }, guidedZone: { title: "AI-tutorin ohjaama", items: ["ratkaista ongelmia", "jäsentää ajattelua"] }, aiZone: { title: "AI-tutorin hoitama", items: ["palauttaa käsitteitä", "selittää perusteita"] }, flowLabel: "OPPIMISVIRTA", flow: { professor: { short: "Op", title: "Opettaja", action: "ohjaa" }, student: { short: "Opisk", title: "Opiskelija", action: "etenee" }, ai: { short: "AI", title: "AI-tutor", action: "hoitaa" } }, quote: "\"AI hoitaa harjoittelun. Opettajat kehittävät ajattelua.\"", aiListTitle: "StudentCentral automatisoi ja ohjaa", aiList: ["Käsitteiden ymmärtäminen", "Harjoittelu", "Päättelyn jäsentäminen"], profListTitle: "Opettajat keskittyvät", profList: ["Kriittiseen ajatteluun", "Soveltavaan oppimiseen", "Tiimityöhön ja projekteihin", "Luovuuteen ja arviointiin"] },
+  hu: { ribbon: "Miért fontos", h2a: "Az AI kezeli az alapokat.", h2em: "Az oktatók arra fókuszálnak, ami a legfontosabb.", sub: "A StudentCentral automatizálja az alapozó tanulást, hogy az oktatók a magasabb szintű gondolkodásra fordíthassák idejüket.", visualLabel: "Bloom-taxonómia ábra", levels: [{ label: "alkotni" }, { label: "értékelni" }, { label: "elemezni" }, { label: "alkalmazni" }, { label: "megérteni" }, { label: "emlékezni" }], professorZone: { title: "Oktatók vezetik", items: ["kritikus gondolkodás", "projektek és prezentációk", "eredeti munka"] }, guidedZone: { title: "AI-tutor vezeti", items: ["problémamegoldás", "gondolkodás strukturálása"] }, aiZone: { title: "AI-tutor kezeli", items: ["fogalmak felidézése", "alapok magyarázata"] }, flowLabel: "TANULÁSI FOLYAMAT", flow: { professor: { short: "Okt", title: "Oktató", action: "vezet" }, student: { short: "Hall", title: "Hallgató", action: "halad" }, ai: { short: "AI", title: "AI-tutor", action: "kezel" } }, quote: "\"Az AI kezeli a gyakorlást. Az oktatók fejlesztik a gondolkodást.\"", aiListTitle: "A StudentCentral automatizál és vezet", aiList: ["Fogalmak megértése", "Gyakorlás", "Érvelés strukturálása"], profListTitle: "Az oktatók erre fókuszálnak", profList: ["Kritikus gondolkodás", "Alkalmazott tanulás", "Csapatmunka és projektek", "Kreativitás és értékelés"] },
+  hr: { ribbon: "Zašto je važno", h2a: "AI preuzima temelje.", h2em: "Profesori se fokusiraju na ono najvažnije.", sub: "StudentCentral automatizira temeljno učenje kako bi profesori vrijeme usmjerili na razmišljanje višeg reda.", visualLabel: "Dijagram Bloomove taksonomije", levels: [{ label: "stvoriti" }, { label: "vrednovati" }, { label: "analizirati" }, { label: "primijeniti" }, { label: "razumjeti" }, { label: "zapamtiti" }], professorZone: { title: "Vode profesori", items: ["kritičko razmišljanje", "projekti i prezentacije", "originalan rad"] }, guidedZone: { title: "Vodi AI tutor", items: ["rješavanje problema", "strukturiranje mišljenja"] }, aiZone: { title: "Preuzima AI tutor", items: ["prisjećanje pojmova", "objašnjenje osnova"] }, flowLabel: "TIJEK UČENJA", flow: { professor: { short: "Prof", title: "Profesor", action: "vodi" }, student: { short: "Stud", title: "Student", action: "napreduje" }, ai: { short: "AI", title: "AI tutor", action: "preuzima" } }, quote: "\"AI preuzima vježbu. Profesori razvijaju mišljenje.\"", aiListTitle: "StudentCentral automatizira i vodi", aiList: ["Razumijevanje pojmova", "Vježbanje zadataka", "Strukturiranje rasuđivanja"], profListTitle: "Profesori se fokusiraju na", profList: ["Kritičko razmišljanje", "Primijenjeno učenje", "Timski rad i projekti", "Kreativnost i vrednovanje"] },
+  bg: { ribbon: "Защо е важно", h2a: "AI поема основата.", h2em: "Преподавателите се фокусират върху най-важното.", sub: "StudentCentral автоматизира основното учене, за да могат преподавателите да отделят време за мислене от по-висок порядък.", visualLabel: "Диаграма на таксономията на Блум", levels: [{ label: "създаване" }, { label: "оценяване" }, { label: "анализ" }, { label: "прилагане" }, { label: "разбиране" }, { label: "запомняне" }], professorZone: { title: "Водено от преподаватели", items: ["критическо мислене", "проекти и презентации", "оригинална работа"] }, guidedZone: { title: "Насочвано от AI тутор", items: ["решаване на проблеми", "структуриране на мисленето"] }, aiZone: { title: "Поето от AI тутор", items: ["припомняне на понятия", "обяснение на основите"] }, flowLabel: "ПОТОК НА УЧЕНЕ", flow: { professor: { short: "Преп", title: "Преподавател", action: "води" }, student: { short: "Студ", title: "Студент", action: "напредва" }, ai: { short: "AI", title: "AI тутор", action: "поема" } }, quote: "\"AI поема практиката. Преподавателите развиват мисленето.\"", aiListTitle: "StudentCentral автоматизира и насочва", aiList: ["Разбиране на понятия", "Практикуване", "Структуриране на разсъждения"], profListTitle: "Преподавателите се фокусират върху", profList: ["Критическо мислене", "Приложно учене", "Екипна работа и проекти", "Креативност и оценяване"] },
+  cs: { ribbon: "Proč na tom záleží", h2a: "AI zvládá základy.", h2em: "Profesoři se soustředí na to nejdůležitější.", sub: "StudentCentral automatizuje základní učení, aby profesoři mohli věnovat čas myšlení vyšší úrovně.", visualLabel: "Diagram Bloomovy taxonomie", levels: [{ label: "tvořit" }, { label: "hodnotit" }, { label: "analyzovat" }, { label: "aplikovat" }, { label: "porozumět" }, { label: "zapamatovat" }], professorZone: { title: "Vedené profesory", items: ["kritické myšlení", "projekty a prezentace", "originální práce"] }, guidedZone: { title: "Vedené AI tutorem", items: ["řešit problémy", "strukturovat myšlení"] }, aiZone: { title: "Zvládá AI tutor", items: ["vybavit si pojmy", "vysvětlit základy"] }, flowLabel: "TOK UČENÍ", flow: { professor: { short: "Prof", title: "Profesor", action: "vede" }, student: { short: "Stud", title: "Student", action: "postupuje" }, ai: { short: "AI", title: "AI tutor", action: "zvládá" } }, quote: "\"AI zvládá procvičování. Profesoři rozvíjejí myšlení.\"", aiListTitle: "StudentCentral automatizuje a vede", aiList: ["Porozumění pojmům", "Procvičování", "Strukturování uvažování"], profListTitle: "Profesoři se soustředí na", profList: ["Kritické myšlení", "Aplikované učení", "Týmovou práci a projekty", "Kreativitu a hodnocení"] },
+  sr: { ribbon: "Зашто је важно", h2a: "AI преузима основу.", h2em: "Професори се фокусирају на оно најважније.", sub: "StudentCentral аутоматизује основно учење како би професори време усмерили на мишљење вишег реда.", visualLabel: "Дијаграм Блумове таксономије", levels: [{ label: "створити" }, { label: "вредновати" }, { label: "анализирати" }, { label: "применити" }, { label: "разумети" }, { label: "запамтити" }], professorZone: { title: "Воде професори", items: ["критичко мишљење", "пројекти и презентације", "оригиналан рад"] }, guidedZone: { title: "Води AI тутор", items: ["решавање проблема", "структурирање мишљења"] }, aiZone: { title: "Преузима AI тутор", items: ["присећање појмова", "објашњавање основа"] }, flowLabel: "ТОК УЧЕЊА", flow: { professor: { short: "Проф", title: "Професор", action: "води" }, student: { short: "Студ", title: "Студент", action: "напредује" }, ai: { short: "AI", title: "AI тутор", action: "преузима" } }, quote: "\"AI преузима вежбу. Професори развијају мишљење.\"", aiListTitle: "StudentCentral аутоматизује и води", aiList: ["Разумевање појмова", "Вежбање", "Структурирање расуђивања"], profListTitle: "Професори се фокусирају на", profList: ["Критичко мишљење", "Примењено учење", "Тимски рад и пројекте", "Креативност и вредновање"] },
+  tr: { ribbon: "Neden önemli", h2a: "AI temeli üstlenir.", h2em: "Profesörler en önemli olana odaklanır.", sub: "StudentCentral temel öğrenmeyi otomatikleştirir; böylece profesörler zamanlarını uzmanlıklarının en çok değer kattığı üst düzey düşünmeye ayırabilir.", visualLabel: "Bloom taksonomisi diyagramı", levels: [{ label: "yarat" }, { label: "değerlendir" }, { label: "analiz et" }, { label: "uygula" }, { label: "anla" }, { label: "hatırla" }], professorZone: { title: "Profesörler yönetir", items: ["eleştirel düşünme", "projeler ve sunumlar", "özgün çalışma"] }, guidedZone: { title: "AI tutor rehberlik eder", items: ["problem çözme", "düşünmeyi yapılandırma"] }, aiZone: { title: "AI tutor üstlenir", items: ["kavramları hatırlama", "temelleri açıklama"] }, flowLabel: "ÖĞRENME AKIŞI", flow: { professor: { short: "Prof", title: "Profesör", action: "yönetir" }, student: { short: "Öğr", title: "Öğrenci", action: "ilerler" }, ai: { short: "AI", title: "AI tutor", action: "üstlenir" } }, quote: "\"AI pratiği üstlenir. Profesörler düşünmeyi geliştirir.\"", aiListTitle: "StudentCentral otomatikleştirir ve rehberlik eder", aiList: ["Kavramları anlama", "Alıştırma yapma", "Akıl yürütmeyi yapılandırma"], profListTitle: "Profesörler şunlara odaklanır", profList: ["Eleştirel düşünme", "Uygulamalı öğrenme", "Takım çalışması ve projeler", "Yaratıcılık ve değerlendirme"] },
+};
+
+const localizedBloomAll = {
+  ...bloomLocales,
+  ...compactBloomLocales,
+  ...genericBloomLocales,
+} as Record<string, any>;
 for (const [lang, names] of Object.entries(fallbackNames)) {
   localizedHomepageAll[lang] = {
     nav: { signUp: names.signUp, getStarted: names.signUp },
@@ -7365,7 +7596,15 @@ export function tx(lang: string): Translations {
     ...base,
     nav: mergeSection(t.en.nav, base.nav, override.nav),
     hero: mergeSection(t.en.hero, base.hero, override.hero),
+    divider: override.divider ?? base.divider ?? t.en.divider,
+    bloom: mergeSection(t.en.bloom, base.bloom, localizedBloomAll[lang]),
+    problem: mergeSection(t.en.problem, base.problem, override.problem),
     approach: mergeSection(t.en.approach, base.approach, override.approach),
+    workflow: mergeSection(t.en.workflow, base.workflow, override.workflow),
+    faculty: mergeSection(t.en.faculty, base.faculty, override.faculty),
+    pedagogy: mergeSection(t.en.pedagogy, base.pedagogy, override.pedagogy),
+    trust: mergeSection(t.en.trust, base.trust, override.trust),
+    institutional: mergeSection(t.en.institutional, base.institutional, override.institutional),
     cta: mergeSection(t.en.cta, base.cta, override.cta),
   } as Translations;
 }

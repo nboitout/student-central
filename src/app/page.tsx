@@ -1,5 +1,6 @@
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
+import BloomSection from "@/components/BloomSection";
 import DividerBar from "@/components/DividerBar";
 import Problem from "@/components/Problem";
 import Approach from "@/components/Approach";
@@ -18,6 +19,7 @@ export default function Home() {
       <Nav />
       <main>
         <Hero />
+        <BloomSection />
         <DividerBar />
         <Problem />
         <Approach />
