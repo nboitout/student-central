@@ -57,7 +57,7 @@ export default function Nav() {
 
   return (
     <nav className={styles.nav}>
-      <a className={styles.brand} href="#hero">Student Central</a>
+      <a className={styles.brand} href="#hero">StudentCentral</a>
       <ul className={styles.links}>
         <li><a href="#problem">{tx.whyItMatters}</a></li>
         <li><a href="#workflow">{tx.howItWorks}</a></li>

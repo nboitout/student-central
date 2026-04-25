@@ -32,6 +32,11 @@ export default function Hero() {
             <a className="btn-p" href={isLoggedIn ? "/workspace" : "/login"}>
               {isLoggedIn ? (tx.myWorkspace ?? "My Workspace") : (tx.tryIt ?? "Try it")}
             </a>
+            {!isLoggedIn && (
+              <a className="btn-s" href="#cta">
+                {tx.requestAccess ?? "Request early access"}
+              </a>
+            )}
           </div>
           <div className={styles.trustStrip}>
             {tx.trust.map((t) => (

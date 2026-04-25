@@ -15,7 +15,7 @@ export default function CTA() {
         <p className={styles.sub}>{tx.sub}</p>
         <div className={styles.actions}>
           <a className={styles.primary} href="/login">{tx.primary}</a>
-          <a className={styles.ghost} href="/workspace">{tx.myWorkspace ?? "My Workspace"}</a>
+          <a className={styles.ghost} href="/login">{tx.secondary ?? tx.myWorkspace ?? "My Workspace"}</a>
         </div>
       </div>
     </section>

@@ -5,13 +5,13 @@ import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 
 export const metadata: Metadata = {
-  title: "Student Central — Reasoning-Aware Assessment for Higher Education",
+  title: "StudentCentral - AI Tutor for Higher Education",
   description:
-    "See whether students understood the answer — not just whether they clicked it. Student Central combines MCQs with AI-guided explanation to help educators assess reasoning, detect misconceptions, and measure real topic mastery.",
+    "See how students think, not just what they answer. StudentCentral turns AI into a course-grounded learning system for guided learning, assessment, and feedback.",
   openGraph: {
-    title: "Student Central — Reasoning-Aware Assessment",
+    title: "StudentCentral - AI Tutor for Higher Education",
     description:
-      "Assessment beyond the multiple-choice score. Faculty-facing assessment intelligence for higher education.",
+      "Students explain their reasoning. Professors understand how they learn.",
     type: "website",
   },
 };
