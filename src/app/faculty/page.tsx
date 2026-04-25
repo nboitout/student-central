@@ -25,6 +25,13 @@ interface MCQDoc {
   position?: number;  /* faculty-assigned playlist position — undefined = auto */
 }
 
+type RawMCQDoc = Partial<MCQDoc> & {
+  level?: string;
+  correct_index?: number;
+  page_number?: number;
+  has_visual?: boolean;
+};
+
 interface Course {
   id:        string;
   isOwned?:  boolean;
@@ -165,7 +172,12 @@ function normalizeGroup(group: Partial<Group>): Group {
 
 function draftFromDoc(q: MCQDoc): EditDraft {
   return { id: q.id, question: q.question,
-           options: [q.options[0].text, q.options[1].text, q.options[2].text, q.options[3].text],
+           options: [
+             q.options[0]?.text ?? "",
+             q.options[1]?.text ?? "",
+             q.options[2]?.text ?? "",
+             q.options[3]?.text ?? "",
+           ],
            correctIndex: q.correctIndex, explanation: q.explanation,
            function: q.function, pageNumber: q.pageNumber, hasVisual: q.hasVisual };
 }
@@ -687,9 +699,16 @@ export default function FacultyDashboard() {
           intermediate: "recognize",
           advanced:     "evaluate",
         };
-        const normalised: MCQDoc[] = raw.map((item: MCQDoc & { level?: string }) => ({
-          ...item,
+        const normalised: MCQDoc[] = raw.map((item: RawMCQDoc) => ({
+          id: item.id ?? `q${Date.now()}`,
+          question: item.question ?? "",
+          options: item.options ?? [],
+          correctIndex: item.correctIndex ?? item.correct_index ?? 0,
+          explanation: item.explanation ?? "",
           function: item.function ?? LEVEL_TO_FN[item.level ?? ""] ?? "understand",
+          pageNumber: item.pageNumber ?? item.page_number ?? 0,
+          hasVisual: item.hasVisual ?? item.has_visual ?? false,
+          position: item.position,
         }));
         setMcqBank(normalised);
       })
@@ -1032,6 +1051,7 @@ export default function FacultyDashboard() {
   const analyticsStudentCount = analyticsView === "group" && analyticsGroup
     ? (groupAnalytics?.memberCount ?? (analyticsGroup.members ?? []).length)
     : analyticsStudents.length;
+  const editDraftPage = Number(editDraft?.pageNumber) || 0;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -1494,11 +1514,13 @@ export default function FacultyDashboard() {
             </div>
 
             {/* PDF slide preview — only when editing existing question with a page ref */}
-            {rightPanel === "edit-q" && editDraft.id && Number(editDraft.pageNumber) > 0 && (
+            {rightPanel === "edit-q" && editDraft.id && (
               <div className={styles.slideSection}>
                 <div className={styles.slideHd}>
                   <span className={styles.eyebrow}>PDF reference</span>
-                  <span className={styles.slidePageLabel}>Page {editDraft.pageNumber}</span>
+                  <span className={styles.slidePageLabel}>
+                    {editDraftPage > 0 ? `Page ${editDraftPage}` : "Page not set"}
+                  </span>
                   <button
                     className={styles.slideToggle}
                     onClick={() => setSlideExpanded(v => !v)}
@@ -1522,12 +1544,12 @@ export default function FacultyDashboard() {
                           <div className={`${styles.slidePlaceholderLine} ${styles.slidePlaceholderLineShort}`} />
                         </div>
                       </div>
-                      <div className={styles.pageBadge}>p. {editDraft.pageNumber}</div>
+                      <div className={styles.pageBadge}>{editDraftPage > 0 ? `p. ${editDraftPage}` : "p. -"}</div>
                     </div>
                     <div className={styles.slideMeta}>
                       <div className={styles.slideMetaRow}>
                         <span className={styles.fieldLabel}>Page</span>
-                        <span className={styles.slideMetaVal}>{editDraft.pageNumber}</span>
+                        <span className={styles.slideMetaVal}>{editDraftPage > 0 ? editDraftPage : "Not set"}</span>
                       </div>
                       <div className={styles.slideMetaRow}>
                         <span className={styles.fieldLabel}>Has visual</span>
