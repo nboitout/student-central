@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import styles from "./workspace.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   listCourses,
   setCurrentUser,
@@ -910,6 +911,7 @@ export default function WorkspacePage() {
             <span className={styles.brandTag}>AI Tutor</span>
           </div>
           <div className={styles.topBarActions}>
+            <LanguageSwitcher />
             <span className={styles.userGreet}>
               {userId && userId !== "nicolas" ? userId : ui.hello}
             </span>

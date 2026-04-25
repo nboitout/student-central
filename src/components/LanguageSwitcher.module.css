@@ -1,0 +1,62 @@
+.langWrap { position: relative; }
+
+.langBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--outline-variant);
+  border-radius: 0.25rem;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  height: 34px;
+}
+.langBtn:hover { background: var(--surface-low); border-color: rgba(13,26,56,0.18); }
+
+.langFlag { font-size: 13px; line-height: 1; }
+
+.langCode {
+  font-family: var(--font-label);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--on-surface);
+}
+
+.langChevron { color: var(--on-surface-variant); transition: transform 0.2s; flex-shrink: 0; }
+.langChevronOpen { transform: rotate(180deg); }
+
+.langDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--surface-lowest);
+  box-shadow: var(--shadow-float);
+  border-radius: 0.375rem;
+  z-index: 200;
+  min-width: 224px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  border: 1px solid rgba(13,26,56,0.08);
+}
+
+.langOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  background: var(--surface-lowest);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+  width: 100%;
+}
+.langOption:hover { background: var(--surface-low); }
+.langOptionActive { background: var(--tertiary-fixed); }
+.langOptionActive:hover { background: var(--tertiary-fixed); }
+
+.langOptionLabel { font-family: var(--font-body); font-size: 0.8125rem; color: var(--on-surface); flex: 1; }
+.langCheck { font-family: var(--font-label); font-size: 0.625rem; font-weight: 700; color: var(--primary); flex-shrink: 0; }
