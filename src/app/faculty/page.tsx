@@ -25,6 +25,7 @@ interface MCQDoc {
 
 interface Course {
   id:        string;
+  isOwned?:  boolean;
   title:     string;
   mcqStatus: "ready" | "generating" | "none" | "failed";
   mcqCount:  number;
@@ -50,7 +51,7 @@ interface MockStudent {
 
 interface AccessEntry {
   email:        string;
-  status:       "invited" | "active";
+  status:       "invited" | "pending" | "active" | "declined";
   sharedAt:     string;
   sessionCount: number;
 }
@@ -567,9 +568,10 @@ export default function FacultyDashboard() {
     fetch(`${API}/api/courses?userId=${facultyId}`)
       .then(r => r.json())
       .then(data => {
-        const list: Course[] = Array.isArray(data) ? data : (data.courses ?? []);
+        const list: Course[] = (Array.isArray(data) ? data : (data.courses ?? []))
+          .filter((c: Course) => c.isOwned !== false);
         setCourses(list);
-        if (list.length > 0) setSelectedCourse(list[0]);
+        setSelectedCourse(list[0] ?? null);
       })
       .catch(err => console.warn("Course fetch failed:", err));
   }, [facultyReady, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps

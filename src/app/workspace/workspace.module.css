@@ -1987,6 +1987,92 @@
               0 0 0 1px rgba(0, 60, 194, 0.22);
 }
 
+.inviteCard {
+  border: 1.5px dashed var(--outline);
+  border-radius: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-container);
+  align-self: start;
+}
+
+.inviteCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.inviteLabel {
+  font-family: var(--font-display);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--on-surface-variant);
+}
+
+.inviteStatus {
+  font-family: var(--font-display);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--on-surface-variant);
+  border: 1px solid var(--outline);
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+.inviteTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--on-surface);
+  margin: 0;
+}
+
+.inviteAuthor {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+  margin: 0;
+}
+
+.inviteActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.inviteAcceptBtn {
+  font-family: var(--font-display);
+  font-size: 12px;
+  padding: 7px 16px;
+  background: var(--on-surface);
+  color: var(--surface);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.inviteAcceptBtn:hover {
+  opacity: 0.85;
+}
+
+.inviteDeclineBtn {
+  font-family: var(--font-display);
+  font-size: 12px;
+  padding: 7px 16px;
+  background: transparent;
+  color: var(--on-surface);
+  border: 1px solid var(--outline);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.inviteDeclineBtn:hover {
+  background: var(--surface-container-high);
+}
+
 .cardDropTarget {
   box-shadow: 0 0 0 2px var(--primary), 0 10px 26px rgba(0, 72, 216, 0.2) !important;
 }

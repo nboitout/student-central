@@ -29,6 +29,57 @@ import {
 
 type SortKey = "recent" | "title";
 type Modal   = null | "create" | "details";
+type AccessStatus = "invited" | "pending" | "active" | "declined";
+
+interface AccessEntry {
+  email: string;
+  status: AccessStatus;
+  sharedAt?: string;
+  sessionCount?: number;
+}
+
+type WorkspaceCourse = Course & {
+  isOwned?: boolean;
+  access?: AccessEntry[];
+};
+
+const COURSE_API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+
+function getMyAccessStatus(course: Course, userId: string): AccessStatus {
+  const workspaceCourse = course as WorkspaceCourse;
+  if (workspaceCourse.isOwned !== false) return "active";
+  const entry = workspaceCourse.access?.find(
+    (a) => a.email.toLowerCase() === userId.toLowerCase()
+  );
+  return entry?.status ?? "invited";
+}
+
+function patchCourseAccess(courseId: string, userId: string, status: AccessStatus) {
+  return fetch(`${COURSE_API_URL}/api/courses/${courseId}/access/${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+}
+
+function withMyAccessStatus(course: Course, userId: string, status: AccessStatus): Course {
+  const workspaceCourse = course as WorkspaceCourse;
+  const access = workspaceCourse.access ?? [];
+  const hasEntry = access.some((a) => a.email.toLowerCase() === userId.toLowerCase());
+
+  return {
+    ...course,
+    access: hasEntry
+      ? access.map((a) =>
+          a.email.toLowerCase() === userId.toLowerCase()
+            ? { ...a, status }
+            : a
+        )
+      : [...access, { email: userId, status }],
+  } as Course;
+}
 
 /* ========================================================
    LEARNING PREFERENCES MODAL
@@ -544,6 +595,43 @@ function CourseCard({
   );
 }
 
+function InviteCard({
+  course,
+  status,
+  onAccept,
+  onDecline,
+}: {
+  course: Course;
+  status: AccessStatus;
+  onAccept: (course: Course) => void;
+  onDecline: (course: Course) => void;
+}) {
+  return (
+    <div className={styles.inviteCard}>
+      <div className={styles.inviteCardHeader}>
+        <span className={styles.inviteLabel}>Course invitation</span>
+        <span className={styles.inviteStatus}>{status}</span>
+      </div>
+      <h3 className={styles.inviteTitle}>{course.title}</h3>
+      <p className={styles.inviteAuthor}>{course.author}</p>
+      <div className={styles.inviteActions}>
+        <button
+          className={styles.inviteAcceptBtn}
+          onClick={() => onAccept(course)}
+        >
+          Accept
+        </button>
+        <button
+          className={styles.inviteDeclineBtn}
+          onClick={() => onDecline(course)}
+        >
+          Decline
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ========================================================
    MAIN PAGE
 ======================================================== */
@@ -573,6 +661,21 @@ export default function WorkspacePage() {
   const [groupDraftName, setGroupDraftName] = useState("");
   const [openGroupMenuId, setOpenGroupMenuId] = useState<string | null>(null);
 
+  const applyCourses = useCallback((fresh: Course[], resolvedUserId: string) => {
+    setCourses(fresh);
+    if (!resolvedUserId) return;
+
+    fresh
+      .filter((c) => {
+        const workspaceCourse = c as WorkspaceCourse;
+        return workspaceCourse.isOwned === false && getMyAccessStatus(c, resolvedUserId) === "invited";
+      })
+      .forEach((c) => {
+        patchCourseAccess(c.id, resolvedUserId, "pending").catch(console.warn);
+        setCourses(prev => prev.map(x => x.id === c.id ? withMyAccessStatus(x, resolvedUserId, "pending") : x));
+      });
+  }, []);
+
   /* Load from API on mount.
      Middleware already guarantees only authenticated users reach this page.
      We fetch the session only to get the real userId — never redirect on error. */
@@ -597,27 +700,27 @@ export default function WorkspacePage() {
         /* Groups load is fire-and-forget — a missing/failing endpoint
            must never block courses from displaying.               */
         if (id) listGroups(id).then(setGroups).catch(() => {});
-        return listCourses(id || undefined);
+        return listCourses(id || undefined).then(fresh => ({ fresh, id }));
       })
-      .then(fresh => {
-        setCourses(fresh);
+      .then(({ fresh, id }) => {
+        applyCourses(fresh, id);
         const generating = fresh.filter(co => co.mcqStatus === "generating").map(co => co.id);
         if (generating.length > 0) setProcessingIds(new Set(generating));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [applyCourses]);
 
   /* Refresh courses when user returns to the tab (e.g. after finishing MCQ) */
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === "visible" && userId) {
-        listCourses(userId).then(setCourses).catch(() => {});
+        listCourses(userId).then(fresh => applyCourses(fresh, userId)).catch(() => {});
       }
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [userId]);
+  }, [applyCourses, userId]);
 
   /* Poll every 8 s while any course is generating */
   const hasProcessing = processingIds.size > 0;
@@ -628,9 +731,9 @@ export default function WorkspacePage() {
     }
     if (pollingRef.current) return; /* already polling */
     pollingRef.current = setInterval(() => {
-      listCourses()
+      listCourses(userId || undefined)
         .then(fresh => {
-          setCourses(fresh);
+          applyCourses(fresh, userId);
           /* Clear processingIds for courses that now have questions ready */
           setProcessingIds(prev => {
             if (prev.size === 0) return prev;
@@ -644,7 +747,7 @@ export default function WorkspacePage() {
         .catch(() => {});
     }, 8000);
     return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
-  }, [hasProcessing]);
+  }, [applyCourses, hasProcessing, userId]);
 
   const SORT_LABELS: Record<SortKey, string> = { recent: ui.sortRecent, title: ui.sortTitle };
 
@@ -726,12 +829,17 @@ export default function WorkspacePage() {
     } catch (err) { console.error("renameGroup failed:", err); }
   };
 
+  const invitationCourses = userId
+    ? filtered.filter(c => (c as WorkspaceCourse).isOwned === false && getMyAccessStatus(c, userId) !== "active")
+    : [];
+  const visibleCourses = filtered.filter(c => !invitationCourses.some(invite => invite.id === c.id));
+
   const groupedSections = groups.map(g => ({
     id: g.id,
     name: g.name,
-    courses: filtered.filter(c => g.courseIds.includes(c.id)),
+    courses: visibleCourses.filter(c => g.courseIds.includes(c.id)),
   })).filter(s => s.courses.length > 0);
-  const ungroupedCourses = filtered.filter(c => !groups.some(g => g.courseIds.includes(c.id)));
+  const ungroupedCourses = visibleCourses.filter(c => !groups.some(g => g.courseIds.includes(c.id)));
 
   const closeModal = () => { setModal(null); setActiveCourse(null); };
 
@@ -767,6 +875,18 @@ export default function WorkspacePage() {
     } catch (err) {
       console.error("Delete failed:", err);
     }
+  };
+
+  const handleAccept = (course: Course) => {
+    if (!userId) return;
+    setCourses(prev => prev.map(c => c.id === course.id ? withMyAccessStatus(c, userId, "active") : c));
+    patchCourseAccess(course.id, userId, "active").catch(console.warn);
+  };
+
+  const handleDecline = (course: Course) => {
+    if (!userId) return;
+    setCourses(prev => prev.filter(c => c.id !== course.id));
+    patchCourseAccess(course.id, userId, "declined").catch(console.warn);
   };
 
   return (
@@ -952,6 +1072,16 @@ export default function WorkspacePage() {
               ))}
 
 
+              {invitationCourses.map((c) => (
+                <InviteCard
+                  key={c.id}
+                  course={c}
+                  status={getMyAccessStatus(c, userId)}
+                  onAccept={handleAccept}
+                  onDecline={handleDecline}
+                />
+              ))}
+
               {ungroupedCourses.map((c, i) => (
                 <CourseCard
                   key={c.id}
@@ -979,6 +1109,18 @@ export default function WorkspacePage() {
           ) : (
             <div className={styles.listView}>
               {filtered.map((c, i) => {
+                const myStatus = getMyAccessStatus(c, userId);
+                if ((c as WorkspaceCourse).isOwned === false && myStatus !== "active") {
+                  return (
+                    <InviteCard
+                      key={c.id}
+                      course={c}
+                      status={myStatus}
+                      onAccept={handleAccept}
+                      onDecline={handleDecline}
+                    />
+                  );
+                }
                 const isProc = processingIds.has(c.id);
                 return (
                   <div
