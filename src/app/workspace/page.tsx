@@ -905,11 +905,11 @@ export default function WorkspacePage() {
     <div className={styles.page} data-build-marker="workspace-grid-3col-2026-04-02">
       <header className={styles.topBar}>
         <div className={styles.topBarInner}>
-          <div className={styles.topBarBrand}>
+          <a href="/" className={styles.topBarBrand}>
             <div className={styles.brandDot} />
             <span className={styles.brandName}>Student Central</span>
             <span className={styles.brandTag}>AI Tutor</span>
-          </div>
+          </a>
           <div className={styles.topBarActions}>
             <LanguageSwitcher />
             <span className={styles.userGreet}>
