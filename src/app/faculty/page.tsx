@@ -573,6 +573,7 @@ export default function FacultyDashboard() {
   const [leftCollapsed, setLeftCollapsed]   = useState(false);
   const [slideExpanded, setSlideExpanded]   = useState(true);
   const [facultyId, setFacultyId]           = useState("nicolas");
+  const [middleWidth, setMiddleWidth]       = useState(520);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useState<boolean>(() => {
@@ -603,6 +604,33 @@ export default function FacultyDashboard() {
 
   const API = process.env.NEXT_PUBLIC_API_URL
     ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+
+  const startMiddleResize = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = middleWidth;
+    const leftWidth = leftCollapsed ? 48 : 210;
+    const minWidth = 280;
+    const minRightWidth = 340;
+
+    const onMove = (event: MouseEvent) => {
+      const maxWidth = Math.max(minWidth, window.innerWidth - leftWidth - minRightWidth);
+      const next = Math.min(maxWidth, Math.max(minWidth, startWidth + event.clientX - startX));
+      setMiddleWidth(next);
+    };
+
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
 
   /* ── Resolve facultyId from NextAuth session on mount ── */
   const [facultyReady, setFacultyReady] = useState(false);
@@ -1057,7 +1085,13 @@ export default function FacultyDashboard() {
 
       {/* MIDDLE + RIGHT — only render once a course is selected */}
       {selectedCourse && <>
-      <section className={styles.paneMiddle} style={playlistMode ? { flex: "1", maxWidth: "none", borderRight: "none" } : undefined}>
+      <section
+        className={styles.paneMiddle}
+        style={playlistMode
+          ? { flex: "1", maxWidth: "none", borderRight: "none" }
+          : { width: middleWidth, flexBasis: middleWidth }
+        }
+      >
         <div className={styles.paneHd}>
           <span className={styles.eyebrow}>
             {!selectedCourse ? "Select a course" : selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
@@ -1410,6 +1444,17 @@ export default function FacultyDashboard() {
           </div>
         )}
       </section>
+
+      {!playlistMode && (
+        <div
+          className={styles.resizeHandle}
+          onMouseDown={startMiddleResize}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize middle pane"
+          title="Resize middle pane"
+        />
+      )}
 
       {/* RIGHT */}
       <section className={styles.paneRight} style={playlistMode ? { display: "none" } : undefined}>

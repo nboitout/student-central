@@ -52,7 +52,7 @@
 }
 
 .resizeHandle {
-  width: 5px;
+  width: 7px;
   flex-shrink: 0;
   cursor: col-resize;
   background: transparent;
@@ -64,6 +64,10 @@
 
 .resizeHandle:hover {
   background: rgba(0, 72, 216, 0.18);
+}
+
+.resizeHandle:active {
+  background: rgba(0, 72, 216, 0.28);
 }
 
 .paneHd {
