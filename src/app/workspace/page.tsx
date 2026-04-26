@@ -45,6 +45,7 @@ type WorkspaceCourse = Course & {
   facultyId?: string;
   ownerId?: string;
   createdBy?: string;
+  allowStudentSharing?: boolean;
 };
 
 const COURSE_API_URL =
@@ -88,6 +89,10 @@ function withMyAccessStatus(course: Course, userId: string, status: AccessStatus
 function getCourseOwnerId(course: Course): string {
   const c = course as WorkspaceCourse;
   return c.userId ?? c.facultyId ?? c.ownerId ?? c.createdBy ?? "";
+}
+
+function isProfessorSharedCourse(course: Course): boolean {
+  return (course as WorkspaceCourse).isOwned === false;
 }
 
 /* ========================================================
@@ -327,10 +332,12 @@ function CourseDetailsModal({
   course,
   onClose,
   ui,
+  userId,
 }: {
   course: Course;
   onClose: () => void;
   ui: ReturnType<typeof getT>["workspace"];
+  userId: string;
 }) {
   const router = useRouter();
   const [recentSession, setRecentSession] = useState<StoredSession | null>(null);
@@ -467,6 +474,7 @@ function CourseCard({
   groupName,
   isProcessing,
   ui,
+  userId,
 }: {
   course: Course;
   index: number;
@@ -482,6 +490,7 @@ function CourseCard({
   groupName?: string;
   isProcessing: boolean;
   ui: ReturnType<typeof getT>["workspace"];
+  userId: string;
 }) {
   const router = useRouter();
   const [menuOpen,   setMenuOpen]   = useState(false);
@@ -493,6 +502,7 @@ function CourseCard({
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
   const initials   = course.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
   const dateStr    = new Date(course.createdAt ?? Date.now()).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const professorShared = isProfessorSharedCourse(course);
 
   return (
     <div
@@ -562,6 +572,7 @@ function CourseCard({
         )}
           <div className={styles.cardMeta}>
           {!editing && <div className={`${styles.cardMetaLine} ${styles.cardAuthor}`}>{course.author}</div>}
+          {!editing && professorShared && <div className={styles.professorSharedNote}>Shared by your professor</div>}
           <div className={styles.cardMetaLine}>{dateStr}</div>
           {groupName && <div className={styles.cardGroupTag}>{groupName}</div>}
         </div>
@@ -956,7 +967,7 @@ export default function WorkspacePage() {
             <div className={styles.pageTitleGroup}>
               <h1 className={styles.pageTitle}>{ui.pageTitle}</h1>
               {courses.length > 0 ? (
-                <a href="/faculty" className={styles.teachBtn}>
+                <a href="/faculty?from=teach" className={styles.teachBtn}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
@@ -1171,6 +1182,7 @@ export default function WorkspacePage() {
                   groupName={undefined}
                   isProcessing={processingIds.has(c.id)}
                   ui={ui}
+                  userId={userId}
                 />
               ))}
             </div>
@@ -1202,7 +1214,10 @@ export default function WorkspacePage() {
                     </div>
                     <div className={styles.listBody}>
                       <div className={styles.listTitle}>{c.title}</div>
-                      <div className={styles.listMeta}>{c.author} · {new Date(c.createdAt ?? Date.now()).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}</div>
+                      <div className={styles.listMeta}>
+                        {c.author} · {new Date(c.createdAt ?? Date.now()).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}
+                        {isProfessorSharedCourse(c) && <span className={styles.professorSharedInline}>Shared by your professor</span>}
+                      </div>
                     </div>
                     <div className={styles.listRight}>
                       {isProc ? (
@@ -1239,7 +1254,7 @@ export default function WorkspacePage() {
           userId={userId}
         />
       )}
-      {modal === "details" && activeCourse && <CourseDetailsModal course={activeCourse} onClose={closeModal} ui={ui} />}
+      {modal === "details" && activeCourse && <CourseDetailsModal course={activeCourse} onClose={closeModal} ui={ui} userId={userId} />}
       {prefsModal && (
         <LearningPrefsModal
           courseTitle={prefsModal.title}

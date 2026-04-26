@@ -2203,6 +2203,37 @@
 
 .cardAuthor { color: var(--on-surface-variant); font-weight: 500; }
 
+.professorSharedNote {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  border: 1px solid rgba(0, 60, 194, 0.18);
+  background: rgba(0, 60, 194, 0.06);
+  color: var(--primary);
+  padding: 3px 7px;
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.professorSharedInline {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  border: 1px solid rgba(0, 60, 194, 0.18);
+  background: rgba(0, 60, 194, 0.06);
+  color: var(--primary);
+  padding: 2px 6px;
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .cardGroupTag {
   display: inline-flex;
   margin-top: 6px;

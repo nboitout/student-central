@@ -36,6 +36,7 @@ export interface Course {
   source: string;
   pdfUrl?: string | null;
   allowDownload?: boolean;
+  allowStudentSharing?: boolean;
   tutorLanguage?: string | null;    /* e.g. "en", "fr", "de" — language for MCQ + AI tutor */
   mcqStatus?: "idle" | "generating" | "ready" | "error";  /* MCQ bank generation state */
   learningPrefs?: {
@@ -117,7 +118,7 @@ export async function createCourse(payload: {
 
 export async function updateCourse(
   courseId: string,
-  updates: { status?: string; exercisesDone?: number; learningPrefs?: Course["learningPrefs"]; title?: string; author?: string },
+  updates: { status?: string; exercisesDone?: number; learningPrefs?: Course["learningPrefs"]; title?: string; author?: string; allowStudentSharing?: boolean },
   userId?: string
 ): Promise<Course> {
   const uid = userId ?? await getCurrentUserId();

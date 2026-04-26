@@ -1,9 +1,11 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./faculty.module.css";
+import { useLanguage } from "@/context/LanguageContext";
+import { teachT } from "@/i18n/teachTranslations";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type MCQFunction = "orient" | "understand" | "recognize" | "connect" | "evaluate";
 type RightPanel  =
@@ -22,7 +24,7 @@ interface MCQDoc {
   function: MCQFunction;
   pageNumber: number;
   hasVisual: boolean;
-  position?: number;  /* faculty-assigned playlist position — undefined = auto */
+  position?: number;  /* faculty-assigned playlist position â€” undefined = auto */
 }
 
 type RawMCQDoc = Partial<MCQDoc> & {
@@ -40,8 +42,9 @@ interface Course {
   mcqCount:  number;
   synthesis: { thesis?: string; key_concepts?: string[] } | null;
   allowDownload: boolean;
+  allowStudentSharing?: boolean;
   visibleProgressTracking: boolean;
-  /* Real API may include additional fields — ignored here */
+  /* Real API may include additional fields â€” ignored here */
   [key: string]: unknown;
 }
 
@@ -91,7 +94,7 @@ interface EditDraft {
   hasVisual: boolean;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Mock data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const MOCK_STUDENTS: MockStudent[] = [
   { id: "s1", email: "alice.bernard@m2.univ.fr", initials: "AB", status: "active",
@@ -105,16 +108,16 @@ const MOCK_STUDENTS: MockStudent[] = [
     functionCoverage: ["orient", "understand"],
     weakConcepts: ["Delegate architecture", "Verification triggers"] },
   { id: "s3", email: "t.dupont@m2.univ.fr", initials: "TD", status: "invited",
-    joinedAt: "—", sessions: 0, avgScore: 0,
+    joinedAt: "â€”", sessions: 0, avgScore: 0,
     signalBreakdown: { Strong: 0, Fragile: 0, "Partial misconception": 0, "Low mastery": 0, unevaluated: 0 },
     functionCoverage: [], weakConcepts: [] },
   { id: "s4", email: "l.rey@m2.univ.fr", initials: "LR", status: "pending",
-    joinedAt: "—", sessions: 0, avgScore: 0,
+    joinedAt: "â€”", sessions: 0, avgScore: 0,
     signalBreakdown: { Strong: 0, Fragile: 0, "Partial misconception": 0, "Low mastery": 0, unevaluated: 0 },
     functionCoverage: [], weakConcepts: [] },
 ];
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const FN_ORDER: MCQFunction[] = ["orient", "understand", "recognize", "connect", "evaluate"];
 
@@ -127,10 +130,10 @@ const SIGNAL_META = [
   { key: "Fragile",               short: "Fragile", cls: "sigFragile" },
   { key: "Partial misconception", short: "Partial", cls: "sigPartial" },
   { key: "Low mastery",           short: "Low",     cls: "sigLow"     },
-  { key: "unevaluated",           short: "—",       cls: "sigNone"    },
+  { key: "unevaluated",           short: "â€”",       cls: "sigNone"    },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function statusPillCls(status: MockStudent["status"] | AccessEntry["status"], s: Record<string, string>) {
   if (status === "active")  return `${s.pill} ${s.pillActive}`;
@@ -170,6 +173,10 @@ function normalizeGroup(group: Partial<Group>): Group {
   };
 }
 
+function canUseCourseInFacultyMode(course: Course): boolean {
+  return course.isOwned !== false || course.allowStudentSharing === true;
+}
+
 function draftFromDoc(q: MCQDoc): EditDraft {
   return { id: q.id, question: q.question,
            options: [
@@ -182,7 +189,7 @@ function draftFromDoc(q: MCQDoc): EditDraft {
            function: q.function, pageNumber: q.pageNumber, hasVisual: q.hasVisual };
 }
 
-// ─── Reformulation result type ────────────────────────────────────────────────
+// â”€â”€â”€ Reformulation result type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface ReformResult { original: string; reformulated: string; }
 
@@ -191,6 +198,8 @@ function ReformulationPanel({ result, onKeep, onAccept }: {
   onKeep:    () => void;
   onAccept:  (finalText: string) => void;
 }) {
+  const { lang } = useLanguage();
+  const tx = teachT(lang);
   const [editing,    setEditing]    = useState(false);
   const [editedText, setEditedText] = useState(result.reformulated);
 
@@ -203,18 +212,18 @@ function ReformulationPanel({ result, onKeep, onAccept }: {
     <div className={styles.reformulationPanel}>
       <div className={styles.reformulationHd}>
         <span className={styles.reformulationHdLabel}>
-          {editing ? "Edit reformulation" : "Reformulation ready"}
+          {editing ? tx.editReformulation : tx.reformulationReady}
         </span>
-        <button className={styles.reformulationDismiss} onClick={onKeep}>✕</button>
+        <button className={styles.reformulationDismiss} onClick={onKeep}>âœ•</button>
       </div>
       <div className={styles.reformulationCompare}>
         <div className={styles.reformulationCol}>
-          <span className={styles.reformulationColLabel}>Original</span>
+          <span className={styles.reformulationColLabel}>{tx.originalLabel}</span>
           <p className={styles.reformulationText}>{result.original}</p>
         </div>
         <div className={styles.reformulationCol}>
           <span className={styles.reformulationColLabel}>
-            {editing ? "Your edit" : "Reformulated"}
+            {editing ? tx.yourEdit : tx.reformulatedLabel}
           </span>
           {editing ? (
             <textarea
@@ -232,23 +241,23 @@ function ReformulationPanel({ result, onKeep, onAccept }: {
         </div>
       </div>
       <div className={styles.reformulationActions}>
-        <button className={styles.keepBtn} onClick={onKeep}>Keep original</button>
+        <button className={styles.keepBtn} onClick={onKeep}>{tx.keepOriginal}</button>
         {!editing && (
-          <button className={styles.editReformBtn} onClick={enterEdit}>Edit ↗</button>
+          <button className={styles.editReformBtn} onClick={enterEdit}>{tx.editArrow}</button>
         )}
         <button
           className={styles.acceptBtn}
           onClick={() => onAccept(editing ? editedText.trim() || result.reformulated : result.reformulated)}
           disabled={editing && !editedText.trim()}
         >
-          Accept
+          {tx.accept}
         </button>
       </div>
     </div>
   );
 }
 
-// ─── QuestionEditor ───────────────────────────────────────────────────────────
+// â”€â”€â”€ QuestionEditor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface AcceptedReform { original: string; reformulated: string; }
 
@@ -260,6 +269,8 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
   onDelete?: () => void;
   courseTitle: string;
 }) {
+  const { lang } = useLanguage();
+  const tx = teachT(lang);
   const set = (patch: Partial<EditDraft>) => onChange({ ...draft, ...patch });
   const setOpt = (i: number, val: string) => {
     const opts = [...draft.options] as [string, string, string, string];
@@ -298,7 +309,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
       setPending(prev => ({ ...prev, [field]: { original: text, reformulated } }));
     } catch (e) {
       console.warn("Reformulate failed:", e);
-      /* Endpoint not yet live — fall back to mock so the UI remains usable */
+      /* Endpoint not yet live â€” fall back to mock so the UI remains usable */
       const swaps: [RegExp, string][] = [
         [/Which/,        "What"],
         [/What is/,      "Identify the"],
@@ -315,7 +326,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
       for (const [pat, rep] of swaps) {
         if (pat.test(reformulated)) { reformulated = reformulated.replace(pat, rep); break; }
       }
-      if (reformulated === text) reformulated = text.replace(/\?$/, " — select the best answer.");
+      if (reformulated === text) reformulated = text.replace(/\?$/, " â€” select the best answer.");
       setPending(prev => ({ ...prev, [field]: { original: text, reformulated } }));
     } finally {
       setReformulating(null);
@@ -362,6 +373,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
       setReplacing(null);
     }
   };
+
   const applyToField = (field: string, text: string) => {
     if (field === "question")    { set({ question: text });    return; }
     if (field === "explanation") { set({ explanation: text }); return; }
@@ -400,17 +412,17 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
     <div className={styles.editorShell}>
       <div className={styles.editorScroll}>
 
-        {/* ── Question ── */}
+        {/* â”€â”€ Question â”€â”€ */}
         <div className={styles.editorSection}>
-          <label className={styles.fieldLabel}>Question text</label>
+          <label className={styles.fieldLabel}>{tx.questionLabel}</label>
           <div className={styles.textareaWrapper}>
             <textarea className={styles.fieldTextarea} rows={3}
               value={draft.question} onChange={e => set({ question: e.target.value })}
-              placeholder="Type the question…" />
+              placeholder="Type the questionâ€¦" />
             <button className={rfClass("question")}
               onClick={() => reformulate("question", draft.question)}
               disabled={!!reformulating || !draft.question.trim()} title="Reformulate with AI">
-              {reformulating === "question" ? "Reformulating…" : "Reformulate"}
+              {reformulating === "question" ? tx.reformulating : tx.reformulate}
             </button>
           </div>
         </div>
@@ -420,9 +432,9 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
             onAccept={(t) => acceptReform("question", t)} />
         )}
 
-        {/* ── Options ── */}
+        {/* â”€â”€ Options â”€â”€ */}
         <div className={styles.editorSection}>
-          <label className={styles.fieldLabel}>Options — click letter to mark correct</label>
+          <label className={styles.fieldLabel}>{tx.optionsLabel}</label>
           {draft.options.map((opt, i) => {
             const field = `opt-${i}`;
             return (
@@ -436,18 +448,18 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
                   <div className={styles.optInputWrapper}>
                     <input className={styles.optInput} value={opt}
                       onChange={e => setOpt(i, e.target.value)}
-                      placeholder={`Option ${String.fromCharCode(65 + i)}…`} />
+                      placeholder={`Option ${String.fromCharCode(65 + i)}â€¦`} />
                     <button className={rfOptClass(field)}
                       onClick={() => reformulate(field, opt)}
                       disabled={!!reformulating || !opt.trim()} title="Reformulate with AI">
-                      {reformulating === field ? "…" : "Reformulate"}
+                      {reformulating === field ? "â€¦" : tx.reformulate}
                     </button>
                     {draft.correctIndex !== i && (
                       <button className={replaceClass(field)}
                         onClick={() => replaceDistractor(field, i)}
                         disabled={!!replacing || !draft.question.trim() || !draft.options[draft.correctIndex]?.trim() || !opt.trim()}
                         title="Generate a new distractor">
-                        {replacing === field ? "…" : "Replace"}
+                        {replacing === field ? "…" : tx.replaceDistractor}
                       </button>
                     )}
                   </div>
@@ -465,16 +477,16 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
           })}
         </div>
 
-        {/* ── Explanation ── */}
+        {/* â”€â”€ Explanation â”€â”€ */}
         <div className={styles.editorSection}>
           <div className={styles.explanationHeader}>
-            <label className={styles.fieldLabel}>Explanation</label>
+            <label className={styles.fieldLabel}>{tx.explanationLabel}</label>
             <label className={styles.pageRefControl}>
-              <span className={styles.fieldLabel}>Page ref</span>
+              <span className={styles.fieldLabel}>{tx.pageRefLabel}</span>
               <input className={styles.pageRefInput} type="number" min={1}
                 value={draft.pageNumber}
                 onChange={e => set({ pageNumber: e.target.value === "" ? "" : Number(e.target.value) })}
-                placeholder="—" />
+                placeholder="â€”" />
             </label>
           </div>
           <div className={styles.textareaWrapper}>
@@ -484,7 +496,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
             <button className={rfClass("explanation")}
               onClick={() => reformulate("explanation", draft.explanation)}
               disabled={!!reformulating || !draft.explanation.trim()} title="Reformulate with AI">
-              {reformulating === "explanation" ? "Reformulating…" : "Reformulate"}
+              {reformulating === "explanation" ? tx.reformulating : tx.reformulate}
             </button>
           </div>
         </div>
@@ -494,22 +506,21 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
             onAccept={(t) => acceptReform("explanation", t)} />
         )}
 
-        {/* ── Meta ── */}
+        {/* â”€â”€ Meta â”€â”€ */}
         <div className={styles.editorSection}>
           <div className={styles.metaRow}>
             <div className={styles.metaField}>
-              <label className={styles.fieldLabel}>Function</label>
+              <label className={styles.fieldLabel}>{tx.functionLabel}</label>
               <select className={styles.fieldSelect} value={draft.function}
                 onChange={e => set({ function: e.target.value as MCQFunction })}>
                 {FN_ORDER.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
               </select>
             </div>
-
             <div className={styles.metaField}>
-              <label className={styles.fieldLabel}>Has visual</label>
+              <label className={styles.fieldLabel}>{tx.hasVisual}</label>
               <button className={`${styles.toggleBtn} ${draft.hasVisual ? styles.toggleBtnOn : ""}`}
                 onClick={() => set({ hasVisual: !draft.hasVisual })}>
-                {draft.hasVisual ? "Yes" : "No"}
+                {draft.hasVisual ? tx.yes : tx.no}
               </button>
             </div>
           </div>
@@ -518,11 +529,11 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
 
       <div className={styles.editorActions}>
         <button className={styles.saveBtn} onClick={() => { onSave(acceptedReforms); setAcceptedReforms({}); }}>
-          {draft.id ? "Save changes" : "Create question"}
+          {draft.id ? tx.saveChanges : tx.createQuestion}
         </button>
-        <button className={styles.cancelBtn} onClick={onCancel}>Cancel</button>
+        <button className={styles.cancelBtn} onClick={onCancel}>{tx.cancel}</button>
         {onDelete && (
-          <button className={styles.deleteBtn} onClick={onDelete}>Delete question</button>
+          <button className={styles.deleteBtn} onClick={onDelete}>{tx.deleteQuestion}</button>
         )}
       </div>
     </div>
@@ -530,9 +541,11 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
 }
 
 
-// ─── Teach Intro Modal ────────────────────────────────────────────────────────
+// â”€â”€â”€ Teach Intro Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function TeachIntro({ onClose }: { onClose: () => void }) {
+  const { lang } = useLanguage();
+  const tx = teachT(lang);
   const [dontShow, setDontShow] = React.useState(false);
 
   const handleClose = () => {
@@ -543,10 +556,10 @@ function TeachIntro({ onClose }: { onClose: () => void }) {
   };
 
   const TABS: [string, string][] = [
-    ["Questions", "Review and edit the MCQ bank generated from your course PDF — reorder, reformulate, or add questions manually."],
-    ["Students",  "Manage your class roster, send bulk invitations, and track who has joined."],
-    ["Share",     "Grant students access to your course in one click — they see it instantly in their workspace, no email needed."],
-    ["Analytics", "Monitor session performance, signal breakdowns, and weak concepts across your whole class."],
+    [tx.tabQuestions, tx.tabDescQuestions],
+    [tx.tabStudents,  tx.tabDescStudents],
+    [tx.tabShare,     tx.tabDescShare],
+    [tx.tabAnalytics, tx.tabDescAnalytics],
   ];
 
   return (
@@ -560,21 +573,21 @@ function TeachIntro({ onClose }: { onClose: () => void }) {
           fontFamily: "var(--font-display)", fontSize: "0.625rem", fontWeight: 700,
           letterSpacing: "0.12em", textTransform: "uppercase",
           color: "var(--primary)", marginBottom: 8,
-        }}>Faculty dashboard</div>
+        }}>{tx.introEyebrow}</div>
         <div style={{
           fontFamily: "var(--font-display)", fontSize: "1.375rem", fontWeight: 700,
           color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.2,
           marginBottom: 12,
-        }}>Welcome to Teach</div>
+        }}>{tx.introTitle}</div>
         <p style={{
           fontFamily: "var(--font-body)", fontSize: "0.875rem",
           color: "var(--on-surface-variant)", lineHeight: 1.65, margin: 0,
         }}>
-          The four tabs above are your instructor toolkit. Here&apos;s what each one does:
+          {tx.introSubtitle}
         </p>
       </div>
 
-      {/* Tab descriptions — visually linked to the 4 tabs */}
+      {/* Tab descriptions â€” visually linked to the 4 tabs */}
       <div style={{ display: "flex", flexDirection: "column", gap: 0, flex: 1 }}>
         {TABS.map(([tab, desc], i) => (
           <div key={tab} style={{
@@ -612,7 +625,7 @@ function TeachIntro({ onClose }: { onClose: () => void }) {
             onChange={e => setDontShow(e.target.checked)}
             style={{ width: 14, height: 14, cursor: "pointer", accentColor: "var(--primary)" }}
           />
-          Don&apos;t show me this again
+          {tx.dontShowAgain}
         </label>
         <button onClick={handleClose} style={{
           fontFamily: "var(--font-display)", fontSize: "0.8125rem", fontWeight: 700,
@@ -622,16 +635,18 @@ function TeachIntro({ onClose }: { onClose: () => void }) {
           onMouseOver={e => (e.currentTarget.style.opacity = "0.85")}
           onMouseOut={e => (e.currentTarget.style.opacity = "1")}
         >
-          Got it →
+          {tx.gotIt}
         </button>
       </div>
     </div>
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function FacultyDashboard() {
+  const { lang } = useLanguage();
+  const tx = teachT(lang);
   const [courses,        setCourses]        = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [activeMode, setActiveMode]         = useState<Mode>("questions");
@@ -673,7 +688,7 @@ export default function FacultyDashboard() {
   const [groupAnalytics, setGroupAnalytics] = useState<GroupAnalytics | null>(null);
   const [groupAnalyticsLoading, setGroupAnalyticsLoading] = useState(false);
 
-  // ── Share tab state ──
+  // â”€â”€ Share tab state â”€â”€
   const [shareAccess,  setShareAccess]  = useState<AccessEntry[]>([]);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareEmail,   setShareEmail]   = useState("");
@@ -708,7 +723,7 @@ export default function FacultyDashboard() {
     document.addEventListener("mouseup", onUp);
   };
 
-  /* ── Resolve facultyId from NextAuth session on mount ── */
+  /* â”€â”€ Resolve facultyId from NextAuth session on mount â”€â”€ */
   const [facultyReady, setFacultyReady] = useState(false);
 
   useEffect(() => {
@@ -722,16 +737,20 @@ export default function FacultyDashboard() {
       .finally(() => setFacultyReady(true));
   }, []);
 
-  /* ── Fetch course list once facultyId is resolved ── */
+  /* â”€â”€ Fetch course list once facultyId is resolved â”€â”€ */
   useEffect(() => {
     if (!facultyReady) return;
     fetch(`${API}/api/courses?userId=${facultyId}`)
       .then(r => r.json())
       .then(data => {
-        const list: Course[] = (Array.isArray(data) ? data : (data.courses ?? []))
-          .filter((c: Course) => c.isOwned !== false);
+        const allCourses: Course[] = Array.isArray(data) ? data : (data.courses ?? []);
+        const list = allCourses.filter(canUseCourseInFacultyMode);
         setCourses(list);
         setSelectedCourse(list[0] ?? null);
+        const openedFromTeach = new URLSearchParams(window.location.search).get("from") === "teach";
+        if (openedFromTeach && list.length === 0) {
+          window.alert("No courses are available for Teach mode yet. Professor-shared courses can only be prepared and shared when the professor explicitly allows student sharing.");
+        }
       })
       .catch(err => console.warn("Course fetch failed:", err));
   }, [facultyReady, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -792,7 +811,7 @@ export default function FacultyDashboard() {
     };
   }, [facultyReady, selectedCourse?.id, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── Fetch MCQ bank — waits for facultyId to be resolved ── */
+  /* â”€â”€ Fetch MCQ bank â€” waits for facultyId to be resolved â”€â”€ */
   useEffect(() => {
     if (!facultyReady || !selectedCourse || activeMode !== "questions") return;
     setMcqLoading(true);
@@ -803,7 +822,7 @@ export default function FacultyDashboard() {
         /* Response shape: { mcqs: [...], count: N, courseId: string } */
         const raw = Array.isArray(data) ? data : (data.mcqs ?? []);
         /* Normalise legacy MCQs that use level instead of function.
-           Generated before the five-function taxonomy — map to closest equivalent. */
+           Generated before the five-function taxonomy â€” map to closest equivalent. */
         const LEVEL_TO_FN: Record<string, MCQFunction> = {
           basic:        "understand",
           intermediate: "recognize",
@@ -826,7 +845,7 @@ export default function FacultyDashboard() {
       .finally(() => setMcqLoading(false));
   }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── Fetch access list for Share tab ── */
+  /* â”€â”€ Fetch access list for Share tab â”€â”€ */
   useEffect(() => {
     if (!facultyReady || !selectedCourse || activeMode !== "share") return;
     setShareLoading(true);
@@ -880,7 +899,7 @@ export default function FacultyDashboard() {
       hasVisual: editDraft.hasVisual,
     };
 
-    /* Persist to backend — fire-and-forget, local state update is immediate */
+    /* Persist to backend â€” fire-and-forget, local state update is immediate */
     if (editDraft.id) {
       const API = process.env.NEXT_PUBLIC_API_URL
         ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
@@ -908,7 +927,7 @@ export default function FacultyDashboard() {
       }).catch(err => console.warn("MCQ save failed:", err));
     }
 
-    /* Always update local state immediately — UI stays responsive */
+    /* Always update local state immediately â€” UI stays responsive */
     if (editDraft.id) {
       setMcqBank(prev => prev.map(q => q.id === doc.id ? doc : q));
     } else {
@@ -946,7 +965,7 @@ export default function FacultyDashboard() {
     setDontShowDeleteConfirm(false);
   };
 
-  /* ── Share tab handlers ── */
+  /* â”€â”€ Share tab handlers â”€â”€ */
   const handleShareAdd = () => {
     const email = shareEmail.trim().toLowerCase();
     if (!email || !selectedCourse) return;
@@ -1105,7 +1124,20 @@ export default function FacultyDashboard() {
     }).catch(err => console.warn("visibleProgressTracking update failed:", err));
   };
 
-  /* ── Playlist mode handlers ── */
+  const handleStudentSharingToggle = () => {
+    if (!selectedCourse) return;
+    const next = !(selectedCourse.allowStudentSharing ?? false);
+    const updated = { ...selectedCourse, allowStudentSharing: next };
+    setSelectedCourse(updated);
+    setCourses(prev => prev.map(c => c.id === selectedCourse.id ? updated : c));
+    fetch(`${API}/api/courses/${selectedCourse.id}?userId=${facultyId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowStudentSharing: next }),
+    }).catch(err => console.warn("allowStudentSharing update failed:", err));
+  };
+
+  /* â”€â”€ Playlist mode handlers â”€â”€ */
   const enterPlaylist = () => {
     /* Sort by existing position if set, otherwise current bank order */
     const sorted = [...mcqBank].sort((a, b) =>
@@ -1125,7 +1157,7 @@ export default function FacultyDashboard() {
     const withPositions = playlistOrder.map((q, i) => ({ ...q, position: i + 1 }));
     setMcqBank(withPositions);
     setPlaylistMode(false);
-    /* Batch persist — fire and forget */
+    /* Batch persist â€” fire and forget */
     fetch(`${API}/api/mcq/batch-positions`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
@@ -1163,7 +1195,7 @@ export default function FacultyDashboard() {
     : analyticsStudents.length;
   const editDraftPage = Number(editDraft?.pageNumber) || 0;
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // Render
   return (
     <div className={styles.shell}>
 
@@ -1177,14 +1209,14 @@ export default function FacultyDashboard() {
           {leftCollapsed ? "W" : "Workspace"}
         </a>
         <div className={styles.paneHd}>
-          {!leftCollapsed && <span className={styles.eyebrow}>Courses</span>}
+          {!leftCollapsed && <span className={styles.eyebrow}>{tx.coursesEyebrow}</span>}
           {!leftCollapsed && <span className={styles.hdMeta}>{facultyId}</span>}
           <button
             className={styles.collapseBtn}
             onClick={() => setLeftCollapsed(v => !v)}
-            title={leftCollapsed ? "Expand course list" : "Collapse course list"}
+            title={leftCollapsed ? tx.expandList : tx.collapseList}
           >
-            {leftCollapsed ? "›" : "‹"}
+            {leftCollapsed ? "â€º" : "â€¹"}
           </button>
         </div>
 
@@ -1203,7 +1235,7 @@ export default function FacultyDashboard() {
           </div>
         ) : (
         <ul className={styles.courseList}>
-          {courses.length === 0 && <li className={styles.courseItem} style={{opacity:0.4, cursor:"default"}}>Loading courses…</li>}
+          {courses.length === 0 && <li className={styles.courseItem} style={{opacity:0.4, cursor:"default"}}>{tx.loadingCourses}</li>}
           {courses.map(c => (
             <li key={c.id}
               className={`${styles.courseItem} ${selectedCourse?.id === c.id ? styles.courseItemActive : ""}`}
@@ -1220,7 +1252,7 @@ export default function FacultyDashboard() {
         )}
       </aside>
 
-      {/* MIDDLE + RIGHT — only render once a course is selected */}
+      {/* MIDDLE + RIGHT â€” only render once a course is selected */}
       {selectedCourse && <>
       <section
         className={styles.paneMiddle}
@@ -1235,7 +1267,7 @@ export default function FacultyDashboard() {
       >
         <div className={styles.paneHd}>
           <span className={styles.eyebrow}>
-            {!selectedCourse ? "Select a course" : selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
+            {!selectedCourse ? tx.selectCourse : selectedCourse.title.length > 30 ? selectedCourse.title.slice(0, 30) + "…" : selectedCourse.title}
           </span>
         </div>
 
@@ -1253,37 +1285,37 @@ export default function FacultyDashboard() {
             <button key={m}
               className={`${styles.tab} ${activeMode === m ? styles.tabActive : ""}`}
               onClick={() => switchMode(m)}>
-              {m.charAt(0).toUpperCase() + m.slice(1)}
+              {{ questions: tx.tabQuestions, students: tx.tabStudents, share: tx.tabShare, analytics: tx.tabAnalytics }[m]}
             </button>
           ))}
         </div>
 
-        {/* ── Questions ── */}
+        {/* â”€â”€ Questions â”€â”€ */}
         {activeMode === "questions" && (
           <div className={styles.panelShell}>
             <div className={styles.panelHd}>
               <span className={styles.eyebrow}>
-                {mcqLoading ? "Loading…" : playlistMode ? "Ordering playlist" : `${mcqBank.length} questions`}
+                {mcqLoading ? tx.loading : playlistMode ? tx.orderingPlaylist : `${mcqBank.length} ${tx.tabQuestions.toLowerCase()}`}
               </span>
               <div style={{ display:"flex", gap:6 }}>
                 {playlistMode ? (
                   <>
-                    <button className={styles.addBtn} onClick={savePlaylist}>Done</button>
-                    <button className={styles.ghostBtn} onClick={cancelPlaylist}>Cancel</button>
+                    <button className={styles.addBtn} onClick={savePlaylist}>{tx.done}</button>
+                    <button className={styles.ghostBtn} onClick={cancelPlaylist}>{tx.cancel}</button>
                   </>
                 ) : (
                   <>
-                    <button className={styles.ghostBtn} onClick={enterPlaylist} disabled={mcqLoading || mcqBank.length === 0}>✎ Order playlist</button>
-                    <button className={styles.addBtn} onClick={openNew} disabled={mcqLoading}>+ New</button>
+                    <button className={styles.ghostBtn} onClick={enterPlaylist} disabled={mcqLoading || mcqBank.length === 0}>{tx.orderPlaylist}</button>
+                    <button className={styles.addBtn} onClick={openNew} disabled={mcqLoading}>{tx.newQuestion}</button>
                   </>
                 )}
               </div>
             </div>
 
-            {/* ── Playlist mode: flat draggable list ── */}
+            {/* â”€â”€ Playlist mode: flat draggable list â”€â”€ */}
             {playlistMode && (
               <>
-                <div className={styles.playlistHint}>Drag rows to reorder · Done saves the order</div>
+                <div className={styles.playlistHint}>{tx.playlistHint}</div>
                 <div className={styles.panelScroll}>
                   {playlistOrder.map((q, i) => (
                     <div
@@ -1309,7 +1341,7 @@ export default function FacultyDashboard() {
               </>
             )}
 
-            {/* ── Normal mode: grouped view ── */}
+            {/* â”€â”€ Normal mode: grouped view â”€â”€ */}
             {!playlistMode && (
               <div className={styles.panelScroll}>
                 {groupedMcqs.map(({ fn, qs }) => (
@@ -1329,13 +1361,13 @@ export default function FacultyDashboard() {
                           {q.hasVisual && <span className={styles.visualFlag}>visual</span>}
                         </div>
                         <div className={styles.qActions}>
-                          <button className={styles.editBtn} onClick={() => openEdit(q)}>Edit</button>
-                          <button className={styles.delBtnSm} onClick={() => requestDeleteQuestion(q.id)}>Del</button>
+                          <button className={styles.editBtn} onClick={() => openEdit(q)}>{tx.edit}</button>
+                          <button className={styles.delBtnSm} onClick={() => requestDeleteQuestion(q.id)}>{tx.del}</button>
                         </div>
                       </div>
                     ))}
                     {qs.length === 0 && (
-                      <div className={styles.emptyGroup}>No {fn} questions yet</div>
+                      <div className={styles.emptyGroup}>{tx.noQuestionsYet}</div>
                     )}
                   </div>
                 ))}
@@ -1344,27 +1376,27 @@ export default function FacultyDashboard() {
           </div>
         )}
 
-        {/* ── Share ── */}
+        {/* â”€â”€ Share â”€â”€ */}
         {activeMode === "share" && (
           <div className={styles.panelShell}>
             <div className={styles.shareInputRow}>
               <input
                 className={styles.shareInput}
                 type="email"
-                placeholder="Student email address…"
+                placeholder={tx.shareEmailPlaceholder}
                 value={shareEmail}
                 onChange={e => setShareEmail(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleShareAdd()}
               />
               <button className={styles.addBtn} onClick={handleShareAdd} disabled={!shareEmail.trim()}>
-                Share
+                {tx.share}
               </button>
             </div>
             <div className={styles.panelHd}>
               <span className={styles.eyebrow}>
                 {shareLoading
-                  ? "Loading…"
-                  : `${shareAccess.length} student${shareAccess.length !== 1 ? "s" : ""} with access`}
+                  ? tx.loading
+                  : `${shareAccess.length} ${shareAccess.length !== 1 ? tx.studentsWithAccess : tx.studentWithAccess}`}
               </span>
               <button className={styles.ghostBtn}>Export</button>
             </div>
@@ -1377,53 +1409,67 @@ export default function FacultyDashboard() {
                   <div className={styles.studentInfo}>
                     <div className={styles.studentEmail}>{s.email}</div>
                     <div className={styles.studentMeta}>
-                      {s.sessionCount > 0 ? `${s.sessionCount} session${s.sessionCount > 1 ? "s" : ""}` : "No sessions yet"}
+                      {s.sessionCount > 0 ? `${s.sessionCount} ${tx.statsSessions.toLowerCase()}` : tx.noSessionsYet}
                     </div>
                   </div>
                   <span className={statusPillCls(s.status, styles)}>{s.status}</span>
-                  <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>Remove</button>
+                  <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>{tx.remove}</button>
                 </div>
               ))}
               {!shareLoading && shareAccess.length === 0 && (
-                <div className={styles.emptyGroup}>No students yet — share this course using the input above.</div>
+                <div className={styles.emptyGroup}>{tx.noStudentsYet}</div>
               )}
               <div className={styles.courseSettingsBlock}>
-                <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>Course settings</span>
+                <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>{tx.courseSettings}</span>
                 <div className={styles.settingRow}>
                   <div>
-                    <span className={styles.settingLabel}>Allow PDF download</span>
-                    <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>Students can save the course document</div>
+                    <span className={styles.settingLabel}>{tx.allowDownload}</span>
+                    <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>{tx.allowDownloadHint}</div>
                   </div>
                   <button
                     className={`${styles.toggleBtn} ${selectedCourse.allowDownload ? styles.toggleBtnOn : ""}`}
                     onClick={handleAllowDownloadToggle}
                   >
-                    {selectedCourse.allowDownload ? "On" : "Off"}
+                    {selectedCourse.allowDownload ? tx.on : tx.off}
                   </button>
                 </div>
                 <div className={styles.settingRow}>
                   <div>
-                    <span className={styles.settingLabel}>Visible progress tracking</span>
-                    <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>Students see a banner indicating their sessions are reviewed by the instructor</div>
+                    <span className={styles.settingLabel}>{tx.visibleProgress}</span>
+                    <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>{tx.visibleProgressHint}</div>
                   </div>
                   <button
                     className={`${styles.toggleBtn} ${(selectedCourse.visibleProgressTracking ?? true) ? styles.toggleBtnOn : ""}`}
                     onClick={handleVisibleProgressToggle}
                   >
-                    {(selectedCourse.visibleProgressTracking ?? true) ? "On" : "Off"}
+                    {(selectedCourse.visibleProgressTracking ?? true) ? tx.on : tx.off}
                   </button>
                 </div>
+                {selectedCourse.isOwned !== false && (
+                  <div className={styles.settingRow}>
+                    <div>
+                      <span className={styles.settingLabel}>{tx.allowStudentSharing}</span>
+                      <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>{tx.allowStudentSharingHint}</div>
+                    </div>
+                    <button
+                      className={`${styles.toggleBtn} ${(selectedCourse.allowStudentSharing ?? false) ? styles.toggleBtnOn : ""}`}
+                      onClick={handleStudentSharingToggle}
+                    >
+                      {(selectedCourse.allowStudentSharing ?? false) ? tx.on : tx.off}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Students ── */}
+        {/* â”€â”€ Students â”€â”€ */}
         {activeMode === "students" && (
           <div className={styles.panelShell}>
             <div className={styles.panelHd}>
-              <span className={styles.eyebrow}>Roster — {MOCK_STUDENTS.length}</span>
-              <button className={styles.addBtn} onClick={() => setRightPanel("invite")}>+ Invite</button>
+              <span className={styles.eyebrow}>Roster â€” {MOCK_STUDENTS.length}</span>
+              <button className={styles.addBtn} onClick={() => setRightPanel("invite")}>{tx.invite}</button>
             </div>
             <div
               className={`${styles.uploadZone} ${styles.uploadZoneHidden}`}
@@ -1435,8 +1481,8 @@ export default function FacultyDashboard() {
                 if (file) handleCsvFile(file);
               }}
             >
-              <p>Drop a .csv of student emails</p>
-              <span className={styles.uploadHint}>one email per line</span>
+              <p>{tx.dropCsv}</p>
+              <span className={styles.uploadHint}>{tx.oneEmailPerLine}</span>
               <input
                 ref={csvInputRef}
                 type="file"
@@ -1455,15 +1501,15 @@ export default function FacultyDashboard() {
                   <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>{s.initials}</div>
                   <div className={styles.studentInfo}>
                     <div className={styles.studentEmail}>{s.email}</div>
-                    <div className={styles.studentMeta}>{s.joinedAt !== "—" ? `Joined ${s.joinedAt}` : "Invited 14 Apr"}</div>
+                    <div className={styles.studentMeta}>{s.joinedAt !== "â€”" ? `${tx.joined} ${s.joinedAt}` : `${tx.invite.replace("+ ","")} 14 Apr`}</div>
                   </div>
                   <span className={statusPillCls(s.status, styles)}>{s.status}</span>
                 </div>
               ))}
               <div className={styles.groupsSection}>
                 <div className={styles.groupsSectionHd}>
-                  <span className={styles.eyebrow}>{groupsLoading ? "Groups loading" : `Groups - ${groups.length}`}</span>
-                  <button className={styles.addBtn} onClick={() => csvInputRef.current?.click()}>+ Group</button>
+                  <span className={styles.eyebrow}>{groupsLoading ? tx.groupsLoading : `${tx.groups} - ${groups.length}`}</span>
+                  <button className={styles.addBtn} onClick={() => csvInputRef.current?.click()}>{tx.addGroup}</button>
                 </div>
                 {groups.map(g => (
                   <div
@@ -1474,15 +1520,15 @@ export default function FacultyDashboard() {
                     <span className={styles.groupInitial}>{g.name[0]?.toUpperCase() ?? "G"}</span>
                     <div className={styles.groupMeta}>
                       <span className={styles.groupName}>{g.name}</span>
-                      <span className={styles.groupCount}>{(g.members ?? []).length} students</span>
+                      <span className={styles.groupCount}>{(g.members ?? []).length} {tx.statsStudents.toLowerCase()}</span>
                     </div>
                     {(g.courseIds ?? []).includes(selectedCourse?.id ?? "") && (
-                      <span className={styles.groupSharedChip}>Shared</span>
+                      <span className={styles.groupSharedChip}>{tx.shared}</span>
                     )}
                   </div>
                 ))}
                 {!groupsLoading && groups.length === 0 && (
-                  <div className={styles.emptyGroup}>No groups yet - upload a CSV to create one.</div>
+                  <div className={styles.emptyGroup}>{tx.noGroups}</div>
                 )}
                 <div
                   className={styles.uploadZone}
@@ -1494,15 +1540,15 @@ export default function FacultyDashboard() {
                     if (file) handleCsvFile(file);
                   }}
                 >
-                  <p>Drop a .csv of student emails</p>
-                  <span className={styles.uploadHint}>one email per line</span>
+                  <p>{tx.dropCsv}</p>
+                  <span className={styles.uploadHint}>{tx.oneEmailPerLine}</span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Analytics ── */}
+        {/* â”€â”€ Analytics â”€â”€ */}
         {activeMode === "analytics" && (
           <div className={styles.panelShell}>
             <div className={styles.analyticsControls}>
@@ -1511,14 +1557,14 @@ export default function FacultyDashboard() {
                   className={`${styles.toggleBtn} ${analyticsView === "students" ? styles.toggleBtnOn : ""}`}
                   onClick={() => setAnalyticsView("students")}
                 >
-                  Students
+                  {tx.statsStudents}
                 </button>
                 <button
                   className={`${styles.toggleBtn} ${analyticsView === "group" ? styles.toggleBtnOn : ""}`}
                   onClick={() => setAnalyticsView("group")}
                   disabled={groups.length === 0}
                 >
-                  Groups
+                  {tx.groups}
                 </button>
               </div>
               {analyticsView === "group" && (
@@ -1530,7 +1576,7 @@ export default function FacultyDashboard() {
                     setAnalyticsGroup(g);
                   }}
                 >
-                  <option value="">Select a group...</option>
+                  <option value="">{tx.selectGroupPlaceholder}</option>
                   {groups.map(g => (
                     <option key={g.id} value={g.id}>{g.name} ({(g.members ?? []).length})</option>
                   ))}
@@ -1538,16 +1584,16 @@ export default function FacultyDashboard() {
               )}
             </div>
             <div className={styles.statRow}>
-              <div className={styles.statBox}><div className={styles.statN}>{analyticsStudentCount}</div><div className={styles.statLbl}>Students</div></div>
-              <div className={styles.statBox}><div className={styles.statN}>{analyticsView === "group" && analyticsGroup ? (groupAnalytics?.sessions.length ?? 0) : activeStudents.reduce((s,st)=>s+st.sessions,0)}</div><div className={styles.statLbl}>Sessions</div></div>
-              <div className={styles.statBox}><div className={styles.statN}>{classAvgScore}%</div><div className={styles.statLbl}>Avg score</div></div>
+              <div className={styles.statBox}><div className={styles.statN}>{analyticsStudentCount}</div><div className={styles.statLbl}>{tx.statsStudents}</div></div>
+              <div className={styles.statBox}><div className={styles.statN}>{analyticsView === "group" && analyticsGroup ? (groupAnalytics?.sessions.length ?? 0) : activeStudents.reduce((s,st)=>s+st.sessions,0)}</div><div className={styles.statLbl}>{tx.statsSessions}</div></div>
+              <div className={styles.statBox}><div className={styles.statN}>{classAvgScore}%</div><div className={styles.statLbl}>{tx.statsAvgScore}</div></div>
             </div>
             <div className={styles.panelScroll}>
               {analyticsView === "group" && !analyticsGroup && (
-                <div className={styles.emptyGroup}>Select a group to view class analytics.</div>
+                <div className={styles.emptyGroup}>{tx.selectGroupHint}</div>
               )}
               {groupAnalyticsLoading && (
-                <div className={styles.emptyGroup}>Loading group analytics...</div>
+                <div className={styles.emptyGroup}>{tx.loadingGroupAnalytics}</div>
               )}
               {analyticsStudents.map(s => (
                 <div key={s.id}
@@ -1555,7 +1601,7 @@ export default function FacultyDashboard() {
                   onClick={() => { setSelectedStudent(s); setRightPanel("student-detail"); }}>
                   <div className={styles.analyticsLabel}>{s.email}</div>
                   <div className={styles.analyticsMeta}>
-                    {s.sessions > 0 ? `${s.sessions} session${s.sessions>1?"s":""} · ${s.avgScore}%` : "No sessions"}
+                    {s.sessions > 0 ? `${s.sessions} ${tx.statsSessions.toLowerCase()} Â· ${s.avgScore}%` : tx.noSessions}
                   </div>
                   <div className={styles.barTrack}>
                     <div className={styles.barFill} style={{ width:`${s.avgScore}%` }} />
@@ -1563,13 +1609,13 @@ export default function FacultyDashboard() {
                 </div>
               ))}
               <div className={styles.weakBlock}>
-                <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>Weak concepts — class</span>
+                <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>{tx.weakConceptsLabel}</span>
                 {["Canary vs blue-green trade-offs","Delegate architecture"].map(c => (
                   <div key={c} className={styles.weakItem}>{c}</div>
                 ))}
               </div>
               <div className={styles.signalBlock}>
-                <span className={styles.eyebrow} style={{ display:"block", marginBottom:10 }}>Signal breakdown — all sessions</span>
+                <span className={styles.eyebrow} style={{ display:"block", marginBottom:10 }}>{tx.signalBreakdownLabel}</span>
                 <div className={styles.signalGrid}>
                   {SIGNAL_META.map(sm => (
                     <div key={sm.key} className={styles.signalItem}>
@@ -1606,16 +1652,16 @@ export default function FacultyDashboard() {
           ) : (
             <div className={styles.emptyState}>
               <span className={styles.eyebrow}>
-                {activeMode==="questions" && "Select a question"}
-                {activeMode==="share"     && "Share settings"}
-                {activeMode==="students"  && "Invitation"}
-                {activeMode==="analytics" && "Select a student"}
+                {activeMode==="questions" && tx.selectQuestion}
+                {activeMode==="share"     && tx.shareSettings}
+                {activeMode==="students"  && tx.invitationLabel}
+                {activeMode==="analytics" && tx.selectStudent}
               </span>
               <p>
-                {activeMode==="questions" && "Click a question to edit, or create a new one."}
-                {activeMode==="share"     && "Enter a student email above to share this course."}
-                {activeMode==="students"  && "Click Invite to send bulk invitations."}
-                {activeMode==="analytics" && "Click a student row to inspect their progress."}
+                {activeMode==="questions" && tx.clickToEdit}
+                {activeMode==="share"     && tx.enterEmail}
+                {activeMode==="students"  && tx.clickInvite}
+                {activeMode==="analytics" && tx.clickStudent}
               </p>
             </div>
           )
@@ -1624,19 +1670,19 @@ export default function FacultyDashboard() {
         {(rightPanel==="edit-q"||rightPanel==="new-q") && editDraft && (
           <>
             <div className={styles.paneHd}>
-              <span className={styles.eyebrow}>{rightPanel==="new-q" ? "New question" : "Edit question"}</span>
+              <span className={styles.eyebrow}>{rightPanel==="new-q" ? tx.newQ : tx.editQ}</span>
               <span className={`${styles.fnChip} ${styles[`fn_${editDraft.function}` as keyof typeof styles]}`}>
                 {editDraft.function}
               </span>
             </div>
 
-            {/* PDF slide preview — only when editing existing question with a page ref */}
+            {/* PDF slide preview â€” only when editing existing question with a page ref */}
             {rightPanel === "edit-q" && editDraft.id && (
               <div className={styles.slideSection}>
                 <div className={styles.slideHd}>
-                  <span className={styles.eyebrow}>PDF reference</span>
+                  <span className={styles.eyebrow}>{tx.pdfReference}</span>
                   <span className={styles.slidePageLabel}>
-                    {editDraftPage > 0 ? `Page ${editDraftPage}` : "Page not set"}
+                    {editDraftPage > 0 ? `${tx.page} ${editDraftPage}` : tx.pageNotSet}
                   </span>
                   <div className={styles.slideHdActions}>
                     {coursePdfUrl ? (
@@ -1646,18 +1692,18 @@ export default function FacultyDashboard() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Open full PDF →
+                        {tx.openFullPdf}
                       </a>
                     ) : (
                       <span className={styles.pdfUnavailable}>
-                        {coursePdfLoading ? "Loading PDF" : coursePdfError ?? "PDF unavailable"}
+                        {coursePdfLoading ? tx.loadingPdf : coursePdfError ?? tx.pdfUnavailable}
                       </span>
                     )}
                     <button
                       className={styles.slideToggle}
                       onClick={() => setSlideExpanded(v => !v)}
                     >
-                      {slideExpanded ? "Collapse" : "Expand"}
+                      {slideExpanded ? tx.collapse : tx.expand}
                     </button>
                   </div>
                 </div>
@@ -1685,11 +1731,10 @@ export default function FacultyDashboard() {
                           </div>
                         </div>
                       )}
-                      {coursePdfLoading && <div className={styles.pdfState}>Loading PDF</div>}
+                      {coursePdfLoading && <div className={styles.pdfState}>{tx.loadingPdf}</div>}
                       {!coursePdfLoading && coursePdfError && <div className={styles.pdfState}>{coursePdfError}</div>}
                       <div className={styles.pageBadge}>{editDraftPage > 0 ? `p. ${editDraftPage}` : "p. -"}</div>
                     </div>
-
                   </div>
                 )}
               </div>
@@ -1704,26 +1749,26 @@ export default function FacultyDashboard() {
 
         {rightPanel==="invite" && (
           <>
-            <div className={styles.paneHd}><span className={styles.eyebrow}>Invitation preview</span></div>
+            <div className={styles.paneHd}><span className={styles.eyebrow}>{tx.invitationPreview}</span></div>
             <div className={styles.inviteShell}>
               <div className={styles.invitePreview}>
-                <div className={styles.inviteSubject}>You&apos;ve been enrolled in &ldquo;{selectedCourse?.title}&rdquo;</div>
+                <div className={styles.inviteSubject}>{tx.inviteSubject} &ldquo;{selectedCourse?.title}&rdquo;</div>
                 <div className={styles.inviteBody}>
-                  <p>Hello,</p>
-                  <p>Your professor has shared a course with you on <strong>Student Central</strong>. Click below to access your MCQ session and AI tutor.</p>
-                  <p className={styles.inviteLink}>→ Open Student Central</p>
-                  <p>Once logged in, the course will appear in your workspace automatically.</p>
+                  <p>{tx.inviteHello}</p>
+                  <p>{tx.inviteBody}</p>
+                  <p className={styles.inviteLink}>{tx.inviteLink}</p>
+                  <p>{tx.inviteAfter}</p>
                 </div>
               </div>
               <div className={styles.editorSection} style={{ padding:"12px 16px" }}>
-                <label className={styles.fieldLabel}>Paste emails or upload CSV</label>
+                <label className={styles.fieldLabel}>{tx.pasteEmails}</label>
                 <textarea className={styles.fieldTextarea} rows={5}
                   defaultValue={"alice.bernard@m2.univ.fr\nc.martin@m2.univ.fr\nt.dupont@m2.univ.fr"} />
-                <p className={styles.inviteHint}>3 valid addresses · Course: {selectedCourse?.title}</p>
+                <p className={styles.inviteHint}>3 valid addresses Â· Course: {selectedCourse?.title}</p>
               </div>
               <div className={styles.editorActions}>
-                <button className={styles.saveBtn}>Send invitations</button>
-                <button className={styles.cancelBtn} onClick={()=>setRightPanel("empty")}>Cancel</button>
+                <button className={styles.saveBtn}>{tx.sendInvitations}</button>
+                <button className={styles.cancelBtn} onClick={()=>setRightPanel("empty")}>{tx.cancel}</button>
               </div>
             </div>
           </>
@@ -1731,10 +1776,10 @@ export default function FacultyDashboard() {
 
         {rightPanel==="group-create" && (
           <div className={styles.editorShell}>
-            <div className={styles.paneHd}><span className={styles.eyebrow}>Create group</span></div>
+            <div className={styles.paneHd}><span className={styles.eyebrow}>{tx.createGroup}</span></div>
             <div className={styles.editorScroll}>
               <div className={styles.editorSection}>
-                <label className={styles.fieldLabel}>Group name</label>
+                <label className={styles.fieldLabel}>{tx.groupName}</label>
                 <input
                   className={styles.fieldInput}
                   value={newGroupName}
@@ -1745,7 +1790,7 @@ export default function FacultyDashboard() {
               </div>
 
               <div className={styles.editorSection}>
-                <label className={styles.fieldLabel}>Members - {pendingCsv?.length ?? 0}</label>
+                <label className={styles.fieldLabel}>{tx.members} — {pendingCsv?.length ?? 0}</label>
                 {pendingCsv?.map(email => (
                   <div key={email} className={styles.memberRow}>
                     <span className={styles.avatar}>{email[0].toUpperCase()}</span>
@@ -1762,10 +1807,10 @@ export default function FacultyDashboard() {
                 disabled={!newGroupName.trim() || !pendingCsv?.length}
                 onClick={handleCreateGroup}
               >
-                Create group
+                {tx.createGroup}
               </button>
               <button className={styles.cancelBtn} onClick={() => { setPendingCsv(null); setRightPanel("empty"); }}>
-                Cancel
+                {tx.cancel}
               </button>
             </div>
           </div>
@@ -1773,10 +1818,10 @@ export default function FacultyDashboard() {
 
         {rightPanel==="group-detail" && selectedGroup && (
           <div className={styles.editorShell}>
-            <div className={styles.paneHd}><span className={styles.eyebrow}>Group</span></div>
+            <div className={styles.paneHd}><span className={styles.eyebrow}>{tx.groupEyebrow}</span></div>
             <div className={styles.editorScroll}>
               <div className={styles.editorSection}>
-                <label className={styles.fieldLabel}>Group name</label>
+                <label className={styles.fieldLabel}>{tx.groupName}</label>
                 <input
                   className={styles.fieldInput}
                   value={selectedGroup.name}
@@ -1793,11 +1838,11 @@ export default function FacultyDashboard() {
                 <div className={styles.editorSection}>
                   <div className={styles.settingRow}>
                     <div className={styles.settingLabelGroup}>
-                      <span className={styles.settingLabel}>Share with &quot;{selectedCourse.title}&quot;</span>
+                      <span className={styles.settingLabel}>{tx.shareWith} &quot;{selectedCourse.title}&quot;</span>
                       <span className={styles.settingHint}>
                         {(selectedGroup.courseIds ?? []).includes(selectedCourse.id)
-                          ? "Already shared - students have access"
-                          : "Adds all members to this course"}
+                          ? tx.alreadyShared
+                          : tx.addsAllMembers}
                       </span>
                     </div>
                     <button
@@ -1805,26 +1850,26 @@ export default function FacultyDashboard() {
                       disabled={(selectedGroup.courseIds ?? []).includes(selectedCourse.id)}
                       onClick={handleShareGroup}
                     >
-                      {(selectedGroup.courseIds ?? []).includes(selectedCourse.id) ? "Shared" : "Share"}
+                      {(selectedGroup.courseIds ?? []).includes(selectedCourse.id) ? tx.shared : tx.share}
                     </button>
                   </div>
                 </div>
               )}
 
               <div className={styles.editorSection}>
-                <label className={styles.fieldLabel}>Members</label>
+                <label className={styles.fieldLabel}>{tx.members}</label>
                 {(selectedGroup.members ?? []).map(email => (
                   <div key={email} className={styles.memberRow}>
                     <span className={styles.avatar}>{email[0].toUpperCase()}</span>
                     <span className={styles.memberEmail}>{email}</span>
-                    <button className={styles.delBtnSm} onClick={() => handleRemoveGroupMember(email)}>Remove</button>
+                    <button className={styles.delBtnSm} onClick={() => handleRemoveGroupMember(email)}>{tx.remove}</button>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className={styles.editorActions}>
-              <button className={styles.deleteBtn} onClick={handleDeleteGroup}>Delete group</button>
+              <button className={styles.deleteBtn} onClick={handleDeleteGroup}>{tx.deleteGroup}</button>
             </div>
           </div>
         )}
@@ -1871,7 +1916,7 @@ export default function FacultyDashboard() {
                   {FN_ORDER.map(fn => (
                     <span key={fn}
                       className={`${styles.fnChip} ${styles[`fn_${fn}` as keyof typeof styles]} ${!selectedStudent.functionCoverage.includes(fn)?styles.fnChipDim:""}`}>
-                      {fn}{selectedStudent.functionCoverage.includes(fn)?" ✓":""}
+                      {fn}{selectedStudent.functionCoverage.includes(fn)?" âœ“":""}
                     </span>
                   ))}
                 </div>
@@ -1892,10 +1937,10 @@ export default function FacultyDashboard() {
       {deleteConfirmId && (
         <div className={styles.confirmOverlay} onClick={cancelDeleteQuestion}>
           <div className={styles.confirmDialog} onClick={e => e.stopPropagation()}>
-            <div className={styles.confirmEyebrow}>Delete question</div>
-            <h2 className={styles.confirmTitle}>Delete this question?</h2>
+            <div className={styles.confirmEyebrow}>{tx.deleteQuestion}</div>
+            <h2 className={styles.confirmTitle}>{tx.deleteThisQuestion}</h2>
             <p className={styles.confirmBody}>
-              This removes the question from the course bank immediately.
+              {tx.deleteConfirmBody}
             </p>
             <label className={styles.confirmCheckRow}>
               <input
@@ -1904,11 +1949,11 @@ export default function FacultyDashboard() {
                 checked={dontShowDeleteConfirm}
                 onChange={e => setDontShowDeleteConfirm(e.target.checked)}
               />
-              <span>Don&apos;t show me this again</span>
+              <span>{tx.dontShowAgain}</span>
             </label>
             <div className={styles.confirmActions}>
-              <button className={styles.cancelBtn} onClick={cancelDeleteQuestion}>Cancel</button>
-              <button className={styles.deleteConfirmBtn} onClick={confirmDeleteQuestion}>Delete</button>
+              <button className={styles.cancelBtn} onClick={cancelDeleteQuestion}>{tx.cancel}</button>
+              <button className={styles.deleteConfirmBtn} onClick={confirmDeleteQuestion}>{tx.deleteConfirmBtn}</button>
             </div>
           </div>
         </div>
