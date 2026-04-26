@@ -171,10 +171,12 @@ export async function generateMCQ(payload: {
   courseId: string;
   pdfUrl?: string;
   courseTitle?: string;
+  userId?: string;
 }): Promise<MCQQuestion> {
+  const uid = payload.userId ?? await getCurrentUserId();
   return request<MCQQuestion>("/api/mcq/generate", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, userId: uid }),
   });
 }
 

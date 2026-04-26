@@ -70,6 +70,7 @@ function MCQContent() {
     : "";
   const signedPdfUrl = pdfUrl && /[?&](sig|se|sp|sv)=/i.test(pdfUrl) ? pdfUrl : "";
   const ownerId      = params.get("ownerId") ?? "";
+  const userHint     = params.get("userId") ?? "";
   const tutorLang      = params.get("lang")         ?? "en";
   /* Map short tutorLang code → full BCP-47 for Azure STT */
   const STT_LANG_MAP: Record<string, string> = {
@@ -862,7 +863,7 @@ function MCQContent() {
     fetch("/api/auth/session")
       .then(r => r.json())
       .then(s => {
-        const uid = s?.user?.email ?? s?.user?.id ?? "";
+        const uid = s?.user?.email ?? s?.user?.id ?? userHint;
         if (uid) { setCurrentUser(uid); setUserId(uid); }
         return uid;
       })

@@ -366,6 +366,7 @@ function CourseDetailsModal({
   const progress = Math.round((course.exercisesDone / (total || 1)) * 100);
   const ownerId = getCourseOwnerId(course);
   const ownerParam = ownerId ? `&ownerId=${encodeURIComponent(ownerId)}` : "";
+  const studentParam = userId ? `&userId=${encodeURIComponent(userId)}` : "";
 
   const fmtDate = (iso?: string | null) => {
     if (!iso) return "";
@@ -373,7 +374,7 @@ function CourseDetailsModal({
   };
 
   const resumeUrl = recentSession
-    ? `/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}${ownerParam}&resumeSession=${recentSession.id}`
+    ? `/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}${ownerParam}${studentParam}&resumeSession=${recentSession.id}`
     : null;
 
   return (
@@ -422,7 +423,7 @@ function CourseDetailsModal({
           <div className={styles.actionCards}>
             <button
               className={`${styles.actionCard} ${styles.actionCardPrimary}`}
-              onClick={() => { onClose(); router.push(`/workspace/course?id=${course.id}${ownerParam}`); }}
+              onClick={() => { onClose(); router.push(`/workspace/course?id=${course.id}${ownerParam}${studentParam}`); }}
             >
               <div className={styles.actionCardIcon}>↗</div>
               <div className={styles.actionCardTitle}>{ui.accessCourse}</div>
@@ -431,7 +432,7 @@ function CourseDetailsModal({
             <button
               className={`${styles.actionCard} ${(course.mcqCount ?? course.exercisesTotal ?? 0) === 0 ? styles.actionCardDisabled : ""}`}
               disabled={(course.mcqCount ?? course.exercisesTotal ?? 0) === 0}
-              onClick={() => { onClose(); router.push(`/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}${ownerParam}`); }}
+              onClick={() => { onClose(); router.push(`/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}${ownerParam}${studentParam}`); }}
             >
               <div className={styles.actionCardIcon}>◎</div>
               <div className={styles.actionCardTitle}>{ui.startMCQ}</div>
@@ -587,7 +588,7 @@ function CourseCard({
               className={styles.cardFooterProgressLink}
               onClick={() => {
                 const ownerId = getCourseOwnerId(course);
-                router.push(`/workspace/course/dashboard?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}${ownerId ? `&ownerId=${encodeURIComponent(ownerId)}` : ""}`);
+                router.push(`/workspace/course/dashboard?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}${ownerId ? `&ownerId=${encodeURIComponent(ownerId)}` : ""}${userId ? `&userId=${encodeURIComponent(userId)}` : ""}`);
               }}
             >
               <div className={`${styles.statusBadge} ${styles[`status${course.status.replace(" ", "")}`]}`}>
