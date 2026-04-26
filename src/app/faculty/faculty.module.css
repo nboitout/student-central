@@ -1431,7 +1431,6 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  border-right: 1px solid var(--outline-variant);
 }
 
 .slidePlaceholder {
@@ -1512,38 +1511,6 @@
   background: var(--surface-lowest);
   border: 1px solid var(--outline-variant);
   color: var(--on-surface-variant);
-}
-
-.slideMeta {
-  width: 160px;
-  min-width: 160px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.slideMetaRow {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.slideMetaVal {
-  font-family: var(--font-body);
-  font-size: 0.8125rem;
-  color: var(--on-surface);
-}
-
-.slideMetaVisual { color: var(--primary); }
-
-.slideMetaSource {
-  font-family: var(--font-body);
-  font-size: 0.6875rem;
-  color: var(--on-surface-variant);
-  word-break: break-all;
-  line-height: 1.4;
 }
 
 .pdfLink {

@@ -1621,23 +1621,7 @@ export default function FacultyDashboard() {
                       {!coursePdfLoading && coursePdfError && <div className={styles.pdfState}>{coursePdfError}</div>}
                       <div className={styles.pageBadge}>{editDraftPage > 0 ? `p. ${editDraftPage}` : "p. -"}</div>
                     </div>
-                    <div className={styles.slideMeta}>
-                      <div className={styles.slideMetaRow}>
-                        <span className={styles.fieldLabel}>Page</span>
-                        <span className={styles.slideMetaVal}>{editDraftPage > 0 ? editDraftPage : "Not set"}</span>
-                      </div>
-                      <div className={styles.slideMetaRow}>
-                        <span className={styles.fieldLabel}>Page content</span>
-                        <span className={`${styles.slideMetaVal} ${editDraft.hasVisual ? styles.slideMetaVisual : ""}`}>
-                          {editDraft.hasVisual ? "Includes visual" : "Text only"}
-                        </span>
-                      </div>
-                      <div className={styles.slideMetaRow}>
-                        <span className={styles.fieldLabel}>Source</span>
-                        <span className={styles.slideMetaSource}>{selectedCourse?.title}.pdf</span>
-                      </div>
 
-                    </div>
                   </div>
                 )}
               </div>
