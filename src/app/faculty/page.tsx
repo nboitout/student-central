@@ -1108,6 +1108,13 @@ export default function FacultyDashboard() {
 
       {/* LEFT */}
       <aside className={`${styles.paneLeft} ${leftCollapsed ? styles.paneLeftCollapsed : ""}`}>
+        <a
+          className={styles.workspaceBtn}
+          href="/workspace"
+          title="Workspace"
+        >
+          {leftCollapsed ? "W" : "Workspace"}
+        </a>
         <div className={styles.paneHd}>
           {!leftCollapsed && <span className={styles.eyebrow}>Courses</span>}
           {!leftCollapsed && <span className={styles.hdMeta}>{facultyId}</span>}
