@@ -13,12 +13,29 @@ export async function GET(
     return NextResponse.json({ detail: "Missing userId." }, { status: 400 });
   }
 
-  const upstream = await fetch(
-    `${API}/api/courses/${encodeURIComponent(params.courseId)}/pdf-url?userId=${encodeURIComponent(userId)}`,
-    { cache: "no-store" },
-  );
+  const courseId = encodeURIComponent(params.courseId);
+  const signPdfUrl = (signingUserId: string) =>
+    fetch(
+      `${API}/api/courses/${courseId}/pdf-url?userId=${encodeURIComponent(signingUserId)}`,
+      { cache: "no-store" },
+    );
 
-  const data = await upstream.json().catch(() => null);
+  let upstream = await signPdfUrl(userId);
+  let data = await upstream.json().catch(() => null);
+
+  if (upstream.status === 403) {
+    const courseResponse = await fetch(
+      `${API}/api/courses/${courseId}?userId=${encodeURIComponent(userId)}`,
+      { cache: "no-store" },
+    );
+    const course = await courseResponse.json().catch(() => null);
+    const ownerId = course?.userId ?? course?.facultyId ?? course?.ownerId ?? null;
+
+    if (courseResponse.ok && ownerId && ownerId !== userId) {
+      upstream = await signPdfUrl(ownerId);
+      data = await upstream.json().catch(() => null);
+    }
+  }
 
   if (!upstream.ok) {
     return NextResponse.json(data ?? { detail: "PDF URL fetch failed." }, {
