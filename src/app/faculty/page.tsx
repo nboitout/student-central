@@ -268,6 +268,8 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
   };
 
   const [reformulating,    setReformulating]    = useState<string | null>(null);
+  const [replacing,        setReplacing]        = useState<string | null>(null);
+  const [replaceErrors,    setReplaceErrors]    = useState<Record<string, string>>({});
   const [pending,          setPending]          = useState<Record<string, ReformResult>>({});
   const [acceptedReforms,  setAcceptedReforms]  = useState<Record<string, AcceptedReform>>({});
 
@@ -320,6 +322,46 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
     }
   };
 
+  const replaceDistractor = async (field: string, optionIndex: number) => {
+    if (optionIndex === draft.correctIndex || replacing) return;
+    const currentDistractor = draft.options[optionIndex]?.trim();
+    const correctAnswer = draft.options[draft.correctIndex]?.trim();
+    if (!draft.question.trim() || !currentDistractor || !correctAnswer) return;
+
+    setReplacing(field);
+    setPending(prev => { const n = { ...prev }; delete n[field]; return n; });
+    setReplaceErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
+
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL
+        ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
+      const res = await fetch(`${API}/api/mcq/distractor/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: draft.question,
+          correctAnswer,
+          currentDistractor,
+          existingOptions: draft.options,
+          explanation: draft.explanation,
+          pedagogical_function: draft.function,
+          course_title: courseTitle,
+          pageNumber: Number(draft.pageNumber) || 0,
+          optionIndex,
+        }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+      const replacement = data.distractor ?? data.replacement ?? data.option ?? data.text ?? "";
+      if (!replacement.trim()) throw new Error("Empty distractor replacement");
+      setPending(prev => ({ ...prev, [field]: { original: currentDistractor, reformulated: replacement.trim() } }));
+    } catch (e) {
+      console.warn("Distractor replacement failed:", e);
+      setReplaceErrors(prev => ({ ...prev, [field]: "Replacement unavailable" }));
+    } finally {
+      setReplacing(null);
+    }
+  };
   const applyToField = (field: string, text: string) => {
     if (field === "question")    { set({ question: text });    return; }
     if (field === "explanation") { set({ explanation: text }); return; }
@@ -348,6 +390,11 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
     reformulating === field
       ? `${styles.reformulateBtnOpt} ${styles.reformulateBtnLoading}`
       : styles.reformulateBtnOpt;
+
+  const replaceClass = (field: string) =>
+    replacing === field
+      ? `${styles.replaceDistractorBtn} ${styles.reformulateBtnLoading}`
+      : styles.replaceDistractorBtn;
 
   return (
     <div className={styles.editorShell}>
@@ -395,8 +442,19 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
                       disabled={!!reformulating || !opt.trim()} title="Reformulate with AI">
                       {reformulating === field ? "…" : "Reformulate"}
                     </button>
+                    {draft.correctIndex !== i && (
+                      <button className={replaceClass(field)}
+                        onClick={() => replaceDistractor(field, i)}
+                        disabled={!!replacing || !draft.question.trim() || !draft.options[draft.correctIndex]?.trim() || !opt.trim()}
+                        title="Generate a new distractor">
+                        {replacing === field ? "…" : "Replace"}
+                      </button>
+                    )}
                   </div>
                 </div>
+                {replaceErrors[field] && (
+                  <div className={styles.replaceError}>{replaceErrors[field]}</div>
+                )}
                 {pending[field] && (
                   <ReformulationPanel result={pending[field]}
                     onKeep={()   => dismiss(field)}
@@ -409,7 +467,16 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
 
         {/* ── Explanation ── */}
         <div className={styles.editorSection}>
-          <label className={styles.fieldLabel}>Explanation</label>
+          <div className={styles.explanationHeader}>
+            <label className={styles.fieldLabel}>Explanation</label>
+            <label className={styles.pageRefControl}>
+              <span className={styles.fieldLabel}>Page ref</span>
+              <input className={styles.pageRefInput} type="number" min={1}
+                value={draft.pageNumber}
+                onChange={e => set({ pageNumber: e.target.value === "" ? "" : Number(e.target.value) })}
+                placeholder="—" />
+            </label>
+          </div>
           <div className={styles.textareaWrapper}>
             <textarea className={styles.fieldTextarea} rows={3}
               value={draft.explanation} onChange={e => set({ explanation: e.target.value })}
@@ -437,13 +504,7 @@ function QuestionEditor({ draft, onChange, onSave, onCancel, onDelete, courseTit
                 {FN_ORDER.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
               </select>
             </div>
-            <div className={styles.metaField}>
-              <label className={styles.fieldLabel}>Page ref</label>
-              <input className={styles.fieldInput} type="number" min={1}
-                value={draft.pageNumber}
-                onChange={e => set({ pageNumber: e.target.value === "" ? "" : Number(e.target.value) })}
-                placeholder="—" />
-            </div>
+
             <div className={styles.metaField}>
               <label className={styles.fieldLabel}>Has visual</label>
               <button className={`${styles.toggleBtn} ${draft.hasVisual ? styles.toggleBtnOn : ""}`}

@@ -888,13 +888,13 @@
 
 .optInputWrapper .optInput {
   flex: 1;
-  padding-right: 72px; /* room for "REFORMULATE" word */
+  padding-right: 128px; /* room for option actions */
 }
 
 /* Ghost "reformulate" label — right edge of the option input */
 .reformulateBtnOpt {
   position: absolute;
-  right: 8px;
+  right: 62px;
   top: 50%;
   transform: translateY(-50%);
   font-family: var(--font-display);
@@ -915,6 +915,40 @@
 
 .reformulateBtnOpt:hover { opacity: 1; }
 .reformulateBtnOpt:disabled { opacity: 0.2 !important; cursor: not-allowed; }
+
+.replaceDistractorBtn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-display);
+  font-size: 0.4375rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  padding: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.replaceDistractorBtn:hover { opacity: 1; }
+.replaceDistractorBtn:disabled { opacity: 0.2 !important; cursor: not-allowed; }
+
+.replaceError {
+  margin: -1px 0 5px 30px;
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  opacity: 0.7;
+}
 
 /* ── Reformulate loading animation ─────────────────────────────────────────── */
 
@@ -1103,6 +1137,38 @@
   opacity: 0.6;
   margin-bottom: 6px;
 }
+
+.explanationHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.explanationHeader .fieldLabel {
+  margin-bottom: 0;
+}
+
+.pageRefControl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pageRefInput {
+  width: 58px;
+  padding: 4px 6px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: var(--on-surface);
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  outline: none;
+}
+
+.pageRefInput:focus { border-color: var(--primary); }
 
 .fieldTextarea {
   width: 100%;
