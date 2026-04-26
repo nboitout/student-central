@@ -62,9 +62,12 @@ function MCQContent() {
   const router      = useRouter();
   const { lang }    = useLanguage();
   const ui          = getT(lang).mcq;
-  const courseId    = params.get("id")    ?? "";
+  const courseId    = params.get("id") ?? params.get("courseId") ?? "";
   const courseTitle = decodeURIComponent(params.get("title") ?? "Course");
-  const pdfUrl      = decodeURIComponent(params.get("pdf")   ?? "");
+  const pdfUrlParam = params.get("pdf") ?? "";
+  const pdfUrl      = pdfUrlParam && !["undefined", "null"].includes(pdfUrlParam)
+    ? decodeURIComponent(pdfUrlParam)
+    : "";
   const tutorLang      = params.get("lang")         ?? "en";
   /* Map short tutorLang code → full BCP-47 for Azure STT */
   const STT_LANG_MAP: Record<string, string> = {
@@ -128,7 +131,8 @@ function MCQContent() {
   const [debriefQIdx,  setDebriefQIdx]  = useState(0);
 
   /* ── Slide state ── */
-  const [pdfSasUrl,    setPdfSasUrl]    = useState<string | null>(null);
+  const [pdfSasUrl,    setPdfSasUrl]    = useState<string | null>(pdfUrl || null);
+  const [pdfStatus,    setPdfStatus]    = useState<"loading" | "ready" | "error">(pdfUrl ? "ready" : "loading");
 
   /* ── Timers ── */
   const [qStartTime,   setQStartTime]   = useState<number>(Date.now());
@@ -870,7 +874,13 @@ function MCQContent() {
         }
         /* Fetch signed PDF URL through the local proxy so shared courses work reliably. */
         if (courseId) {
-          fetch(`/api/courses/${courseId}/pdf-url?userId=${encodeURIComponent(uid || "anonymous")}`)
+          if (!uid && !pdfUrl) {
+            setPdfStatus("error");
+            console.warn("PDF URL fetch skipped: missing authenticated user.");
+            return;
+          }
+          if (!pdfUrl) setPdfStatus("loading");
+          fetch(`/api/courses/${encodeURIComponent(courseId)}/pdf-url?userId=${encodeURIComponent(uid || "")}`)
             .then(async r => {
               const data = await r.json().catch(() => null);
               if (!r.ok) throw new Error(data?.detail ?? `PDF URL fetch failed with ${r.status}`);
@@ -878,10 +888,20 @@ function MCQContent() {
             })
             .then(data => {
               const url = data?.url ?? data?.sasUrl ?? null;
-              if (url) setPdfSasUrl(url);
-              else console.warn("PDF URL response did not include url or sasUrl:", data);
+              if (url) {
+                setPdfSasUrl(url);
+                setPdfStatus("ready");
+              } else {
+                if (!pdfUrl) setPdfStatus("error");
+                console.warn("PDF URL response did not include url or sasUrl:", data);
+              }
             })
-            .catch(err => console.warn("PDF URL fetch failed:", err));
+            .catch(err => {
+              if (!pdfUrl) setPdfStatus("error");
+              console.warn("PDF URL fetch failed:", err);
+            });
+        } else if (!pdfUrl) {
+          setPdfStatus("error");
         }
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1210,9 +1230,10 @@ function MCQContent() {
 
   /* ─── Slide pane — PDF open at the question's page ──── */
   /* During debrief use the focused question's page; otherwise use current MCQ page */
-  const currentPage = screen === "chat"
+  const rawCurrentPage = screen === "chat"
     ? (results[debriefQIdx]?.question?.pageNumber ?? 1)
     : (mcq?.pageNumber ?? 1);
+  const currentPage = Math.max(1, Number(rawCurrentPage) || 1);
   const slidePane = (
     <div className={styles.slidePane} style={{ width: `${slideWidth}%` }}>
       {pdfSasUrl ? (
