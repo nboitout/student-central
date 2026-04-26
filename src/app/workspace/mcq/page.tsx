@@ -868,12 +868,20 @@ function MCQContent() {
         } else {
           startSessionWithUser(uid);
         }
-        /* Fetch PDF SAS URL */
+        /* Fetch signed PDF URL through the local proxy so shared courses work reliably. */
         if (courseId) {
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io"}/api/courses/${courseId}/pdf-url?userId=${uid || "anonymous"}`)
-            .then(r => r.json())
-            .then(({ sasUrl }) => { if (sasUrl) setPdfSasUrl(sasUrl); })
-            .catch(() => {});
+          fetch(`/api/courses/${courseId}/pdf-url?userId=${encodeURIComponent(uid || "anonymous")}`)
+            .then(async r => {
+              const data = await r.json().catch(() => null);
+              if (!r.ok) throw new Error(data?.detail ?? `PDF URL fetch failed with ${r.status}`);
+              return data;
+            })
+            .then(data => {
+              const url = data?.url ?? data?.sasUrl ?? null;
+              if (url) setPdfSasUrl(url);
+              else console.warn("PDF URL response did not include url or sasUrl:", data);
+            })
+            .catch(err => console.warn("PDF URL fetch failed:", err));
         }
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
