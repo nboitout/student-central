@@ -1570,18 +1570,35 @@ export default function FacultyDashboard() {
                   <span className={styles.slidePageLabel}>
                     {editDraftPage > 0 ? `Page ${editDraftPage}` : "Page not set"}
                   </span>
-                  <button
-                    className={styles.slideToggle}
-                    onClick={() => setSlideExpanded(v => !v)}
-                  >
-                    {slideExpanded ? "Collapse" : "Expand"}
-                  </button>
+                  <div className={styles.slideHdActions}>
+                    {coursePdfUrl ? (
+                      <a
+                        href={`${coursePdfUrl}#page=${editDraftPage > 0 ? editDraftPage : 1}`}
+                        className={styles.pdfLink}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open full PDF →
+                      </a>
+                    ) : (
+                      <span className={styles.pdfUnavailable}>
+                        {coursePdfLoading ? "Loading PDF" : coursePdfError ?? "PDF unavailable"}
+                      </span>
+                    )}
+                    <button
+                      className={styles.slideToggle}
+                      onClick={() => setSlideExpanded(v => !v)}
+                    >
+                      {slideExpanded ? "Collapse" : "Expand"}
+                    </button>
+                  </div>
                 </div>
                 {slideExpanded && (
                   <div className={styles.slideBody}>
                     <div className={styles.slideImgArea}>
                       {coursePdfUrl ? (
                         <iframe
+                          key={`${coursePdfUrl}-${editDraftPage > 0 ? editDraftPage : 1}`}
                           className={styles.pdfFrame}
                           src={`${coursePdfUrl}#page=${editDraftPage > 0 ? editDraftPage : 1}`}
                           title={`PDF preview for ${selectedCourse?.title ?? "course"}`}
@@ -1610,29 +1627,16 @@ export default function FacultyDashboard() {
                         <span className={styles.slideMetaVal}>{editDraftPage > 0 ? editDraftPage : "Not set"}</span>
                       </div>
                       <div className={styles.slideMetaRow}>
-                        <span className={styles.fieldLabel}>Has visual</span>
+                        <span className={styles.fieldLabel}>Page content</span>
                         <span className={`${styles.slideMetaVal} ${editDraft.hasVisual ? styles.slideMetaVisual : ""}`}>
-                          {editDraft.hasVisual ? "Yes" : "No"}
+                          {editDraft.hasVisual ? "Includes visual" : "Text only"}
                         </span>
                       </div>
                       <div className={styles.slideMetaRow}>
                         <span className={styles.fieldLabel}>Source</span>
                         <span className={styles.slideMetaSource}>{selectedCourse?.title}.pdf</span>
                       </div>
-                      {coursePdfUrl ? (
-                        <a
-                          href={coursePdfUrl}
-                          className={styles.pdfLink}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Open full PDF →
-                        </a>
-                      ) : (
-                        <span className={styles.pdfUnavailable}>
-                          {coursePdfLoading ? "Loading PDF" : coursePdfError ?? "PDF unavailable"}
-                        </span>
-                      )}
+
                     </div>
                   </div>
                 )}

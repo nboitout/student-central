@@ -1398,8 +1398,14 @@
   color: var(--on-surface-variant);
 }
 
-.slideToggle {
+.slideHdActions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slideToggle {
   font-family: var(--font-display);
   font-size: 0.5rem;
   font-weight: 700;
@@ -1530,7 +1536,7 @@
   color: var(--on-surface);
 }
 
-.slideMetaVisual { color: #60a5fa; }
+.slideMetaVisual { color: var(--primary); }
 
 .slideMetaSource {
   font-family: var(--font-body);
@@ -1548,7 +1554,6 @@
   color: var(--primary);
   text-decoration: underline;
   text-decoration-color: var(--primary);
-  margin-top: auto;
   cursor: pointer;
 }
 
@@ -1558,7 +1563,6 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--on-surface-variant);
-  margin-top: auto;
   line-height: 1.4;
 }
 /* ── Playlist mode ────────────────────────────────────────── */
