@@ -698,15 +698,21 @@ export default function FacultyDashboard() {
     setCoursePdfError(null);
     let cancelled = false;
     const controller = new AbortController();
-    fetch(`${API}/api/courses/${selectedCourse.id}/pdf-url?userId=${encodeURIComponent(facultyId)}`, {
+    fetch(`/api/courses/${selectedCourse.id}/pdf-url?userId=${encodeURIComponent(facultyId)}`, {
       signal: controller.signal,
     })
       .then(async r => {
-        if (!r.ok) throw new Error(`PDF URL fetch failed with ${r.status}`);
-        return r.json();
+        const data = await r.json().catch(() => null);
+        if (!r.ok) throw new Error(data?.detail ?? `PDF URL fetch failed with ${r.status}`);
+        return data;
       })
       .then(data => {
-        if (!cancelled) setCoursePdfUrl(data.url ?? null);
+        const pdfUrl = data.url ?? data.sasUrl ?? null;
+        if (!pdfUrl) console.warn("PDF URL response did not include url or sasUrl:", data);
+        if (!cancelled) {
+          setCoursePdfUrl(pdfUrl);
+          setCoursePdfError(pdfUrl ? null : "PDF URL missing");
+        }
       })
       .catch(err => {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -1595,7 +1601,7 @@ export default function FacultyDashboard() {
                         </div>
                       )}
                       {coursePdfLoading && <div className={styles.pdfState}>Loading PDF</div>}
-                      {!coursePdfLoading && coursePdfError && <div className={styles.pdfState}>PDF unavailable</div>}
+                      {!coursePdfLoading && coursePdfError && <div className={styles.pdfState}>{coursePdfError}</div>}
                       <div className={styles.pageBadge}>{editDraftPage > 0 ? `p. ${editDraftPage}` : "p. -"}</div>
                     </div>
                     <div className={styles.slideMeta}>
@@ -1624,7 +1630,7 @@ export default function FacultyDashboard() {
                         </a>
                       ) : (
                         <span className={styles.pdfUnavailable}>
-                          {coursePdfLoading ? "Loading PDF" : "PDF unavailable"}
+                          {coursePdfLoading ? "Loading PDF" : coursePdfError ?? "PDF unavailable"}
                         </span>
                       )}
                     </div>

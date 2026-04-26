@@ -1478,6 +1478,7 @@
   position: absolute;
   bottom: 8px;
   left: 10px;
+  max-width: calc(100% - 70px);
   font-family: var(--font-display);
   font-size: 0.5rem;
   font-weight: 700;
@@ -1487,6 +1488,9 @@
   background: var(--surface-lowest);
   border: 1px solid var(--outline-variant);
   color: var(--on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pageBadge {
@@ -1555,6 +1559,7 @@
   letter-spacing: 0.06em;
   color: var(--on-surface-variant);
   margin-top: auto;
+  line-height: 1.4;
 }
 /* ── Playlist mode ────────────────────────────────────────── */
 
