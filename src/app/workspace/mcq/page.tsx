@@ -69,6 +69,7 @@ function MCQContent() {
     ? decodeURIComponent(pdfUrlParam)
     : "";
   const signedPdfUrl = pdfUrl && /[?&](sig|se|sp|sv)=/i.test(pdfUrl) ? pdfUrl : "";
+  const ownerId      = params.get("ownerId") ?? "";
   const tutorLang      = params.get("lang")         ?? "en";
   /* Map short tutorLang code → full BCP-47 for Azure STT */
   const STT_LANG_MAP: Record<string, string> = {
@@ -881,7 +882,9 @@ function MCQContent() {
             return;
           }
           if (!signedPdfUrl) setPdfStatus("loading");
-          fetch(`/api/courses/${encodeURIComponent(courseId)}/pdf-url?userId=${encodeURIComponent(uid || "")}`)
+          const pdfParams = new URLSearchParams({ userId: uid || "" });
+          if (ownerId) pdfParams.set("ownerId", ownerId);
+          fetch(`/api/courses/${encodeURIComponent(courseId)}/pdf-url?${pdfParams}`)
             .then(async r => {
               const data = await r.json().catch(() => null);
               if (!r.ok) throw new Error(data?.detail ?? `PDF URL fetch failed with ${r.status}`);

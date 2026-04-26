@@ -8,6 +8,7 @@ export async function GET(
   { params }: { params: { courseId: string } },
 ) {
   const userId = request.nextUrl.searchParams.get("userId");
+  const ownerHint = request.nextUrl.searchParams.get("ownerId");
 
   if (!userId) {
     return NextResponse.json({ detail: "Missing userId." }, { status: 400 });
@@ -28,8 +29,15 @@ export async function GET(
       `${API}/api/courses/${courseId}?userId=${encodeURIComponent(userId)}`,
       { cache: "no-store" },
     );
-    const course = await courseResponse.json().catch(() => null);
-    const ownerId = course?.userId ?? course?.facultyId ?? course?.ownerId ?? null;
+    const coursePayload = await courseResponse.json().catch(() => null);
+    const course = coursePayload?.course ?? coursePayload?.data?.course ?? coursePayload;
+    const ownerId =
+      ownerHint
+      ?? course?.userId
+      ?? course?.facultyId
+      ?? course?.ownerId
+      ?? course?.createdBy
+      ?? null;
 
     if (courseResponse.ok && ownerId && ownerId !== userId) {
       upstream = await signPdfUrl(ownerId);

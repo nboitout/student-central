@@ -12,6 +12,10 @@ const API_URL =
 
 interface Course {
   id: string;
+  userId?: string;
+  facultyId?: string;
+  ownerId?: string;
+  createdBy?: string;
   title: string;
   author: string;
   source: string;
@@ -78,6 +82,8 @@ function CourseReaderContent() {
   }, [courseId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pct = course ? Math.round((course.exercisesDone / course.exercisesTotal) * 100) : 0;
+  const ownerId = course?.userId ?? course?.facultyId ?? course?.ownerId ?? course?.createdBy ?? "";
+  const ownerParam = ownerId ? `&ownerId=${encodeURIComponent(ownerId)}` : "";
 
   const statusLabel: Record<string, string> = {
     "Not Started": ws.statusNotStarted,
@@ -207,7 +213,7 @@ function CourseReaderContent() {
             </div>
             <button
               className={styles.dashLink}
-              onClick={() => router.push(`/workspace/course/dashboard?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}`)}
+              onClick={() => router.push(`/workspace/course/dashboard?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}${ownerParam}`)}
             >
               <span>{ui.viewDashboard ?? "View full dashboard"}</span>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -237,7 +243,7 @@ function CourseReaderContent() {
             <div className={styles.sidebarLabel}>{ui.assessmentLabel}</div>
             <button
               className={styles.mcqBtn}
-              onClick={() => router.push(`/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}`)}
+              onClick={() => router.push(`/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}${ownerParam}`)}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>

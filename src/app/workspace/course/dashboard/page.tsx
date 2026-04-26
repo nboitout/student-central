@@ -117,6 +117,8 @@ function DashboardContent() {
   const courseId    = params.get("id") ?? "";
   const courseTitle = decodeURIComponent(params.get("title") ?? "Course");
   const pdfUrl      = params.get("pdf") ?? "";
+  const ownerId     = params.get("ownerId") ?? "";
+  const ownerParam  = ownerId ? `&ownerId=${encodeURIComponent(ownerId)}` : "";
 
   const [data, setData] = useState<DashboardData | null>(null);
 
@@ -179,7 +181,7 @@ function DashboardContent() {
           </button>
           <button
             className={styles.btnMcq}
-            onClick={() => router.push(`/workspace/mcq?id=${courseId}&title=${encodeURIComponent(courseTitle)}&pdf=${encodeURIComponent(pdfUrl)}`)}
+            onClick={() => router.push(`/workspace/mcq?id=${courseId}&title=${encodeURIComponent(courseTitle)}&pdf=${encodeURIComponent(pdfUrl)}${ownerParam}`)}
           >
             Start tutoring →
           </button>
