@@ -33,6 +33,7 @@ function CourseReaderContent() {
   const ws       = getT(lang).workspace;
 
   const courseId = params.get("id") ?? "";
+  const ownerHint = params.get("ownerId") ?? "";
   const [userId, setUserId] = useState("");
 
   const [course,     setCourse]     = useState<Course | null>(null);
@@ -56,25 +57,41 @@ function CourseReaderContent() {
       .then(s => {
         uid = s?.user?.email ?? s?.user?.id ?? "";
         if (uid) setUserId(uid);
-        return fetch(`${API_URL}/api/courses/${courseId}?userId=${uid}`);
+        return fetch(`${API_URL}/api/courses/${encodeURIComponent(courseId)}?userId=${encodeURIComponent(uid)}`);
       })
       .then(res => {
         if (!res.ok) throw new Error(`${ui.courseNotFound} (${res.status})`);
         return res.json();
       })
-      .then((data: Course) => {
+      .then((payload: Course | { course?: Course; data?: { course?: Course } }) => {
+        const data = "course" in payload && payload.course
+          ? payload.course
+          : "data" in payload && payload.data?.course
+            ? payload.data.course
+            : payload as Course;
         setCourse(data);
         setLoading(false);
         if (data.pdfUrl) {
           setPdfLoading(true);
           setPdfStatus("loading");
-          fetch(`${API_URL}/api/courses/${courseId}/pdf-url?userId=${uid}`)
-            .then(r => r.json())
-            .then(({ sasUrl }) => {
-              if (sasUrl) setSasUrl(sasUrl);
+          const pdfParams = new URLSearchParams({ userId: uid });
+          const ownerId = ownerHint || data.userId || data.facultyId || data.ownerId || data.createdBy || "";
+          if (ownerId) pdfParams.set("ownerId", ownerId);
+          fetch(`/api/courses/${encodeURIComponent(courseId)}/pdf-url?${pdfParams}`)
+            .then(async r => {
+              const pdfData = await r.json().catch(() => null);
+              if (!r.ok) throw new Error(pdfData?.detail ?? `PDF URL fetch failed with ${r.status}`);
+              return pdfData;
+            })
+            .then(({ url, sasUrl }) => {
+              const signedUrl = url ?? sasUrl ?? null;
+              if (signedUrl) setSasUrl(signedUrl);
               else setPdfStatus("error");
             })
-            .catch(() => setPdfStatus("error"))
+            .catch(err => {
+              console.warn("Course PDF URL fetch failed:", err);
+              setPdfStatus("error");
+            })
             .finally(() => setPdfLoading(false));
         }
       })

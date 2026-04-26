@@ -422,7 +422,7 @@ function CourseDetailsModal({
           <div className={styles.actionCards}>
             <button
               className={`${styles.actionCard} ${styles.actionCardPrimary}`}
-              onClick={() => { onClose(); router.push(`/workspace/course?id=${course.id}`); }}
+              onClick={() => { onClose(); router.push(`/workspace/course?id=${course.id}${ownerParam}`); }}
             >
               <div className={styles.actionCardIcon}>↗</div>
               <div className={styles.actionCardTitle}>{ui.accessCourse}</div>
