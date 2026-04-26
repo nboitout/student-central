@@ -68,6 +68,7 @@ function MCQContent() {
   const pdfUrl      = pdfUrlParam && !["undefined", "null"].includes(pdfUrlParam)
     ? decodeURIComponent(pdfUrlParam)
     : "";
+  const signedPdfUrl = pdfUrl && /[?&](sig|se|sp|sv)=/i.test(pdfUrl) ? pdfUrl : "";
   const tutorLang      = params.get("lang")         ?? "en";
   /* Map short tutorLang code → full BCP-47 for Azure STT */
   const STT_LANG_MAP: Record<string, string> = {
@@ -131,8 +132,8 @@ function MCQContent() {
   const [debriefQIdx,  setDebriefQIdx]  = useState(0);
 
   /* ── Slide state ── */
-  const [pdfSasUrl,    setPdfSasUrl]    = useState<string | null>(pdfUrl || null);
-  const [pdfStatus,    setPdfStatus]    = useState<"loading" | "ready" | "error">(pdfUrl ? "ready" : "loading");
+  const [pdfSasUrl,    setPdfSasUrl]    = useState<string | null>(signedPdfUrl || null);
+  const [pdfStatus,    setPdfStatus]    = useState<"loading" | "ready" | "error">(signedPdfUrl ? "ready" : "loading");
 
   /* ── Timers ── */
   const [qStartTime,   setQStartTime]   = useState<number>(Date.now());
@@ -874,12 +875,12 @@ function MCQContent() {
         }
         /* Fetch signed PDF URL through the local proxy so shared courses work reliably. */
         if (courseId) {
-          if (!uid && !pdfUrl) {
+          if (!uid) {
             setPdfStatus("error");
             console.warn("PDF URL fetch skipped: missing authenticated user.");
             return;
           }
-          if (!pdfUrl) setPdfStatus("loading");
+          if (!signedPdfUrl) setPdfStatus("loading");
           fetch(`/api/courses/${encodeURIComponent(courseId)}/pdf-url?userId=${encodeURIComponent(uid || "")}`)
             .then(async r => {
               const data = await r.json().catch(() => null);
@@ -892,15 +893,15 @@ function MCQContent() {
                 setPdfSasUrl(url);
                 setPdfStatus("ready");
               } else {
-                if (!pdfUrl) setPdfStatus("error");
+                if (!signedPdfUrl) setPdfStatus("error");
                 console.warn("PDF URL response did not include url or sasUrl:", data);
               }
             })
             .catch(err => {
-              if (!pdfUrl) setPdfStatus("error");
+              if (!signedPdfUrl) setPdfStatus("error");
               console.warn("PDF URL fetch failed:", err);
             });
-        } else if (!pdfUrl) {
+        } else if (!signedPdfUrl) {
           setPdfStatus("error");
         }
       });
@@ -1245,7 +1246,14 @@ function MCQContent() {
         />
       ) : (
         <div className={styles.slidePlaceholder}>
-          <div className={styles.slidePlaceholderText}>Loading course material…</div>
+          {pdfStatus === "error" && (
+            <div className={styles.slidePlaceholderHint}>
+              The signed PDF link could not be loaded for this course session.
+            </div>
+          )}
+          <div className={styles.slidePlaceholderText}>
+            {pdfStatus === "error" ? "Course material unavailable" : "Loading course material..."}
+          </div>
         </div>
       )}
     </div>
