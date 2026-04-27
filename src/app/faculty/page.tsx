@@ -695,6 +695,8 @@ export default function FacultyDashboard() {
   const [shareLoading, setShareLoading] = useState(false);
   const [shareEmail,   setShareEmail]   = useState("");
   const [pendingStudentEmails, setPendingStudentEmails] = useState<string[]>([]);
+  const [dragStudentEmail, setDragStudentEmail] = useState<string | null>(null);
+  const [dropGroupId, setDropGroupId] = useState<string | null>(null);
 
   const API = process.env.NEXT_PUBLIC_API_URL
     ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
@@ -1135,6 +1137,28 @@ export default function FacultyDashboard() {
     }).catch(console.warn);
   };
 
+  const handleAddStudentToGroup = (email: string, group: Group) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return;
+    const members = group.members ?? [];
+    if (members.some(member => member.toLowerCase() === normalizedEmail)) return;
+
+    const updated = {
+      ...group,
+      members: [...members, normalizedEmail],
+    };
+
+    setGroups(prev => prev.map(g => g.id === group.id ? updated : g));
+    setSelectedGroup(prev => prev?.id === group.id ? updated : prev);
+    setAnalyticsGroup(prev => prev?.id === group.id ? updated : prev);
+
+    fetch(`${API}/api/groups/${group.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ members: updated.members }),
+    }).catch(console.warn);
+  };
+
   const handleAllowDownloadToggle = () => {
     if (!selectedCourse) return;
     const next = !selectedCourse.allowDownload;
@@ -1242,6 +1266,12 @@ export default function FacultyDashboard() {
       })),
     ...shareAccess.map(entry => ({ ...entry, isShared: true })),
   ];
+  const groupMemberEmails = new Set(
+    groups.flatMap(group => (group.members ?? []).map(member => member.toLowerCase()))
+  );
+  const individualStudentRows = studentAccessRows.filter(
+    row => !groupMemberEmails.has(row.email.toLowerCase())
+  );
   const editDraftPage = Number(editDraft?.pageNumber) || 0;
 
   // Render
@@ -1502,7 +1532,7 @@ export default function FacultyDashboard() {
               <span className={styles.eyebrow}>
                 {shareLoading
                   ? tx.loading
-                  : `${studentAccessRows.length} ${studentAccessRows.length !== 1 ? tx.studentsWithAccess : tx.studentWithAccess}`}
+                  : `${individualStudentRows.length} ${individualStudentRows.length !== 1 ? tx.studentsWithAccess : tx.studentWithAccess}`}
               </span>
               <button className={styles.ghostBtn}>Export</button>
             </div>
@@ -1531,8 +1561,21 @@ export default function FacultyDashboard() {
               />
             </div>
             <div className={styles.panelScroll}>
-              {studentAccessRows.map(s => (
-                <div key={s.email} className={styles.studentRow}>
+              {individualStudentRows.map(s => (
+                <div
+                  key={s.email}
+                  className={styles.studentRow}
+                  draggable
+                  onDragStart={e => {
+                    setDragStudentEmail(s.email);
+                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.setData("text/plain", s.email);
+                  }}
+                  onDragEnd={() => {
+                    setDragStudentEmail(null);
+                    setDropGroupId(null);
+                  }}
+                >
                   <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>
                     {emailInitials(s.email)}
                   </div>
@@ -1553,7 +1596,7 @@ export default function FacultyDashboard() {
                   )}
                 </div>
               ))}
-              {!shareLoading && studentAccessRows.length === 0 && (
+              {!shareLoading && individualStudentRows.length === 0 && (
                 <div className={styles.emptyGroup}>{selectedCourse ? tx.noStudentsYet : tx.selectCourse}</div>
               )}
               <div className={styles.groupsSection}>
@@ -1564,8 +1607,22 @@ export default function FacultyDashboard() {
                 {groups.map(g => (
                   <div
                     key={g.id}
-                    className={`${styles.groupRow} ${selectedGroup?.id === g.id ? styles.groupRowActive : ""}`}
+                    className={`${styles.groupRow} ${selectedGroup?.id === g.id ? styles.groupRowActive : ""} ${dropGroupId === g.id ? styles.groupRowDrop : ""}`}
                     onClick={() => { setSelectedGroup(g); setRightPanel("group-detail"); }}
+                    onDragOver={e => {
+                      if (!dragStudentEmail) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDropGroupId(g.id);
+                    }}
+                    onDragLeave={() => setDropGroupId(prev => prev === g.id ? null : prev)}
+                    onDrop={e => {
+                      e.preventDefault();
+                      const email = dragStudentEmail ?? e.dataTransfer.getData("text/plain");
+                      if (email) handleAddStudentToGroup(email, g);
+                      setDragStudentEmail(null);
+                      setDropGroupId(null);
+                    }}
                   >
                     <span className={styles.groupInitial}>{g.name[0]?.toUpperCase() ?? "G"}</span>
                     <div className={styles.groupMeta}>
