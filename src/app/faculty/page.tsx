@@ -1168,8 +1168,9 @@ export default function FacultyDashboard() {
     };
 
     setGroups(prev => prev.map(g => g.id === group.id ? updated : g));
-    setSelectedGroup(prev => prev?.id === group.id ? updated : prev);
+    setSelectedGroup(updated);
     setAnalyticsGroup(prev => prev?.id === group.id ? updated : prev);
+    setRightPanel("group-detail");
 
     fetch(`${API}/api/groups/${group.id}`, {
       method: "PATCH",
