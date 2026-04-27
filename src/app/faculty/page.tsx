@@ -1128,10 +1128,21 @@ export default function FacultyDashboard() {
   const handleDeleteGroup = () => {
     if (!selectedGroup) return;
     const groupId = selectedGroup.id;
+    const memberEmails = new Set((selectedGroup.members ?? []).map(email => email.toLowerCase()));
+    const sharedCourseIds = selectedGroup.courseIds ?? [];
     setGroups(prev => prev.filter(g => g.id !== groupId));
+    setPendingStudentEmails(prev => prev.filter(email => !memberEmails.has(email.toLowerCase())));
+    setShareAccess(prev => prev.filter(entry => !memberEmails.has(entry.email.toLowerCase())));
     setSelectedGroup(null);
     setAnalyticsGroup(prev => prev?.id === groupId ? null : prev);
     setRightPanel("empty");
+    sharedCourseIds.forEach(courseId => {
+      memberEmails.forEach(email => {
+        fetch(`${API}/api/courses/${courseId}/access/${encodeURIComponent(email)}?userId=${facultyId}`, {
+          method: "DELETE",
+        }).catch(console.warn);
+      });
+    });
     fetch(`${API}/api/groups/${groupId}?facultyId=${facultyId}`, {
       method: "DELETE",
     }).catch(console.warn);
