@@ -24,6 +24,7 @@ export interface TeachStrings {
   /* Share panel */
   shareEmailPlaceholder: string;
   share:                string;
+  addStudent:           string;
   export:               string;
   noSessionsYet:        string;
   remove:               string;
@@ -163,13 +164,14 @@ const teach: Record<string, TeachStrings> = {
     del:                  "Del",
     shareEmailPlaceholder: "Student email address…",
     share:                "Share",
+    addStudent:           "Add student",
     export:               "Export",
     noSessionsYet:        "No sessions yet",
     remove:               "Remove",
     noQuestionsYet:       "No questions yet",
     studentWithAccess:    "student with access",
     studentsWithAccess:   "students with access",
-    noStudentsYet:        "No students yet — share this course using the input above.",
+    noStudentsYet:        "No students yet — add a student email above.",
     courseSettings:       "Course settings",
     allowDownload:        "Allow PDF download",
     allowDownloadHint:    "Students can save the course document",
@@ -290,13 +292,14 @@ const teach: Record<string, TeachStrings> = {
     del:                  "Suppr.",
     shareEmailPlaceholder: "Adresse e-mail de l'étudiant…",
     share:                "Partager",
+    addStudent:           "Ajouter l'étudiant",
     export:               "Exporter",
     noSessionsYet:        "Aucune session pour l'instant",
     remove:               "Retirer",
     noQuestionsYet:       "Aucune question pour l'instant",
     studentWithAccess:    "étudiant avec accès",
     studentsWithAccess:   "étudiants avec accès",
-    noStudentsYet:        "Aucun étudiant pour l'instant — partagez ce cours via le champ ci-dessus.",
+    noStudentsYet:        "Aucun étudiant pour l'instant — ajoutez une adresse e-mail ci-dessus.",
     courseSettings:       "Paramètres du cours",
     allowDownload:        "Autoriser le téléchargement PDF",
     allowDownloadHint:    "Les étudiants peuvent enregistrer le document du cours",

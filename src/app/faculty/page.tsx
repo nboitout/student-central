@@ -68,6 +68,8 @@ interface AccessEntry {
   sessionCount: number;
 }
 
+type StudentAccessRow = AccessEntry & { isShared: boolean };
+
 interface Group {
   id:        string;
   name:      string;
@@ -692,6 +694,7 @@ export default function FacultyDashboard() {
   const [shareAccess,  setShareAccess]  = useState<AccessEntry[]>([]);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareEmail,   setShareEmail]   = useState("");
+  const [pendingStudentEmails, setPendingStudentEmails] = useState<string[]>([]);
 
   const API = process.env.NEXT_PUBLIC_API_URL
     ?? "https://student-central-api.whitefield-86cda2f2.westeurope.azurecontainerapps.io";
@@ -987,10 +990,19 @@ export default function FacultyDashboard() {
   };
 
   /* â”€â”€ Share tab handlers â”€â”€ */
-  const handleShareAdd = () => {
+  const handleAddStudent = () => {
     const email = shareEmail.trim().toLowerCase();
-    if (!email || !selectedCourse) return;
+    if (!email) return;
     setShareEmail("");
+    setPendingStudentEmails(prev => {
+      if (prev.includes(email) || shareAccess.some(e => e.email === email)) return prev;
+      return [email, ...prev];
+    });
+  };
+
+  const handleShareStudent = (email: string) => {
+    if (!selectedCourse) return;
+    setPendingStudentEmails(prev => prev.filter(e => e !== email));
     setShareAccess(prev => {
       if (prev.find(e => e.email === email)) return prev;
       return [...prev, { email, status: "invited", sharedAt: new Date().toISOString(), sessionCount: 0 }];
@@ -1008,6 +1020,10 @@ export default function FacultyDashboard() {
     fetch(`${API}/api/courses/${selectedCourse.id}/access/${encodeURIComponent(email)}?userId=${facultyId}`, {
       method: "DELETE",
     }).catch(err => console.warn("Share remove failed:", err));
+  };
+
+  const handleRemovePendingStudent = (email: string) => {
+    setPendingStudentEmails(prev => prev.filter(e => e !== email));
   };
 
   const handleCsvFile = (file: File) => {
@@ -1214,6 +1230,18 @@ export default function FacultyDashboard() {
   const analyticsStudentCount = analyticsView === "group" && analyticsGroup
     ? (groupAnalytics?.memberCount ?? (analyticsGroup.members ?? []).length)
     : analyticsStudents.length;
+  const studentAccessRows: StudentAccessRow[] = [
+    ...pendingStudentEmails
+      .filter(email => !shareAccess.some(entry => entry.email === email))
+      .map(email => ({
+        email,
+        status: "pending" as const,
+        sharedAt: "",
+        sessionCount: 0,
+        isShared: false,
+      })),
+    ...shareAccess.map(entry => ({ ...entry, isShared: true })),
+  ];
   const editDraftPage = Number(editDraft?.pageNumber) || 0;
 
   // Render
@@ -1463,18 +1491,18 @@ export default function FacultyDashboard() {
                 placeholder={tx.shareEmailPlaceholder}
                 value={shareEmail}
                 onChange={e => setShareEmail(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleShareAdd()}
+                onKeyDown={e => e.key === "Enter" && handleAddStudent()}
                 disabled={!selectedCourse}
               />
-              <button className={styles.addBtn} onClick={handleShareAdd} disabled={!shareEmail.trim() || !selectedCourse}>
-                {tx.share}
+              <button className={styles.addBtn} onClick={handleAddStudent} disabled={!shareEmail.trim() || !selectedCourse}>
+                {tx.addStudent}
               </button>
             </div>
             <div className={styles.panelHd}>
               <span className={styles.eyebrow}>
                 {shareLoading
                   ? tx.loading
-                  : `${shareAccess.length} ${shareAccess.length !== 1 ? tx.studentsWithAccess : tx.studentWithAccess}`}
+                  : `${studentAccessRows.length} ${studentAccessRows.length !== 1 ? tx.studentsWithAccess : tx.studentWithAccess}`}
               </span>
               <button className={styles.ghostBtn}>Export</button>
             </div>
@@ -1503,7 +1531,7 @@ export default function FacultyDashboard() {
               />
             </div>
             <div className={styles.panelScroll}>
-              {shareAccess.map(s => (
+              {studentAccessRows.map(s => (
                 <div key={s.email} className={styles.studentRow}>
                   <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>
                     {emailInitials(s.email)}
@@ -1515,10 +1543,17 @@ export default function FacultyDashboard() {
                     </div>
                   </div>
                   <span className={statusPillCls(s.status, styles)}>{s.status}</span>
-                  <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>{tx.remove}</button>
+                  {s.isShared ? (
+                    <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>{tx.remove}</button>
+                  ) : (
+                    <>
+                      <button className={styles.editBtn} onClick={() => handleShareStudent(s.email)}>{tx.share}</button>
+                      <button className={styles.delBtnSm} onClick={() => handleRemovePendingStudent(s.email)}>{tx.remove}</button>
+                    </>
+                  )}
                 </div>
               ))}
-              {!shareLoading && shareAccess.length === 0 && (
+              {!shareLoading && studentAccessRows.length === 0 && (
                 <div className={styles.emptyGroup}>{selectedCourse ? tx.noStudentsYet : tx.selectCourse}</div>
               )}
               <div className={styles.groupsSection}>
