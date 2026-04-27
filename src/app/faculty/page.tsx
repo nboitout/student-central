@@ -845,15 +845,36 @@ export default function FacultyDashboard() {
       .finally(() => setMcqLoading(false));
   }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* â”€â”€ Fetch access list for Share tab â”€â”€ */
+  /* â”€â”€ Fetch course access list for Students / Share workflows â”€â”€ */
   useEffect(() => {
-    if (!facultyReady || !selectedCourse || activeMode !== "share") return;
+    if (!facultyReady || !["students", "share"].includes(activeMode)) return;
+    if (!selectedCourse) {
+      setShareAccess([]);
+      setShareLoading(false);
+      return;
+    }
     setShareLoading(true);
-    fetch(`${API}/api/courses/${selectedCourse.id}/access?userId=${facultyId}`)
+    let cancelled = false;
+    const controller = new AbortController();
+    fetch(`${API}/api/courses/${selectedCourse.id}/access?userId=${facultyId}`, {
+      signal: controller.signal,
+    })
       .then(r => r.json())
-      .then(data => setShareAccess(data.access ?? []))
-      .catch(err => console.warn("Access fetch failed:", err))
-      .finally(() => setShareLoading(false));
+      .then(data => {
+        if (!cancelled) setShareAccess(data.access ?? []);
+      })
+      .catch(err => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.warn("Access fetch failed:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setShareLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -1379,6 +1400,62 @@ export default function FacultyDashboard() {
         {/* â”€â”€ Share â”€â”€ */}
         {activeMode === "share" && (
           <div className={styles.panelShell}>
+            <div className={styles.panelHd}>
+              <span className={styles.eyebrow}>{tx.courseSettings}</span>
+            </div>
+            <div className={styles.panelScroll}>
+              {!selectedCourse ? (
+                <div className={styles.emptyGroup}>{tx.selectCourse}</div>
+              ) : (
+                <div className={styles.courseSettingsBlock}>
+                  <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>{tx.shareSettings}</span>
+                  <div className={styles.settingRow}>
+                    <div>
+                      <span className={styles.settingLabel}>{tx.allowDownload}</span>
+                      <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>{tx.allowDownloadHint}</div>
+                    </div>
+                    <button
+                      className={`${styles.toggleBtn} ${selectedCourse.allowDownload ? styles.toggleBtnOn : ""}`}
+                      onClick={handleAllowDownloadToggle}
+                    >
+                      {selectedCourse.allowDownload ? tx.on : tx.off}
+                    </button>
+                  </div>
+                  <div className={styles.settingRow}>
+                    <div>
+                      <span className={styles.settingLabel}>{tx.visibleProgress}</span>
+                      <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>{tx.visibleProgressHint}</div>
+                    </div>
+                    <button
+                      className={`${styles.toggleBtn} ${(selectedCourse.visibleProgressTracking ?? true) ? styles.toggleBtnOn : ""}`}
+                      onClick={handleVisibleProgressToggle}
+                    >
+                      {(selectedCourse.visibleProgressTracking ?? true) ? tx.on : tx.off}
+                    </button>
+                  </div>
+                  {selectedCourse.isOwned !== false && (
+                    <div className={styles.settingRow}>
+                      <div>
+                        <span className={styles.settingLabel}>{tx.allowStudentSharing}</span>
+                        <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>{tx.allowStudentSharingHint}</div>
+                      </div>
+                      <button
+                        className={`${styles.toggleBtn} ${(selectedCourse.allowStudentSharing ?? false) ? styles.toggleBtnOn : ""}`}
+                        onClick={handleStudentSharingToggle}
+                      >
+                        {(selectedCourse.allowStudentSharing ?? false) ? tx.on : tx.off}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* â”€â”€ Students â”€â”€ */}
+        {activeMode === "students" && (
+          <div className={styles.panelShell}>
             <div className={styles.shareInputRow}>
               <input
                 className={styles.shareInput}
@@ -1387,8 +1464,9 @@ export default function FacultyDashboard() {
                 value={shareEmail}
                 onChange={e => setShareEmail(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleShareAdd()}
+                disabled={!selectedCourse}
               />
-              <button className={styles.addBtn} onClick={handleShareAdd} disabled={!shareEmail.trim()}>
+              <button className={styles.addBtn} onClick={handleShareAdd} disabled={!shareEmail.trim() || !selectedCourse}>
                 {tx.share}
               </button>
             </div>
@@ -1399,77 +1477,6 @@ export default function FacultyDashboard() {
                   : `${shareAccess.length} ${shareAccess.length !== 1 ? tx.studentsWithAccess : tx.studentWithAccess}`}
               </span>
               <button className={styles.ghostBtn}>Export</button>
-            </div>
-            <div className={styles.panelScroll}>
-              {shareAccess.map(s => (
-                <div key={s.email} className={styles.studentRow}>
-                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>
-                    {emailInitials(s.email)}
-                  </div>
-                  <div className={styles.studentInfo}>
-                    <div className={styles.studentEmail}>{s.email}</div>
-                    <div className={styles.studentMeta}>
-                      {s.sessionCount > 0 ? `${s.sessionCount} ${tx.statsSessions.toLowerCase()}` : tx.noSessionsYet}
-                    </div>
-                  </div>
-                  <span className={statusPillCls(s.status, styles)}>{s.status}</span>
-                  <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>{tx.remove}</button>
-                </div>
-              ))}
-              {!shareLoading && shareAccess.length === 0 && (
-                <div className={styles.emptyGroup}>{tx.noStudentsYet}</div>
-              )}
-              <div className={styles.courseSettingsBlock}>
-                <span className={styles.eyebrow} style={{ display:"block", marginBottom:8 }}>{tx.courseSettings}</span>
-                <div className={styles.settingRow}>
-                  <div>
-                    <span className={styles.settingLabel}>{tx.allowDownload}</span>
-                    <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>{tx.allowDownloadHint}</div>
-                  </div>
-                  <button
-                    className={`${styles.toggleBtn} ${selectedCourse.allowDownload ? styles.toggleBtnOn : ""}`}
-                    onClick={handleAllowDownloadToggle}
-                  >
-                    {selectedCourse.allowDownload ? tx.on : tx.off}
-                  </button>
-                </div>
-                <div className={styles.settingRow}>
-                  <div>
-                    <span className={styles.settingLabel}>{tx.visibleProgress}</span>
-                    <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>{tx.visibleProgressHint}</div>
-                  </div>
-                  <button
-                    className={`${styles.toggleBtn} ${(selectedCourse.visibleProgressTracking ?? true) ? styles.toggleBtnOn : ""}`}
-                    onClick={handleVisibleProgressToggle}
-                  >
-                    {(selectedCourse.visibleProgressTracking ?? true) ? tx.on : tx.off}
-                  </button>
-                </div>
-                {selectedCourse.isOwned !== false && (
-                  <div className={styles.settingRow}>
-                    <div>
-                      <span className={styles.settingLabel}>{tx.allowStudentSharing}</span>
-                      <div style={{fontSize:"0.75rem",color:"var(--on-surface-variant)",opacity:0.7,marginTop:2}}>{tx.allowStudentSharingHint}</div>
-                    </div>
-                    <button
-                      className={`${styles.toggleBtn} ${(selectedCourse.allowStudentSharing ?? false) ? styles.toggleBtnOn : ""}`}
-                      onClick={handleStudentSharingToggle}
-                    >
-                      {(selectedCourse.allowStudentSharing ?? false) ? tx.on : tx.off}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* â”€â”€ Students â”€â”€ */}
-        {activeMode === "students" && (
-          <div className={styles.panelShell}>
-            <div className={styles.panelHd}>
-              <span className={styles.eyebrow}>Roster â€” {MOCK_STUDENTS.length}</span>
-              <button className={styles.addBtn} onClick={() => setRightPanel("invite")}>{tx.invite}</button>
             </div>
             <div
               className={`${styles.uploadZone} ${styles.uploadZoneHidden}`}
@@ -1496,16 +1503,24 @@ export default function FacultyDashboard() {
               />
             </div>
             <div className={styles.panelScroll}>
-              {MOCK_STUDENTS.map(s => (
-                <div key={s.id} className={styles.studentRow}>
-                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>{s.initials}</div>
+              {shareAccess.map(s => (
+                <div key={s.email} className={styles.studentRow}>
+                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>
+                    {emailInitials(s.email)}
+                  </div>
                   <div className={styles.studentInfo}>
                     <div className={styles.studentEmail}>{s.email}</div>
-                    <div className={styles.studentMeta}>{s.joinedAt !== "â€”" ? `${tx.joined} ${s.joinedAt}` : `${tx.invite.replace("+ ","")} 14 Apr`}</div>
+                    <div className={styles.studentMeta}>
+                      {s.sessionCount > 0 ? `${s.sessionCount} ${tx.statsSessions.toLowerCase()}` : tx.noSessionsYet}
+                    </div>
                   </div>
                   <span className={statusPillCls(s.status, styles)}>{s.status}</span>
+                  <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>{tx.remove}</button>
                 </div>
               ))}
+              {!shareLoading && shareAccess.length === 0 && (
+                <div className={styles.emptyGroup}>{selectedCourse ? tx.noStudentsYet : tx.selectCourse}</div>
+              )}
               <div className={styles.groupsSection}>
                 <div className={styles.groupsSectionHd}>
                   <span className={styles.eyebrow}>{groupsLoading ? tx.groupsLoading : `${tx.groups} - ${groups.length}`}</span>
