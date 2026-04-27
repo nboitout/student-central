@@ -61,6 +61,10 @@ function getMyAccessStatus(course: Course, userId: string): AccessStatus {
   return entry?.status ?? "invited";
 }
 
+function isLiveInvitationStatus(status: AccessStatus): boolean {
+  return status === "invited" || status === "pending";
+}
+
 function patchCourseAccess(courseId: string, userId: string, status: AccessStatus) {
   return fetch(`${COURSE_API_URL}/api/courses/${courseId}/access/${encodeURIComponent(userId)}`, {
     method: "PATCH",
@@ -867,7 +871,7 @@ export default function WorkspacePage() {
   };
 
   const invitationCourses = userId
-    ? filtered.filter(c => (c as WorkspaceCourse).isOwned === false && getMyAccessStatus(c, userId) !== "active")
+    ? filtered.filter(c => (c as WorkspaceCourse).isOwned === false && isLiveInvitationStatus(getMyAccessStatus(c, userId)))
     : [];
   const visibleCourses = filtered.filter(c => !invitationCourses.some(invite => invite.id === c.id));
 
@@ -1190,7 +1194,7 @@ export default function WorkspacePage() {
             <div className={styles.listView}>
               {filtered.map((c, i) => {
                 const myStatus = getMyAccessStatus(c, userId);
-                if ((c as WorkspaceCourse).isOwned === false && myStatus !== "active") {
+                if ((c as WorkspaceCourse).isOwned === false && isLiveInvitationStatus(myStatus)) {
                   return (
                     <InviteCard
                       key={c.id}
