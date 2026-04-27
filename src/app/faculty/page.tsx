@@ -175,6 +175,11 @@ function normalizeGroup(group: Partial<Group>): Group {
   };
 }
 
+function unwrapGroupResponse(data: Partial<Group> | { group?: Partial<Group> }): Partial<Group> {
+  if ("group" in data && data.group) return data.group;
+  return data as Partial<Group>;
+}
+
 function canUseCourseInFacultyMode(course: Course): boolean {
   return course.isOwned !== false || course.allowStudentSharing === true;
 }
@@ -1062,15 +1067,29 @@ export default function FacultyDashboard() {
       body: JSON.stringify({
         name: optimistic.name,
         facultyId,
+        userId: facultyId,
         members: optimistic.members,
       }),
     })
       .then(r => r.json())
-      .then((real: Group) => {
-        const normalized = normalizeGroup(real);
+      .then((data: Partial<Group> | { group?: Partial<Group> }) => {
+        const real = unwrapGroupResponse(data);
+        const normalized = normalizeGroup({
+          ...optimistic,
+          ...real,
+          members: Array.isArray(real.members) ? real.members : optimistic.members,
+          courseIds: Array.isArray(real.courseIds) ? real.courseIds : optimistic.courseIds,
+        });
         setGroups(prev => prev.map(g => g.id === optimistic.id ? normalized : g));
         setSelectedGroup(normalized);
         setAnalyticsGroup(prev => prev?.id === optimistic.id ? normalized : prev);
+        if (!Array.isArray(real.members)) {
+          fetch(`${API}/api/groups/${normalized.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ members: optimistic.members }),
+          }).catch(console.warn);
+        }
       })
       .catch(console.warn);
   };
