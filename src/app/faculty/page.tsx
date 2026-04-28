@@ -180,6 +180,26 @@ function unwrapGroupResponse(data: Partial<Group> | { group?: Partial<Group> }):
   return data as Partial<Group>;
 }
 
+function pendingStudentsStorageKey(facultyId: string, courseId: string): string {
+  return `teachPendingStudents:${facultyId}:${courseId}`;
+}
+
+function readPendingStudents(facultyId: string, courseId: string): string[] {
+  try {
+    const raw = localStorage.getItem(pendingStudentsStorageKey(facultyId, courseId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((email): email is string => typeof email === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePendingStudents(facultyId: string, courseId: string, emails: string[]) {
+  try {
+    localStorage.setItem(pendingStudentsStorageKey(facultyId, courseId), JSON.stringify(emails));
+  } catch {}
+}
+
 function canUseCourseInFacultyMode(course: Course): boolean {
   return course.isOwned !== false || course.allowStudentSharing === true;
 }
@@ -888,6 +908,14 @@ export default function FacultyDashboard() {
   }, [selectedCourse?.id, activeMode, facultyId, facultyReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!facultyReady || !selectedCourse?.id) {
+      setPendingStudentEmails([]);
+      return;
+    }
+    setPendingStudentEmails(readPendingStudents(facultyId, selectedCourse.id));
+  }, [facultyReady, facultyId, selectedCourse?.id]);
+
+  useEffect(() => {
     if (activeMode !== "analytics") return;
     if (analyticsView !== "group" || !analyticsGroup || !selectedCourse) return;
 
@@ -999,17 +1027,23 @@ export default function FacultyDashboard() {
   /* â”€â”€ Share tab handlers â”€â”€ */
   const handleAddStudent = () => {
     const email = shareEmail.trim().toLowerCase();
-    if (!email) return;
+    if (!email || !selectedCourse) return;
     setShareEmail("");
     setPendingStudentEmails(prev => {
       if (prev.includes(email) || shareAccess.some(e => e.email === email)) return prev;
-      return [email, ...prev];
+      const next = [email, ...prev];
+      writePendingStudents(facultyId, selectedCourse.id, next);
+      return next;
     });
   };
 
   const handleShareStudent = (email: string) => {
     if (!selectedCourse) return;
-    setPendingStudentEmails(prev => prev.filter(e => e !== email));
+    setPendingStudentEmails(prev => {
+      const next = prev.filter(e => e !== email);
+      writePendingStudents(facultyId, selectedCourse.id, next);
+      return next;
+    });
     setShareAccess(prev => {
       if (prev.find(e => e.email === email)) return prev;
       return [...prev, { email, status: "invited", sharedAt: new Date().toISOString(), sessionCount: 0 }];
@@ -1030,7 +1064,12 @@ export default function FacultyDashboard() {
   };
 
   const handleRemovePendingStudent = (email: string) => {
-    setPendingStudentEmails(prev => prev.filter(e => e !== email));
+    if (!selectedCourse) return;
+    setPendingStudentEmails(prev => {
+      const next = prev.filter(e => e !== email);
+      writePendingStudents(facultyId, selectedCourse.id, next);
+      return next;
+    });
   };
 
   const handleCsvFile = (file: File) => {
@@ -1131,7 +1170,11 @@ export default function FacultyDashboard() {
     const memberEmails = new Set((selectedGroup.members ?? []).map(email => email.toLowerCase()));
     const sharedCourseIds = selectedGroup.courseIds ?? [];
     setGroups(prev => prev.filter(g => g.id !== groupId));
-    setPendingStudentEmails(prev => prev.filter(email => !memberEmails.has(email.toLowerCase())));
+    setPendingStudentEmails(prev => {
+      const next = prev.filter(email => !memberEmails.has(email.toLowerCase()));
+      if (selectedCourse?.id) writePendingStudents(facultyId, selectedCourse.id, next);
+      return next;
+    });
     setShareAccess(prev => prev.filter(entry => !memberEmails.has(entry.email.toLowerCase())));
     setSelectedGroup(null);
     setAnalyticsGroup(prev => prev?.id === groupId ? null : prev);
