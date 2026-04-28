@@ -175,11 +175,6 @@ function normalizeGroup(group: Partial<Group>): Group {
   };
 }
 
-function unwrapGroupResponse(data: Partial<Group> | { group?: Partial<Group> }): Partial<Group> {
-  if ("group" in data && data.group) return data.group;
-  return data as Partial<Group>;
-}
-
 function pendingStudentsStorageKey(facultyId: string, courseId: string): string {
   return `teachPendingStudents:${facultyId}:${courseId}`;
 }
@@ -200,38 +195,45 @@ function writePendingStudents(facultyId: string, courseId: string, emails: strin
   } catch {}
 }
 
-function groupMembersStorageKey(facultyId: string, groupId: string): string {
-  return `teachGroupMembers:${facultyId}:${groupId}`;
+function groupSnapshotStorageKey(facultyId: string, groupId: string): string {
+  return `teachGroupSnapshot:${facultyId}:${groupId}`;
 }
 
-function readStoredGroupMembers(facultyId: string, groupId: string): string[] {
+function readStoredGroupSnapshot(facultyId: string, groupId: string): Partial<Group> | null {
   try {
-    const raw = localStorage.getItem(groupMembersStorageKey(facultyId, groupId));
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((email): email is string => typeof email === "string") : [];
+    const raw = localStorage.getItem(groupSnapshotStorageKey(facultyId, groupId));
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? parsed as Partial<Group> : null;
   } catch {
-    return [];
+    return null;
   }
 }
 
-function writeStoredGroupMembers(facultyId: string, groupId: string, emails: string[]) {
+function writeStoredGroupSnapshot(facultyId: string, group: Group) {
   try {
-    localStorage.setItem(groupMembersStorageKey(facultyId, groupId), JSON.stringify(emails));
+    localStorage.setItem(groupSnapshotStorageKey(facultyId, group.id), JSON.stringify(group));
   } catch {}
 }
 
-function removeStoredGroupMembers(facultyId: string, groupId: string) {
+function removeStoredGroupSnapshot(facultyId: string, groupId: string) {
   try {
-    localStorage.removeItem(groupMembersStorageKey(facultyId, groupId));
+    localStorage.removeItem(groupSnapshotStorageKey(facultyId, groupId));
   } catch {}
 }
 
-function withStoredGroupMembers(group: Group, facultyId: string): Group {
-  const members = Array.from(new Set([
-    ...(group.members ?? []).map(email => email.toLowerCase()),
-    ...readStoredGroupMembers(facultyId, group.id).map(email => email.toLowerCase()),
-  ]));
-  return { ...group, members };
+function mergeStoredGroupSnapshot(group: Group, facultyId: string): Group {
+  const stored = readStoredGroupSnapshot(facultyId, group.id);
+  if (!stored) return group;
+  return normalizeGroup({
+    ...group,
+    id: group.id,
+    name: group.name || stored.name,
+    facultyId: group.facultyId || stored.facultyId,
+    members: group.members.length > 0 ? group.members : stored.members,
+    courseIds: group.courseIds.length > 0 ? group.courseIds : stored.courseIds,
+    createdAt: group.createdAt || stored.createdAt,
+    updatedAt: group.updatedAt || stored.updatedAt,
+  });
 }
 
 function canUseCourseInFacultyMode(course: Course): boolean {
@@ -824,7 +826,7 @@ export default function FacultyDashboard() {
     setGroupsLoading(true);
     fetch(`${API}/api/groups?facultyId=${facultyId}`)
       .then(r => r.json())
-      .then(d => setGroups((d.groups ?? []).map((group: Partial<Group>) => withStoredGroupMembers(normalizeGroup(group), facultyId))))
+      .then(d => setGroups((d.groups ?? []).map((group: Partial<Group>) => mergeStoredGroupSnapshot(normalizeGroup(group), facultyId))))
       .catch(err => console.warn("Groups fetch failed:", err))
       .finally(() => setGroupsLoading(false));
   }, [facultyReady, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1129,6 +1131,7 @@ export default function FacultyDashboard() {
       courseIds: [],
       createdAt: new Date().toISOString(),
     };
+    writeStoredGroupSnapshot(facultyId, optimistic);
     setGroups(prev => [optimistic, ...prev]);
     setSelectedGroup(optimistic);
     setRightPanel("group-detail");
@@ -1140,25 +1143,25 @@ export default function FacultyDashboard() {
       body: JSON.stringify({
         name: optimistic.name,
         facultyId,
-        userId: facultyId,
         members: optimistic.members,
+        courseIds: optimistic.courseIds,
       }),
     })
       .then(r => r.json())
-      .then((data: Partial<Group> | { group?: Partial<Group> }) => {
-        const real = unwrapGroupResponse(data);
+      .then((real: Partial<Group>) => {
         const normalized = normalizeGroup({
           ...optimistic,
           ...real,
           members: Array.isArray(real.members) ? real.members : optimistic.members,
           courseIds: Array.isArray(real.courseIds) ? real.courseIds : optimistic.courseIds,
         });
-        writeStoredGroupMembers(facultyId, normalized.id, normalized.members);
+        removeStoredGroupSnapshot(facultyId, optimistic.id);
+        writeStoredGroupSnapshot(facultyId, normalized);
         setGroups(prev => prev.map(g => g.id === optimistic.id ? normalized : g));
         setSelectedGroup(normalized);
         setAnalyticsGroup(prev => prev?.id === optimistic.id ? normalized : prev);
         if (!Array.isArray(real.members)) {
-          fetch(`${API}/api/groups/${normalized.id}`, {
+          fetch(`${API}/api/groups/${normalized.id}?facultyId=${encodeURIComponent(facultyId)}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ members: optimistic.members }),
@@ -1171,13 +1174,14 @@ export default function FacultyDashboard() {
   const handleRenameGroup = (name: string) => {
     if (!selectedGroup) return;
     const updated = { ...selectedGroup, name };
+    writeStoredGroupSnapshot(facultyId, updated);
     setSelectedGroup(updated);
     setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
   };
 
   const persistRenameGroup = () => {
     if (!selectedGroup || !selectedGroup.name.trim()) return;
-    fetch(`${API}/api/groups/${selectedGroup.id}`, {
+    fetch(`${API}/api/groups/${selectedGroup.id}?facultyId=${encodeURIComponent(facultyId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: selectedGroup.name.trim() }),
@@ -1189,9 +1193,15 @@ export default function FacultyDashboard() {
     if ((selectedGroup.courseIds ?? []).includes(selectedCourse.id)) return;
 
     const updated = { ...selectedGroup, courseIds: [...(selectedGroup.courseIds ?? []), selectedCourse.id] };
+    writeStoredGroupSnapshot(facultyId, updated);
     setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
     setSelectedGroup(updated);
     setAnalyticsGroup(prev => prev?.id === selectedGroup.id ? updated : prev);
+    fetch(`${API}/api/groups/${selectedGroup.id}?facultyId=${encodeURIComponent(facultyId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseIds: updated.courseIds }),
+    }).catch(console.warn);
     fetch(`${API}/api/groups/${selectedGroup.id}/share`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1204,7 +1214,7 @@ export default function FacultyDashboard() {
     const groupId = selectedGroup.id;
     const memberEmails = new Set((selectedGroup.members ?? []).map(email => email.toLowerCase()));
     const sharedCourseIds = selectedGroup.courseIds ?? [];
-    removeStoredGroupMembers(facultyId, groupId);
+    removeStoredGroupSnapshot(facultyId, groupId);
     setGroups(prev => prev.filter(g => g.id !== groupId));
     setPendingStudentEmails(prev => {
       const next = prev.filter(email => !memberEmails.has(email.toLowerCase()));
@@ -1222,7 +1232,7 @@ export default function FacultyDashboard() {
         }).catch(console.warn);
       });
     });
-    fetch(`${API}/api/groups/${groupId}?facultyId=${facultyId}`, {
+    fetch(`${API}/api/groups/${groupId}?facultyId=${encodeURIComponent(facultyId)}`, {
       method: "DELETE",
     }).catch(console.warn);
   };
@@ -1237,10 +1247,10 @@ export default function FacultyDashboard() {
       ...selectedGroup,
       members: (selectedGroup.members ?? []).filter(member => member !== email),
     };
-    writeStoredGroupMembers(facultyId, selectedGroup.id, updated.members);
+    writeStoredGroupSnapshot(facultyId, updated);
     setSelectedGroup(updated);
     setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
-    fetch(`${API}/api/groups/${selectedGroup.id}`, {
+    fetch(`${API}/api/groups/${selectedGroup.id}?facultyId=${encodeURIComponent(facultyId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ members: updated.members }),
@@ -1258,7 +1268,7 @@ export default function FacultyDashboard() {
       members: [...members, normalizedEmail],
     };
 
-    writeStoredGroupMembers(facultyId, group.id, updated.members);
+    writeStoredGroupSnapshot(facultyId, updated);
     if (selectedCourse?.id) {
       setPendingStudentEmails(prev => {
         const next = prev.filter(studentEmail => studentEmail.toLowerCase() !== normalizedEmail);
@@ -1271,7 +1281,7 @@ export default function FacultyDashboard() {
     setAnalyticsGroup(prev => prev?.id === group.id ? updated : prev);
     setRightPanel("group-detail");
 
-    fetch(`${API}/api/groups/${group.id}`, {
+    fetch(`${API}/api/groups/${group.id}?facultyId=${encodeURIComponent(facultyId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ members: updated.members }),
