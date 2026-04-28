@@ -1243,18 +1243,33 @@ export default function FacultyDashboard() {
 
   const handleRemoveGroupMember = (email: string) => {
     if (!selectedGroup) return;
+    const normalizedEmail = email.toLowerCase();
     const updated = {
       ...selectedGroup,
-      members: (selectedGroup.members ?? []).filter(member => member !== email),
+      members: (selectedGroup.members ?? []).filter(member => member.toLowerCase() !== normalizedEmail),
     };
     writeStoredGroupSnapshot(facultyId, updated);
+    if (selectedCourse?.id) {
+      setPendingStudentEmails(prev => {
+        const next = prev.filter(studentEmail => studentEmail.toLowerCase() !== normalizedEmail);
+        writePendingStudents(facultyId, selectedCourse.id, next);
+        return next;
+      });
+    }
+    setShareAccess(prev => prev.filter(entry => entry.email.toLowerCase() !== normalizedEmail));
     setSelectedGroup(updated);
     setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
+    setAnalyticsGroup(prev => prev?.id === selectedGroup.id ? updated : prev);
     fetch(`${API}/api/groups/${selectedGroup.id}?facultyId=${encodeURIComponent(facultyId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ members: updated.members }),
     }).catch(console.warn);
+    (selectedGroup.courseIds ?? []).forEach(courseId => {
+      fetch(`${API}/api/courses/${courseId}/access/${encodeURIComponent(email)}?userId=${facultyId}`, {
+        method: "DELETE",
+      }).catch(console.warn);
+    });
   };
 
   const handleAddStudentToGroup = (email: string, group: Group) => {
@@ -1395,12 +1410,26 @@ export default function FacultyDashboard() {
       })),
     ...shareAccess.map(entry => ({ ...entry, isShared: true })),
   ];
+  const studentAccessByEmail = new Map(
+    studentAccessRows.map(row => [row.email.toLowerCase(), row] as const)
+  );
   const groupMemberEmails = new Set(
     groups.flatMap(group => (group.members ?? []).map(member => member.toLowerCase()))
   );
   const individualStudentRows = studentAccessRows.filter(
     row => !groupMemberEmails.has(row.email.toLowerCase())
   );
+  const selectedGroupStudentRows: StudentAccessRow[] = (selectedGroup?.members ?? []).map(email => {
+    const existing = studentAccessByEmail.get(email.toLowerCase());
+    if (existing) return existing;
+    return {
+      email,
+      status: "pending",
+      sharedAt: "",
+      sessionCount: 0,
+      isShared: false,
+    };
+  });
   const editDraftPage = Number(editDraft?.pageNumber) || 0;
 
   // Render
@@ -2094,11 +2123,31 @@ export default function FacultyDashboard() {
 
               <div className={styles.editorSection}>
                 <label className={styles.fieldLabel}>{tx.members}</label>
-                {(selectedGroup.members ?? []).map(email => (
-                  <div key={email} className={styles.memberRow}>
-                    <span className={styles.avatar}>{email[0].toUpperCase()}</span>
-                    <span className={styles.memberEmail}>{email}</span>
-                    <button className={styles.delBtnSm} onClick={() => handleRemoveGroupMember(email)}>{tx.remove}</button>
+                {selectedGroupStudentRows.map(member => (
+                  <div key={member.email} className={styles.memberRow}>
+                    <span className={`${styles.avatar} ${styles[`avatar_${member.status}` as keyof typeof styles]}`}>
+                      {emailInitials(member.email)}
+                    </span>
+                    <span className={styles.memberEmail}>{member.email}</span>
+                    <span className={statusPillCls(member.status, styles)}>{member.status}</span>
+                    <div className={styles.memberActions}>
+                      {member.isShared ? (
+                        <button className={styles.delBtnSm} onClick={() => handleShareRemove(member.email)}>{tx.remove}</button>
+                      ) : (
+                        <>
+                          <button className={styles.editBtn} onClick={() => handleShareStudent(member.email)}>{tx.share}</button>
+                          <button className={styles.delBtnSm} onClick={() => handleRemoveGroupMember(member.email)}>{tx.remove}</button>
+                        </>
+                      )}
+                      <button
+                        className={styles.memberRemoveGroup}
+                        onClick={() => handleRemoveGroupMember(member.email)}
+                        title="Remove from group"
+                        aria-label={`Remove ${member.email} from group`}
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

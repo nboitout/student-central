@@ -690,18 +690,6 @@ export default function WorkspacePage() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [groupDraftName, setGroupDraftName] = useState("");
   const [openGroupMenuId, setOpenGroupMenuId] = useState<string | null>(null);
-  const [teachCalloutDismissed, setTeachCalloutDismissed] = useState<boolean>(() => {
-    try { return localStorage.getItem("teachCalloutDismissed") === "true"; } catch { return false; }
-  });
-  const [teachCalloutDontShow, setTeachCalloutDontShow] = useState(false);
-
-  const dismissTeachCallout = () => {
-    if (teachCalloutDontShow) {
-      try { localStorage.setItem("teachCalloutDismissed", "true"); } catch {}
-    }
-    setTeachCalloutDismissed(true);
-  };
-
   const applyCourses = useCallback((fresh: Course[], resolvedUserId: string) => {
     setCourses(fresh);
     if (!resolvedUserId) return;
@@ -1002,29 +990,6 @@ export default function WorkspacePage() {
             </button>
           </div>
 
-          {courses.length === 0 && !teachCalloutDismissed && (
-            <div className={styles.teachCallout}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.teachCalloutIcon}>
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <div className={styles.teachCalloutBody}>
-                <strong>Teach mode is locked</strong> — create your first course to unlock it. Once a course exists, the Teach button will become active.
-                <label className={styles.teachCalloutCheck}>
-                  <input
-                    type="checkbox"
-                    checked={teachCalloutDontShow}
-                    onChange={e => setTeachCalloutDontShow(e.target.checked)}
-                  />
-                  Don&apos;t show this again
-                </label>
-              </div>
-              <button className={styles.teachCalloutClose} onClick={dismissTeachCallout} aria-label="Dismiss">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-          )}
 
           <div className={styles.statsRibbon}>
             <div className={styles.stat}><div className={styles.statValue}>{courses.length}</div><div className={styles.statLabel}>{ui.statCourses}</div></div>
