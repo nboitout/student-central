@@ -55,10 +55,40 @@ const COURSE_API_URL =
 function getMyAccessStatus(course: Course, userId: string): AccessStatus {
   const workspaceCourse = course as WorkspaceCourse;
   if (workspaceCourse.isOwned !== false) return "active";
-  const entry = workspaceCourse.access?.find(
+  const entry = getMyAccessEntry(course, userId);
+  return entry?.status ?? "invited";
+}
+
+function accessStatusPriority(status: AccessStatus): number {
+  if (status === "active") return 4;
+  if (status === "pending") return 3;
+  if (status === "invited") return 2;
+  return 1;
+}
+
+function getMyAccessEntry(course: Course, userId: string): AccessEntry | undefined {
+  const workspaceCourse = course as WorkspaceCourse;
+  const myEntries = (workspaceCourse.access ?? []).filter(
     (a) => a.email.toLowerCase() === userId.toLowerCase()
   );
-  return entry?.status ?? "invited";
+
+  return myEntries.reduce<AccessEntry | undefined>((best, entry) => {
+    if (!best) return entry;
+
+    const bestPriority = accessStatusPriority(best.status);
+    const nextPriority = accessStatusPriority(entry.status);
+    const bestSharedAt = Date.parse(best.sharedAt || "") || 0;
+    const nextSharedAt = Date.parse(entry.sharedAt || "") || 0;
+
+    if (
+      nextPriority > bestPriority ||
+      (nextPriority === bestPriority && nextSharedAt >= bestSharedAt)
+    ) {
+      return entry;
+    }
+
+    return best;
+  }, undefined);
 }
 
 function isLiveInvitationStatus(status: AccessStatus): boolean {
@@ -77,17 +107,48 @@ function withMyAccessStatus(course: Course, userId: string, status: AccessStatus
   const workspaceCourse = course as WorkspaceCourse;
   const access = workspaceCourse.access ?? [];
   const hasEntry = access.some((a) => a.email.toLowerCase() === userId.toLowerCase());
+  const nextAccess = hasEntry
+    ? access.map((a) =>
+        a.email.toLowerCase() === userId.toLowerCase()
+          ? { ...a, status }
+          : a
+      )
+    : [...access, { email: userId, status }];
 
   return {
     ...course,
-    access: hasEntry
-      ? access.map((a) =>
-          a.email.toLowerCase() === userId.toLowerCase()
-            ? { ...a, status }
-            : a
-        )
-      : [...access, { email: userId, status }],
+    access: dedupeAccessEntries(nextAccess),
   } as Course;
+}
+
+function dedupeAccessEntries(entries: AccessEntry[]): AccessEntry[] {
+  const deduped = new Map<string, AccessEntry>();
+
+  entries.forEach((entry) => {
+    const key = entry.email.toLowerCase();
+    const existing = deduped.get(key);
+    if (!existing) {
+      deduped.set(key, entry);
+      return;
+    }
+
+    const existingPriority = accessStatusPriority(existing.status);
+    const nextPriority = accessStatusPriority(entry.status);
+    const existingSharedAt = Date.parse(existing.sharedAt || "") || 0;
+    const nextSharedAt = Date.parse(entry.sharedAt || "") || 0;
+
+    if (
+      nextPriority > existingPriority ||
+      (nextPriority === existingPriority && nextSharedAt >= existingSharedAt)
+    ) {
+      deduped.set(key, { ...entry, sessionCount: Math.max(existing.sessionCount ?? 0, entry.sessionCount ?? 0) });
+      return;
+    }
+
+    deduped.set(key, { ...existing, sessionCount: Math.max(existing.sessionCount ?? 0, entry.sessionCount ?? 0) });
+  });
+
+  return Array.from(deduped.values());
 }
 
 function getCourseOwnerId(course: Course): string {

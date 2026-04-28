@@ -250,6 +250,48 @@ function normalizeAccessEntry(entry: Partial<AccessEntry>): AccessEntry | null {
   };
 }
 
+function accessStatusPriority(status: AccessEntry["status"]): number {
+  if (status === "active") return 4;
+  if (status === "pending") return 3;
+  if (status === "invited") return 2;
+  return 1;
+}
+
+function mergeAccessEntries(entries: AccessEntry[]): AccessEntry[] {
+  const deduped = new Map<string, AccessEntry>();
+
+  entries.forEach((entry) => {
+    const existing = deduped.get(entry.email);
+    if (!existing) {
+      deduped.set(entry.email, entry);
+      return;
+    }
+
+    const nextPriority = accessStatusPriority(entry.status);
+    const existingPriority = accessStatusPriority(existing.status);
+    const nextSharedAt = Date.parse(entry.sharedAt || "") || 0;
+    const existingSharedAt = Date.parse(existing.sharedAt || "") || 0;
+
+    if (
+      nextPriority > existingPriority ||
+      (nextPriority === existingPriority && nextSharedAt >= existingSharedAt)
+    ) {
+      deduped.set(entry.email, {
+        ...entry,
+        sessionCount: Math.max(existing.sessionCount, entry.sessionCount),
+      });
+      return;
+    }
+
+    deduped.set(entry.email, {
+      ...existing,
+      sessionCount: Math.max(existing.sessionCount, entry.sessionCount),
+    });
+  });
+
+  return Array.from(deduped.values());
+}
+
 function groupSnapshotStorageKey(facultyId: string, groupId: string): string {
   return `teachGroupSnapshot:${facultyId}:${groupId}`;
 }
@@ -988,7 +1030,7 @@ export default function FacultyDashboard() {
                 .map((entry) => normalizeAccessEntry(entry))
                 .filter((entry: AccessEntry | null): entry is AccessEntry => entry !== null)
             : [];
-          setShareAccess(normalized);
+          setShareAccess(mergeAccessEntries(normalized));
         }
       })
       .catch(err => {
@@ -1126,7 +1168,7 @@ export default function FacultyDashboard() {
   const handleAddStudent = () => {
     const email = shareEmail.trim().toLowerCase();
     if (!email || !selectedCourse) return;
-    const existingAccess = shareAccess.find(entry => entry.email.toLowerCase() === email);
+    const existingAccess = mergeAccessEntries(shareAccess).find(entry => entry.email === email);
     setShareEmail("");
     if (existingAccess && existingAccess.status !== "declined") return;
     if (existingAccess?.status === "declined") {
@@ -1149,11 +1191,12 @@ export default function FacultyDashboard() {
       return next;
     });
     setShareAccess(prev => {
-      const existingIndex = prev.findIndex(e => e.email === email);
+      const nextEntries = mergeAccessEntries(prev);
+      const existingIndex = nextEntries.findIndex(e => e.email === email);
       if (existingIndex === -1) {
-        return [...prev, { email, status: "invited", sharedAt, sessionCount: 0 }];
+        return [...nextEntries, { email, status: "invited", sharedAt, sessionCount: 0 }];
       }
-      return prev.map(entry =>
+      return nextEntries.map(entry =>
         entry.email === email
           ? { ...entry, status: "invited", sharedAt }
           : entry
