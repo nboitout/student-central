@@ -1473,9 +1473,14 @@ export default function FacultyDashboard() {
   const analyticsStudentCount = analyticsView === "group" && analyticsGroup
     ? (groupAnalytics?.memberCount ?? (analyticsGroup.members ?? []).length)
     : analyticsStudents.length;
+  const pendingStudentEmailSet = new Set(
+    pendingStudentEmails.map(email => email.toLowerCase())
+  );
   const studentAccessRows: StudentAccessRow[] = [
     ...pendingStudentEmails
-      .filter(email => !shareAccess.some(entry => entry.email === email))
+      .filter(email => !shareAccess.some(entry =>
+        entry.email.toLowerCase() === email.toLowerCase() && entry.status !== "declined"
+      ))
       .map(email => ({
         email,
         status: "share" as const,
@@ -1483,7 +1488,9 @@ export default function FacultyDashboard() {
         sessionCount: 0,
         isShared: false,
       })),
-    ...shareAccess.map(entry => ({
+    ...shareAccess
+      .filter(entry => !(entry.status === "declined" && pendingStudentEmailSet.has(entry.email.toLowerCase())))
+      .map(entry => ({
       email: entry.email,
       status: mapAccessStatusToRowStatus(entry.status),
       sharedAt: entry.sharedAt,
