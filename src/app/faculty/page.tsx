@@ -1126,9 +1126,14 @@ export default function FacultyDashboard() {
   const handleAddStudent = () => {
     const email = shareEmail.trim().toLowerCase();
     if (!email || !selectedCourse) return;
+    const existingAccess = shareAccess.find(entry => entry.email.toLowerCase() === email);
     setShareEmail("");
+    if (existingAccess && existingAccess.status !== "declined") return;
+    if (existingAccess?.status === "declined") {
+      setShareAccess(prev => prev.filter(entry => entry.email.toLowerCase() !== email));
+    }
     setPendingStudentEmails(prev => {
-      if (prev.includes(email) || shareAccess.some(e => e.email === email)) return prev;
+      if (prev.some(studentEmail => studentEmail.toLowerCase() === email)) return prev;
       const next = [email, ...prev];
       writePendingStudents(facultyId, selectedCourse.id, next);
       return next;
