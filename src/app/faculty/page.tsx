@@ -68,7 +68,15 @@ interface AccessEntry {
   sessionCount: number;
 }
 
-type StudentAccessRow = AccessEntry & { isShared: boolean };
+type StudentRowStatus = "share" | "pending" | "shared" | "accepted" | "declined";
+
+type StudentAccessRow = {
+  email: string;
+  status: StudentRowStatus;
+  sharedAt: string;
+  sessionCount: number;
+  isShared: boolean;
+};
 
 interface Group {
   id:        string;
@@ -137,10 +145,39 @@ const SIGNAL_META = [
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-function statusPillCls(status: MockStudent["status"] | AccessEntry["status"], s: Record<string, string>) {
-  if (status === "active")  return `${s.pill} ${s.pillActive}`;
-  if (status === "invited") return `${s.pill} ${s.pillInvited}`;
+function normalizeAccessStatus(status: unknown): AccessEntry["status"] {
+  const value = typeof status === "string" ? status.toLowerCase() : "";
+  if (value === "active" || value === "accepted") return "active";
+  if (value === "declined") return "declined";
+  if (value === "pending") return "pending";
+  return "invited";
+}
+
+function mapAccessStatusToRowStatus(status: AccessEntry["status"]): StudentRowStatus {
+  if (status === "active") return "accepted";
+  if (status === "declined") return "declined";
+  if (status === "pending") return "pending";
+  return "shared";
+}
+
+function statusLabel(status: MockStudent["status"] | StudentRowStatus | AccessEntry["status"]): string {
+  if (status === "active") return "accepted";
+  if (status === "invited") return "shared";
+  return status;
+}
+
+function statusPillCls(status: MockStudent["status"] | StudentRowStatus | AccessEntry["status"], s: Record<string, string>) {
+  if (status === "active" || status === "accepted")  return `${s.pill} ${s.pillActive}`;
+  if (status === "invited" || status === "shared") return `${s.pill} ${s.pillInvited}`;
+  if (status === "declined") return `${s.pill} ${s.pillDeclined}`;
   return `${s.pill} ${s.pillPending}`;
+}
+
+function avatarCls(status: MockStudent["status"] | StudentRowStatus | AccessEntry["status"], s: Record<string, string>) {
+  if (status === "active" || status === "accepted") return `${s.avatar} ${s.avatar_active}`;
+  if (status === "invited" || status === "shared") return `${s.avatar} ${s.avatar_invited}`;
+  if (status === "declined") return `${s.avatar} ${s.avatar_declined}`;
+  return `${s.avatar} ${s.avatar_pending}`;
 }
 
 function emailInitials(email: string): string {
@@ -193,6 +230,16 @@ function writePendingStudents(facultyId: string, courseId: string, emails: strin
   try {
     localStorage.setItem(pendingStudentsStorageKey(facultyId, courseId), JSON.stringify(emails));
   } catch {}
+}
+
+function normalizeAccessEntry(entry: Partial<AccessEntry>): AccessEntry | null {
+  if (typeof entry.email !== "string" || !entry.email.trim()) return null;
+  return {
+    email: entry.email.trim().toLowerCase(),
+    status: normalizeAccessStatus(entry.status),
+    sharedAt: typeof entry.sharedAt === "string" ? entry.sharedAt : "",
+    sessionCount: typeof entry.sessionCount === "number" ? entry.sessionCount : 0,
+  };
 }
 
 function groupSnapshotStorageKey(facultyId: string, groupId: string): string {
@@ -927,7 +974,14 @@ export default function FacultyDashboard() {
     })
       .then(r => r.json())
       .then(data => {
-        if (!cancelled) setShareAccess(data.access ?? []);
+        if (!cancelled) {
+          const normalized = Array.isArray(data.access)
+            ? data.access
+                .map((entry: Partial<AccessEntry>) => normalizeAccessEntry(entry))
+                .filter((entry): entry is AccessEntry => entry !== null)
+            : [];
+          setShareAccess(normalized);
+        }
       })
       .catch(err => {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -1403,12 +1457,18 @@ export default function FacultyDashboard() {
       .filter(email => !shareAccess.some(entry => entry.email === email))
       .map(email => ({
         email,
-        status: "pending" as const,
+        status: "share" as const,
         sharedAt: "",
         sessionCount: 0,
         isShared: false,
       })),
-    ...shareAccess.map(entry => ({ ...entry, isShared: true })),
+    ...shareAccess.map(entry => ({
+      email: entry.email,
+      status: mapAccessStatusToRowStatus(entry.status),
+      sharedAt: entry.sharedAt,
+      sessionCount: entry.sessionCount,
+      isShared: true,
+    })),
   ];
   const studentAccessByEmail = new Map(
     studentAccessRows.map(row => [row.email.toLowerCase(), row] as const)
@@ -1424,7 +1484,7 @@ export default function FacultyDashboard() {
     if (existing) return existing;
     return {
       email,
-      status: "pending",
+      status: "share",
       sharedAt: "",
       sessionCount: 0,
       isShared: false,
@@ -1734,7 +1794,7 @@ export default function FacultyDashboard() {
                     setDropGroupId(null);
                   }}
                 >
-                  <div className={`${styles.avatar} ${styles[`avatar_${s.status}` as keyof typeof styles]}`}>
+                  <div className={avatarCls(s.status, styles)}>
                     {emailInitials(s.email)}
                   </div>
                   <div className={styles.studentInfo}>
@@ -1743,7 +1803,7 @@ export default function FacultyDashboard() {
                       {s.sessionCount > 0 ? `${s.sessionCount} ${tx.statsSessions.toLowerCase()}` : tx.noSessionsYet}
                     </div>
                   </div>
-                  <span className={statusPillCls(s.status, styles)}>{s.status}</span>
+                  <span className={statusPillCls(s.status, styles)}>{statusLabel(s.status)}</span>
                   {s.isShared ? (
                     <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>{tx.remove}</button>
                   ) : (
@@ -2125,18 +2185,20 @@ export default function FacultyDashboard() {
                 <label className={styles.fieldLabel}>{tx.members}</label>
                 {selectedGroupStudentRows.map(member => (
                   <div key={member.email} className={styles.memberRow}>
-                    <span className={`${styles.avatar} ${styles[`avatar_${member.status}` as keyof typeof styles]}`}>
+                    <span className={avatarCls(member.status, styles)}>
                       {emailInitials(member.email)}
                     </span>
                     <span className={styles.memberEmail}>{member.email}</span>
-                    <span className={statusPillCls(member.status, styles)}>{member.status}</span>
+                    <span className={statusPillCls(member.status, styles)}>{statusLabel(member.status)}</span>
                     <div className={styles.memberActions}>
                       {member.isShared ? (
                         <button className={styles.delBtnSm} onClick={() => handleShareRemove(member.email)}>{tx.remove}</button>
                       ) : (
                         <>
                           <button className={styles.editBtn} onClick={() => handleShareStudent(member.email)}>{tx.share}</button>
-                          <button className={styles.delBtnSm} onClick={() => handleRemoveGroupMember(member.email)}>{tx.remove}</button>
+                          {member.status === "pending" && (
+                            <button className={styles.delBtnSm} onClick={() => handleRemovePendingStudent(member.email)}>{tx.remove}</button>
+                          )}
                         </>
                       )}
                       <button
@@ -2163,7 +2225,7 @@ export default function FacultyDashboard() {
           <>
             <div className={styles.paneHd}>
               <span className={styles.eyebrow}>{selectedStudent.email}</span>
-              <span className={statusPillCls(selectedStudent.status, styles)}>{selectedStudent.status}</span>
+              <span className={statusPillCls(selectedStudent.status, styles)}>{statusLabel(selectedStudent.status)}</span>
             </div>
             <div className={styles.studentDetailShell}>
               <div className={styles.signalSummary}>

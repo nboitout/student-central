@@ -578,6 +578,7 @@
 .avatar_active  { background: rgba(96, 165, 250, 0.12); color: #60a5fa; }
 .avatar_invited { background: rgba(245, 158, 11, 0.12);  color: #f59e0b; }
 .avatar_pending { background: var(--surface-low);         color: var(--on-surface-variant); }
+.avatar_declined { background: rgba(239, 68, 68, 0.1);   color: #ef4444; }
 
 .studentInfo { flex: 1; min-width: 0; }
 
@@ -613,6 +614,7 @@
 .pillActive  { color: #22c55e; border-color: rgba(34, 197, 94, 0.3); }
 .pillInvited { color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
 .pillPending { color: var(--on-surface-variant); border-color: var(--outline-variant); }
+.pillDeclined { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
 
 /* Course settings block */
 .courseSettingsBlock {
