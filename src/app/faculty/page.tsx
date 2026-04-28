@@ -180,6 +180,14 @@ function avatarCls(status: MockStudent["status"] | StudentRowStatus | AccessEntr
   return `${s.avatar} ${s.avatar_pending}`;
 }
 
+function canShareRow(row: StudentAccessRow): boolean {
+  return !row.isShared || row.status === "declined";
+}
+
+function canRemoveDraftRow(row: StudentAccessRow): boolean {
+  return !row.isShared;
+}
+
 function emailInitials(email: string): string {
   const local = email.split("@")[0];
   const parts = local.split(/[._-]/);
@@ -1129,14 +1137,22 @@ export default function FacultyDashboard() {
 
   const handleShareStudent = (email: string) => {
     if (!selectedCourse) return;
+    const sharedAt = new Date().toISOString();
     setPendingStudentEmails(prev => {
       const next = prev.filter(e => e !== email);
       writePendingStudents(facultyId, selectedCourse.id, next);
       return next;
     });
     setShareAccess(prev => {
-      if (prev.find(e => e.email === email)) return prev;
-      return [...prev, { email, status: "invited", sharedAt: new Date().toISOString(), sessionCount: 0 }];
+      const existingIndex = prev.findIndex(e => e.email === email);
+      if (existingIndex === -1) {
+        return [...prev, { email, status: "invited", sharedAt, sessionCount: 0 }];
+      }
+      return prev.map(entry =>
+        entry.email === email
+          ? { ...entry, status: "invited", sharedAt }
+          : entry
+      );
     });
     fetch(`${API}/api/courses/${selectedCourse.id}/access`, {
       method:  "POST",
@@ -1804,13 +1820,15 @@ export default function FacultyDashboard() {
                     </div>
                   </div>
                   <span className={statusPillCls(s.status, styles)}>{statusLabel(s.status)}</span>
+                  {canShareRow(s) && (
+                    <button className={styles.editBtn} onClick={() => handleShareStudent(s.email)}>{tx.share}</button>
+                  )}
                   {s.isShared ? (
                     <button className={styles.delBtnSm} onClick={() => handleShareRemove(s.email)}>{tx.remove}</button>
                   ) : (
-                    <>
-                      <button className={styles.editBtn} onClick={() => handleShareStudent(s.email)}>{tx.share}</button>
+                    canRemoveDraftRow(s) && (
                       <button className={styles.delBtnSm} onClick={() => handleRemovePendingStudent(s.email)}>{tx.remove}</button>
-                    </>
+                    )
                   )}
                 </div>
               ))}
@@ -2191,15 +2209,15 @@ export default function FacultyDashboard() {
                     <span className={styles.memberEmail}>{member.email}</span>
                     <span className={statusPillCls(member.status, styles)}>{statusLabel(member.status)}</span>
                     <div className={styles.memberActions}>
+                      {canShareRow(member) && (
+                        <button className={styles.editBtn} onClick={() => handleShareStudent(member.email)}>{tx.share}</button>
+                      )}
                       {member.isShared ? (
                         <button className={styles.delBtnSm} onClick={() => handleShareRemove(member.email)}>{tx.remove}</button>
                       ) : (
-                        <>
-                          <button className={styles.editBtn} onClick={() => handleShareStudent(member.email)}>{tx.share}</button>
-                          {member.status === "pending" && (
-                            <button className={styles.delBtnSm} onClick={() => handleRemovePendingStudent(member.email)}>{tx.remove}</button>
-                          )}
-                        </>
+                        canRemoveDraftRow(member) && (
+                          <button className={styles.delBtnSm} onClick={() => handleRemovePendingStudent(member.email)}>{tx.remove}</button>
+                        )
                       )}
                       <button
                         className={styles.memberRemoveGroup}
