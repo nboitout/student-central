@@ -200,6 +200,40 @@ function writePendingStudents(facultyId: string, courseId: string, emails: strin
   } catch {}
 }
 
+function groupMembersStorageKey(facultyId: string, groupId: string): string {
+  return `teachGroupMembers:${facultyId}:${groupId}`;
+}
+
+function readStoredGroupMembers(facultyId: string, groupId: string): string[] {
+  try {
+    const raw = localStorage.getItem(groupMembersStorageKey(facultyId, groupId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((email): email is string => typeof email === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredGroupMembers(facultyId: string, groupId: string, emails: string[]) {
+  try {
+    localStorage.setItem(groupMembersStorageKey(facultyId, groupId), JSON.stringify(emails));
+  } catch {}
+}
+
+function removeStoredGroupMembers(facultyId: string, groupId: string) {
+  try {
+    localStorage.removeItem(groupMembersStorageKey(facultyId, groupId));
+  } catch {}
+}
+
+function withStoredGroupMembers(group: Group, facultyId: string): Group {
+  const members = Array.from(new Set([
+    ...(group.members ?? []).map(email => email.toLowerCase()),
+    ...readStoredGroupMembers(facultyId, group.id).map(email => email.toLowerCase()),
+  ]));
+  return { ...group, members };
+}
+
 function canUseCourseInFacultyMode(course: Course): boolean {
   return course.isOwned !== false || course.allowStudentSharing === true;
 }
@@ -790,7 +824,7 @@ export default function FacultyDashboard() {
     setGroupsLoading(true);
     fetch(`${API}/api/groups?facultyId=${facultyId}`)
       .then(r => r.json())
-      .then(d => setGroups((d.groups ?? []).map(normalizeGroup)))
+      .then(d => setGroups((d.groups ?? []).map((group: Partial<Group>) => withStoredGroupMembers(normalizeGroup(group), facultyId))))
       .catch(err => console.warn("Groups fetch failed:", err))
       .finally(() => setGroupsLoading(false));
   }, [facultyReady, facultyId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1119,6 +1153,7 @@ export default function FacultyDashboard() {
           members: Array.isArray(real.members) ? real.members : optimistic.members,
           courseIds: Array.isArray(real.courseIds) ? real.courseIds : optimistic.courseIds,
         });
+        writeStoredGroupMembers(facultyId, normalized.id, normalized.members);
         setGroups(prev => prev.map(g => g.id === optimistic.id ? normalized : g));
         setSelectedGroup(normalized);
         setAnalyticsGroup(prev => prev?.id === optimistic.id ? normalized : prev);
@@ -1169,6 +1204,7 @@ export default function FacultyDashboard() {
     const groupId = selectedGroup.id;
     const memberEmails = new Set((selectedGroup.members ?? []).map(email => email.toLowerCase()));
     const sharedCourseIds = selectedGroup.courseIds ?? [];
+    removeStoredGroupMembers(facultyId, groupId);
     setGroups(prev => prev.filter(g => g.id !== groupId));
     setPendingStudentEmails(prev => {
       const next = prev.filter(email => !memberEmails.has(email.toLowerCase()));
@@ -1201,6 +1237,7 @@ export default function FacultyDashboard() {
       ...selectedGroup,
       members: (selectedGroup.members ?? []).filter(member => member !== email),
     };
+    writeStoredGroupMembers(facultyId, selectedGroup.id, updated.members);
     setSelectedGroup(updated);
     setGroups(prev => prev.map(g => g.id === selectedGroup.id ? updated : g));
     fetch(`${API}/api/groups/${selectedGroup.id}`, {
@@ -1221,6 +1258,14 @@ export default function FacultyDashboard() {
       members: [...members, normalizedEmail],
     };
 
+    writeStoredGroupMembers(facultyId, group.id, updated.members);
+    if (selectedCourse?.id) {
+      setPendingStudentEmails(prev => {
+        const next = prev.filter(studentEmail => studentEmail.toLowerCase() !== normalizedEmail);
+        writePendingStudents(facultyId, selectedCourse.id, next);
+        return next;
+      });
+    }
     setGroups(prev => prev.map(g => g.id === group.id ? updated : g));
     setSelectedGroup(updated);
     setAnalyticsGroup(prev => prev?.id === group.id ? updated : prev);
