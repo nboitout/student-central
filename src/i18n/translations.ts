@@ -1,3 +1,112 @@
+/*
+Potential workspace warning copy for the disabled Teach button.
+Kept as comments for now because we may remove or revise this callout later.
+
+en:
+- title: Teach mode is locked
+- body: Create your first course to unlock it. Once a course exists, the Teach button will become active.
+- checkbox: Don't show this again
+
+fr:
+- title: Le mode Teach est verrouille
+- body: Creez votre premier cours pour le debloquer. Une fois qu'un cours existe, le bouton Teach deviendra actif.
+- checkbox: Ne plus afficher ceci
+
+ro:
+- title: Modul Teach este blocat
+- body: Creeaza primul tau curs pentru a-l debloca. Odata ce exista un curs, butonul Teach va deveni activ.
+- checkbox: Nu mai afisa acest mesaj
+
+de:
+- title: Der Teach-Modus ist gesperrt
+- body: Erstellen Sie zuerst Ihren ersten Kurs, um ihn freizuschalten. Sobald ein Kurs vorhanden ist, wird die Teach-Schaltflaeche aktiv.
+- checkbox: Nicht erneut anzeigen
+
+es:
+- title: El modo Teach esta bloqueado
+- body: Crea tu primer curso para desbloquearlo. Cuando exista un curso, el boton Teach se activara.
+- checkbox: No volver a mostrar esto
+
+el:
+- title: Η λειτουργια Teach ειναι κλειδωμενη
+- body: Δημιουργηστε το πρωτο σας μαθημα για να την ξεκλειδωσετε. Μολις υπαρχει ενα μαθημα, το κουμπι Teach θα γινει ενεργο.
+- checkbox: Να μην εμφανιστει ξανα
+
+it:
+- title: La modalita Teach e bloccata
+- body: Crea il tuo primo corso per sbloccarla. Una volta che esiste un corso, il pulsante Teach diventera attivo.
+- checkbox: Non mostrarlo di nuovo
+
+pl:
+- title: Tryb Teach jest zablokowany
+- body: Utworz pierwszy kurs, aby go odblokowac. Gdy kurs bedzie juz istnial, przycisk Teach stanie sie aktywny.
+- checkbox: Nie pokazuj tego ponownie
+
+uk:
+- title: Режим Teach заблоковано
+- body: Створіть свій перший курс, щоб розблокувати його. Щойно курс з'явиться, кнопка Teach стане активною.
+- checkbox: Більше не показувати
+
+ru:
+- title: Режим Teach заблокирован
+- body: Создайте свой первый курс, чтобы разблокировать его. Как только курс появится, кнопка Teach станет активной.
+- checkbox: Больше не показывать
+
+pt:
+- title: O modo Teach esta bloqueado
+- body: Crie o seu primeiro curso para o desbloquear. Assim que existir um curso, o botao Teach ficara ativo.
+- checkbox: Nao mostrar isto novamente
+
+nl:
+- title: De Teach-modus is vergrendeld
+- body: Maak eerst je eerste cursus aan om deze te ontgrendelen. Zodra er een cursus bestaat, wordt de Teach-knop actief.
+- checkbox: Niet opnieuw tonen
+
+da:
+- title: Teach-tilstand er laast
+- body: Opret dit forste kursus for at lase den op. Naar der findes et kursus, bliver Teach-knappen aktiv.
+- checkbox: Vis ikke dette igen
+
+sv:
+- title: Teach-laget ar last
+- body: Skapa din forsta kurs for att lasa upp det. Nar en kurs finns blir Teach-knappen aktiv.
+- checkbox: Visa inte detta igen
+
+fi:
+- title: Teach-tila on lukittu
+- body: Luo ensimmainen kurssisi avataksesi sen. Kun kurssi on olemassa, Teach-painike aktivoituu.
+- checkbox: Ala nayta tata uudelleen
+
+hu:
+- title: A Teach mod zarolva van
+- body: Hozd letre az elso kurzusodat a feloldashoz. Amint letezik kurzus, a Teach gomb aktivva valik.
+- checkbox: Ne jelenitse meg ujra
+
+hr:
+- title: Teach nacin je zakljucan
+- body: Izradi svoj prvi kolegij kako bi ga otkljucao. Kada kolegij bude postojao, gumb Teach postat ce aktivan.
+- checkbox: Ne prikazuj ovo ponovno
+
+bg:
+- title: Режимът Teach е заключен
+- body: Създайте първия си курс, за да го отключите. След като има курс, бутонът Teach ще стане активен.
+- checkbox: Не показвай това отново
+
+cs:
+- title: Rezim Teach je uzamcen
+- body: Vytvorte si svuj prvni kurz, abyste jej odemkli. Jakmile bude kurz existovat, tlacitko Teach bude aktivni.
+- checkbox: Znovu to nezobrazovat
+
+sr:
+- title: Teach режим је закључан
+- body: Направите свој први курс да бисте га откључали. Када курс буде постојао, дугме Teach ће постати активно.
+- checkbox: Не приказуј ово поново
+
+tr:
+- title: Teach modu kilitli
+- body: Kilidi acmak icin ilk dersini olustur. Bir ders olustugunda Teach dugmesi etkin hale gelir.
+- checkbox: Bunu bir daha gosterme
+*/
 export const t = {
   en: {
     nav: {
