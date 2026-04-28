@@ -976,9 +976,9 @@ export default function FacultyDashboard() {
       .then(data => {
         if (!cancelled) {
           const normalized = Array.isArray(data.access)
-            ? data.access
-                .map((entry: Partial<AccessEntry>) => normalizeAccessEntry(entry))
-                .filter((entry): entry is AccessEntry => entry !== null)
+            ? (data.access as Partial<AccessEntry>[])
+                .map((entry) => normalizeAccessEntry(entry))
+                .filter((entry: AccessEntry | null): entry is AccessEntry => entry !== null)
             : [];
           setShareAccess(normalized);
         }
