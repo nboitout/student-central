@@ -15,12 +15,14 @@ import {
   uploadPdf,
   attachPdf,
   triggerMCQGeneration,
+  getCourseOutline,
   listSessions,
   createGroup,
   listGroups,
   updateGroup as updateGroupApi,
   deleteGroup,
   type Course,
+  type CourseOutline,
   type StoredSession,
   type Group,
 } from "@/lib/api";
@@ -47,6 +49,121 @@ type WorkspaceCourse = Course & {
   createdBy?: string;
   allowStudentSharing?: boolean;
 };
+
+type CreateResult = {
+  course: Course;
+  showPrefs?: boolean;
+  processing?: boolean;
+};
+
+function OutlineBriefing({
+  courseTitle,
+  outline,
+  outlineStatus,
+  mcqStatus,
+  compact = false,
+}: {
+  courseTitle: string;
+  outline?: CourseOutline | null;
+  outlineStatus?: Course["outlineStatus"];
+  mcqStatus?: Course["mcqStatus"];
+  compact?: boolean;
+}) {
+  const expectationPrompts = outline?.expectationPrompts?.filter(Boolean) ?? [];
+  const fallbackPrompts = [
+    `What are you hoping to get out of ${courseTitle}?`,
+    "Which parts feel most unfamiliar right now?",
+    "Are you studying for a class, exam, or interview?",
+  ];
+  const prompts = expectationPrompts.length > 0 ? expectationPrompts : fallbackPrompts;
+  const sections = outline?.sections?.filter(Boolean) ?? [];
+  const keyConcepts = outline?.keyConcepts?.filter(Boolean) ?? [];
+
+  return (
+    <section className={`${styles.briefingCard} ${compact ? styles.briefingCardCompact : ""}`}>
+      <div className={styles.briefingHeader}>
+        <div>
+          <div className={styles.briefingEyebrow}>Document Brief</div>
+          <h3 className={styles.briefingTitle}>{outline?.title || courseTitle}</h3>
+          <p className={styles.briefingLead}>
+            {outline
+              ? "We have mapped the document so the tutor can start with context before the question set finishes."
+              : outlineStatus === "failed"
+                ? "The fast outline was not available, so the tutor will fall back to a more general intake."
+                : "We are reading the document and preparing a fast briefing for your first learner conversation."}
+          </p>
+        </div>
+        <div className={styles.briefingStatusRail}>
+          <div className={styles.briefingStatusItem}>
+            <span className={styles.briefingStatusLabel}>Outline</span>
+            <span className={styles.briefingStatusValue}>
+              {outlineStatus === "ready" ? "Ready" : outlineStatus === "failed" ? "Unavailable" : "Preparing..."}
+            </span>
+          </div>
+          <div className={styles.briefingStatusItem}>
+            <span className={styles.briefingStatusLabel}>MCQs</span>
+            <span className={styles.briefingStatusValue}>
+              {mcqStatus === "ready" ? "Questions ready" : mcqStatus === "failed" ? "Needs retry" : "Generating..."}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {outline ? (
+        <div className={styles.briefingGrid}>
+          <div className={styles.briefingMain}>
+            {outline.domain ? <div className={styles.briefingDomain}>{outline.domain}</div> : null}
+            {outline.summary ? <p className={styles.briefingSummary}>{outline.summary}</p> : null}
+
+            {sections.length > 0 ? (
+              <div className={styles.briefingBlock}>
+                <div className={styles.briefingBlockLabel}>Likely sections</div>
+                <div className={styles.briefingChipRow}>
+                  {sections.map((section) => (
+                    <span key={section} className={styles.briefingChip}>{section}</span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {keyConcepts.length > 0 ? (
+              <div className={styles.briefingBlock}>
+                <div className={styles.briefingBlockLabel}>Key concepts</div>
+                <div className={styles.briefingChipRow}>
+                  {keyConcepts.map((concept) => (
+                    <span key={concept} className={styles.briefingChipMuted}>{concept}</span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <aside className={styles.briefingAside}>
+            <div className={styles.briefingAsideLabel}>Start here</div>
+            <div className={styles.briefingPromptList}>
+              {prompts.map((prompt) => (
+                <div key={prompt} className={styles.briefingPromptCard}>
+                  {prompt}
+                </div>
+              ))}
+            </div>
+          </aside>
+        </div>
+      ) : (
+        <div className={styles.briefingFallback}>
+          <div className={styles.briefingAsideLabel}>Start here</div>
+          <div className={styles.briefingPromptList}>
+            {prompts.map((prompt) => (
+              <div key={prompt} className={styles.briefingPromptCard}>
+                {prompt}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
 
 const COURSE_API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -172,11 +289,19 @@ type LearningPrefs = {
 };
 
 function LearningPrefsModal({
+  courseId,
   courseTitle,
+  initialOutline,
+  initialOutlineStatus,
+  initialMcqStatus,
   onSave,
   onSkip,
 }: {
+  courseId: string;
   courseTitle: string;
+  initialOutline?: CourseOutline | null;
+  initialOutlineStatus?: Course["outlineStatus"];
+  initialMcqStatus?: Course["mcqStatus"];
   onSave: (prefs: LearningPrefs) => void;
   onSkip: () => void;
 }) {
@@ -185,6 +310,36 @@ function LearningPrefsModal({
   const [cadence, setCadence] = useState<LearningPrefs["cadence"]>("days");
   const [note,    setNote]    = useState("");
   const [domain,  setDomain]  = useState<LearningPrefs["domainLevel"]>("2");
+  const [outline, setOutline] = useState<CourseOutline | null>(initialOutline ?? null);
+  const [outlineStatus, setOutlineStatus] = useState<Course["outlineStatus"]>(initialOutlineStatus ?? (initialOutline ? "ready" : "none"));
+  const [mcqStatus, setMcqStatus] = useState<Course["mcqStatus"]>(initialMcqStatus ?? "none");
+
+  useEffect(() => {
+    if (outlineStatus === "ready" || outlineStatus === "failed") return;
+
+    let cancelled = false;
+
+    const poll = () => {
+      getCourseOutline(courseId)
+        .then((data) => {
+          if (cancelled) return;
+          setOutlineStatus(data.outlineStatus);
+          setOutline(data.outline);
+          setMcqStatus(data.mcqStatus);
+        })
+        .catch(() => {
+          if (!cancelled) setOutlineStatus("failed");
+        });
+    };
+
+    poll();
+    const intervalId = window.setInterval(poll, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [courseId, outlineStatus]);
 
   return (
     <div className={styles.overlay} onClick={onSkip}>
@@ -202,6 +357,13 @@ function LearningPrefsModal({
           <button className={styles.modalClose} onClick={onSkip}>✕</button>
         </div>
         <div className={styles.modalBody}>
+          <OutlineBriefing
+            compact
+            courseTitle={courseTitle}
+            outline={outline}
+            outlineStatus={outlineStatus}
+            mcqStatus={mcqStatus}
+          />
           {/* Mastery level */}
           <div className={styles.prefsGroup}>
             <div className={styles.prefsLabel}>What level of mastery are you aiming for?</div>
@@ -286,7 +448,7 @@ function CreateModal({
   userId,
 }: {
   onClose: () => void;
-  onCreate: (c: Course, showPrefs?: boolean) => void;
+  onCreate: (result: CreateResult) => void;
   ui: ReturnType<typeof getT>["workspace"];
   userId: string;
 }) {
@@ -320,14 +482,24 @@ function CreateModal({
       if (file) {
         const { url } = await uploadPdf(file);
         const updated = await attachPdf(course.id, url, userId);
-        /* Fire-and-forget: kick off MCQ generation in the background */
-        triggerMCQGeneration({ courseId: course.id, pdfUrl: url, userId }).catch(err => console.error("MCQ generation failed:", err));
-        onCreate(updated, /* showPrefs */ true);
+        /* Trigger outline extraction immediately and let MCQ generation continue in the background. */
+        const trigger = await triggerMCQGeneration({ courseId: course.id, pdfUrl: url, userId });
+        onCreate({
+          course: {
+            ...updated,
+            mcqCount: trigger.status === "already_generated" ? trigger.count ?? updated.mcqCount ?? 0 : updated.mcqCount,
+            mcqStatus: trigger.status === "already_generated" ? "ready" : "generating",
+            outlineStatus: trigger.outlineStatus ?? updated.outlineStatus ?? "none",
+            outline: trigger.outline ?? updated.outline ?? null,
+          },
+          showPrefs: true,
+          processing: trigger.status !== "already_generated",
+        });
       } else if (driveUrl.trim()) {
         /* Drive URL also triggers questionnaire — MCQ will be generated later */
-        onCreate(course, /* showPrefs */ true);
+        onCreate({ course, showPrefs: true, processing: false });
       } else {
-        onCreate(course, false);
+        onCreate({ course, showPrefs: false, processing: false });
       }
       onClose();
     } catch (err) {
@@ -407,6 +579,9 @@ function CourseDetailsModal({
   const router = useRouter();
   const [recentSession, setRecentSession] = useState<StoredSession | null>(null);
   const [sessionsLoaded, setSessionsLoaded] = useState(false);
+  const [outline, setOutline] = useState<CourseOutline | null>(course.outline ?? null);
+  const [outlineStatus, setOutlineStatus] = useState<Course["outlineStatus"]>(course.outlineStatus ?? (course.outline ? "ready" : "none"));
+  const [mcqStatus, setMcqStatus] = useState<Course["mcqStatus"]>(course.mcqStatus ?? "none");
 
   useEffect(() => {
     listSessions(course.id)
@@ -427,6 +602,39 @@ function CourseDetailsModal({
       })
       .finally(() => setSessionsLoaded(true));
   }, [course.id]);
+
+  useEffect(() => {
+    setOutline(course.outline ?? null);
+    setOutlineStatus(course.outlineStatus ?? (course.outline ? "ready" : "none"));
+    setMcqStatus(course.mcqStatus ?? "none");
+  }, [course.id, course.outline, course.outlineStatus, course.mcqStatus]);
+
+  useEffect(() => {
+    if (!course.pdfUrl || (outlineStatus === "ready" && mcqStatus !== "generating")) return;
+
+    let cancelled = false;
+
+    const poll = () => {
+      getCourseOutline(course.id, userId || undefined)
+        .then((data) => {
+          if (cancelled) return;
+          setOutlineStatus(data.outlineStatus);
+          setOutline(data.outline);
+          setMcqStatus(data.mcqStatus);
+        })
+        .catch(() => {
+          if (!cancelled) setOutlineStatus((prev) => (prev === "none" ? "failed" : prev));
+        });
+    };
+
+    poll();
+    const intervalId = window.setInterval(poll, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [course.id, course.pdfUrl, outlineStatus, mcqStatus, userId]);
 
   const statusKey = course.status.replace(" ", "") as "NotStarted" | "InProgress" | "Completed";
   const statusLabel: Record<string, string> = {
@@ -469,6 +677,15 @@ function CourseDetailsModal({
             <div className={styles.detailsProgressFill} style={{ width: `${progress}%` }} />
           </div>
 
+          {course.pdfUrl ? (
+            <OutlineBriefing
+              courseTitle={course.title}
+              outline={outline}
+              outlineStatus={outlineStatus}
+              mcqStatus={mcqStatus}
+            />
+          ) : null}
+
           {/* Recent session resume card */}
           {sessionsLoaded && recentSession && (
             <div className={styles.resumeCard}>
@@ -502,8 +719,8 @@ function CourseDetailsModal({
               <div className={styles.actionCardDesc}>{ui.accessCourseDesc}</div>
             </button>
             <button
-              className={`${styles.actionCard} ${(course.mcqCount ?? course.exercisesTotal ?? 0) === 0 ? styles.actionCardDisabled : ""}`}
-              disabled={(course.mcqCount ?? course.exercisesTotal ?? 0) === 0}
+              className={`${styles.actionCard} ${mcqStatus !== "ready" && (course.mcqCount ?? course.exercisesTotal ?? 0) === 0 ? styles.actionCardDisabled : ""}`}
+              disabled={mcqStatus !== "ready" && (course.mcqCount ?? course.exercisesTotal ?? 0) === 0}
               onClick={() => { onClose(); router.push(`/workspace/mcq?id=${course.id}&title=${encodeURIComponent(course.title)}&pdf=${encodeURIComponent(course.pdfUrl || "")}${ownerParam}${studentParam}`); }}
             >
               <div className={styles.actionCardIcon}>◎</div>
@@ -829,7 +1046,9 @@ export default function WorkspacePage() {
             if (prev.size === 0) return prev;
             const next = new Set(prev);
             fresh.forEach(course => {
-              if (course.mcqStatus === "ready") next.delete(course.id);
+              if (course.mcqStatus === "ready" || course.mcqStatus === "failed" || course.mcqStatus === "error") {
+                next.delete(course.id);
+              }
             });
             return next;
           });
@@ -1273,10 +1492,11 @@ export default function WorkspacePage() {
       {modal === "create"  && (
         <CreateModal
           onClose={closeModal}
-          onCreate={(newCourse, showPrefs) => {
+          onCreate={({ course: newCourse, showPrefs, processing }) => {
             setCourses(prev => [newCourse, ...prev]);
-            /* Mark as processing in local state immediately */
-            setProcessingIds(prev => new Set(Array.from(prev).concat(newCourse.id)));
+            if (processing) {
+              setProcessingIds(prev => new Set(Array.from(prev).concat(newCourse.id)));
+            }
             closeModal();
             if (showPrefs) setPrefsModal(newCourse);
           }}
@@ -1287,7 +1507,11 @@ export default function WorkspacePage() {
       {modal === "details" && activeCourse && <CourseDetailsModal course={activeCourse} onClose={closeModal} ui={ui} userId={userId} />}
       {prefsModal && (
         <LearningPrefsModal
+          courseId={prefsModal.id}
           courseTitle={prefsModal.title}
+          initialOutline={prefsModal.outline ?? null}
+          initialOutlineStatus={prefsModal.outlineStatus}
+          initialMcqStatus={prefsModal.mcqStatus}
           onSave={(prefs) => {
             /* Store locally — backend will pick up on next course update */
             try {

@@ -28,6 +28,15 @@ export interface CourseSynthesis {
   audience:     string;   /* e.g. "master's students in AI" */
 }
 
+export interface CourseOutline {
+  title: string;
+  domain: string;
+  summary: string;
+  sections: string[];
+  keyConcepts: string[];
+  expectationPrompts: string[];
+}
+
 export interface Course {
   id: string;
   userId: string;
@@ -38,7 +47,9 @@ export interface Course {
   allowDownload?: boolean;
   allowStudentSharing?: boolean;
   tutorLanguage?: string | null;    /* e.g. "en", "fr", "de" — language for MCQ + AI tutor */
-  mcqStatus?: "idle" | "generating" | "ready" | "error";  /* MCQ bank generation state */
+  mcqStatus?: "none" | "idle" | "generating" | "ready" | "failed" | "error";  /* MCQ bank generation state */
+  outlineStatus?: "none" | "generating" | "ready" | "failed";
+  outline?: CourseOutline | null;
   learningPrefs?: {
     masteryLevel?:  "familiarity" | "working" | "deep";
     priorKnowledge?: "none" | "some" | "solid" | "adjacent";
@@ -195,16 +206,41 @@ export async function evaluateReasoning(payload: {
   });
 }
 
+export interface TriggerMCQGenerationResponse {
+  status: "generating" | "already_generated" | string;
+  message?: string;
+  count?: number;
+  outlineStatus?: "none" | "generating" | "ready" | "failed";
+  outline?: CourseOutline | null;
+}
+
+export interface CourseOutlineResponse {
+  courseId: string;
+  outlineStatus: "none" | "generating" | "ready" | "failed";
+  outline: CourseOutline | null;
+  mcqStatus: "none" | "generating" | "ready" | "failed";
+}
+
 /* ── MCQ Generation trigger ─────────────────────────────── */
 export async function triggerMCQGeneration(payload: {
   courseId: string;
   pdfUrl: string;
   userId?: string;
-}): Promise<{ status: string; message: string }> {
+}): Promise<TriggerMCQGenerationResponse> {
   const uid = payload.userId ?? await getCurrentUserId();
-  return request<{ status: string; message: string }>(
+  return request<TriggerMCQGenerationResponse>(
     `/api/upload/trigger-mcq-generation?course_id=${payload.courseId}&pdf_url=${encodeURIComponent(payload.pdfUrl)}&user_id=${encodeURIComponent(uid)}`,
     { method: "POST" }
+  );
+}
+
+export async function getCourseOutline(
+  courseId: string,
+  userId?: string
+): Promise<CourseOutlineResponse> {
+  const uid = userId ?? await getCurrentUserId();
+  return request<CourseOutlineResponse>(
+    `/api/courses/${courseId}/outline?userId=${encodeURIComponent(uid)}`
   );
 }
 

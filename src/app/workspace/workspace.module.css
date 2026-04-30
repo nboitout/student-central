@@ -2737,6 +2737,189 @@
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.briefingCard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 24px;
+  padding: 22px 24px;
+  background:
+    linear-gradient(135deg, rgba(214, 232, 255, 0.65), rgba(255, 249, 238, 0.96));
+  border: 0.5px solid rgba(90, 112, 143, 0.22);
+  box-shadow: 0 12px 32px rgba(26, 28, 46, 0.08);
+}
+
+.briefingCardCompact {
+  padding: 18px 20px;
+  gap: 16px;
+}
+
+.briefingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.briefingEyebrow {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2b4f7c;
+  margin-bottom: 8px;
+}
+
+.briefingTitle {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1d2940;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.briefingLead {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #4e5c73;
+  margin: 8px 0 0;
+  max-width: 58ch;
+}
+
+.briefingStatusRail {
+  display: grid;
+  gap: 8px;
+  min-width: 168px;
+}
+
+.briefingStatusItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 0.5px solid rgba(90, 112, 143, 0.16);
+}
+
+.briefingStatusLabel {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5f6f84;
+}
+
+.briefingStatusValue {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #1f4774;
+}
+
+.briefingGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(220px, 0.95fr);
+  gap: 18px;
+}
+
+.briefingMain,
+.briefingAside,
+.briefingFallback {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.briefingAside,
+.briefingFallback {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 0.5px solid rgba(90, 112, 143, 0.16);
+}
+
+.briefingDomain {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #355f92;
+}
+
+.briefingSummary {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: #2a3447;
+}
+
+.briefingBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.briefingBlockLabel,
+.briefingAsideLabel {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #586a81;
+}
+
+.briefingChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.briefingChip,
+.briefingChipMuted {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #20314d;
+  border: 0.5px solid rgba(90, 112, 143, 0.16);
+}
+
+.briefingChipMuted {
+  background: rgba(232, 238, 247, 0.85);
+  color: #45556d;
+}
+
+.briefingPromptList {
+  display: grid;
+  gap: 8px;
+}
+
+.briefingPromptCard {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: #263247;
+  padding: 12px 14px;
+  background: rgba(247, 249, 252, 0.96);
+  border-left: 3px solid #6d90bd;
+}
+
+.actionCardDisabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.actionCardDisabled:hover {
+  background: var(--surface-lowest);
+}
+
 .actionCards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2781,6 +2964,22 @@
   font-size: 0.8125rem;
   color: var(--on-surface-variant);
   line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  .briefingHeader,
+  .briefingGrid {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .briefingStatusRail {
+    min-width: 0;
+  }
+
+  .actionCards {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ════════════════════════════════════════════════════════
