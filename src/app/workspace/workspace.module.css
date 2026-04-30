@@ -2473,8 +2473,15 @@
   box-shadow: var(--shadow-float);
   width: 100%;
   max-width: 560px;
+  max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.prefsModal {
+  max-width: 720px;
+  max-height: calc(100vh - 40px);
 }
 
 /* Modal header — background shift separates sections */
@@ -2484,6 +2491,7 @@
   justify-content: space-between;
   align-items: flex-start;
   background: var(--surface);
+  flex-shrink: 0;
 }
 
 .modalEyebrow {
@@ -2521,6 +2529,8 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .fieldGroup { display: flex; flex-direction: column; gap: 8px; }
@@ -2642,6 +2652,7 @@
   justify-content: flex-end;
   gap: 12px;
   background: var(--surface-low);
+  flex-shrink: 0;
 }
 
 .cancelBtn {
@@ -2911,6 +2922,16 @@
   border-left: 3px solid #6d90bd;
 }
 
+.briefingWaitingCard {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #4e5c73;
+  padding: 14px 16px;
+  background: rgba(247, 249, 252, 0.82);
+  border: 0.5px dashed rgba(90, 112, 143, 0.28);
+}
+
 .actionCardDisabled {
   opacity: 0.56;
   cursor: not-allowed;
@@ -2967,6 +2988,22 @@
 }
 
 @media (max-width: 760px) {
+  .overlay {
+    padding: 12px;
+  }
+
+  .prefsModal,
+  .modal {
+    max-height: calc(100vh - 24px);
+  }
+
+  .modalHeader,
+  .modalBody,
+  .modalFooter {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
   .briefingHeader,
   .briefingGrid {
     grid-template-columns: 1fr;

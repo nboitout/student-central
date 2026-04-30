@@ -78,6 +78,8 @@ function OutlineBriefing({
   const prompts = expectationPrompts.length > 0 ? expectationPrompts : fallbackPrompts;
   const sections = outline?.sections?.filter(Boolean) ?? [];
   const keyConcepts = outline?.keyConcepts?.filter(Boolean) ?? [];
+  const inquiryReady = outlineStatus === "ready";
+  const inquiryFailed = outlineStatus === "failed";
 
   return (
     <section className={`${styles.briefingCard} ${compact ? styles.briefingCardCompact : ""}`}>
@@ -140,6 +142,25 @@ function OutlineBriefing({
 
           <aside className={styles.briefingAside}>
             <div className={styles.briefingAsideLabel}>Start here</div>
+            {inquiryReady ? (
+              <div className={styles.briefingPromptList}>
+                {prompts.map((prompt) => (
+                  <div key={prompt} className={styles.briefingPromptCard}>
+                    {prompt}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.briefingWaitingCard}>
+                We will unlock the initial inquiry as soon as the outline is ready.
+              </div>
+            )}
+          </aside>
+        </div>
+      ) : (
+        <div className={styles.briefingFallback}>
+          <div className={styles.briefingAsideLabel}>Start here</div>
+          {inquiryFailed ? (
             <div className={styles.briefingPromptList}>
               {prompts.map((prompt) => (
                 <div key={prompt} className={styles.briefingPromptCard}>
@@ -147,18 +168,11 @@ function OutlineBriefing({
                 </div>
               ))}
             </div>
-          </aside>
-        </div>
-      ) : (
-        <div className={styles.briefingFallback}>
-          <div className={styles.briefingAsideLabel}>Start here</div>
-          <div className={styles.briefingPromptList}>
-            {prompts.map((prompt) => (
-              <div key={prompt} className={styles.briefingPromptCard}>
-                {prompt}
-              </div>
-            ))}
-          </div>
+          ) : (
+            <div className={styles.briefingWaitingCard}>
+              We are still preparing the briefing. The first inquiry will appear here once the outline is ready.
+            </div>
+          )}
         </div>
       )}
     </section>
@@ -343,7 +357,7 @@ function LearningPrefsModal({
 
   return (
     <div className={styles.overlay} onClick={onSkip}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+      <div className={`${styles.modal} ${styles.prefsModal}`} onClick={(e) => e.stopPropagation()}>
         {/* Progress bar — cosmetic, shows we are step 2/2 */}
         <div className={styles.prefsProgressBar}><div className={styles.prefsProgressFill} /></div>
         <div className={styles.modalHeader}>
