@@ -219,6 +219,8 @@ export interface CourseOutlineResponse {
   outlineStatus: "none" | "generating" | "ready" | "failed";
   outline: CourseOutline | null;
   mcqStatus: "none" | "generating" | "ready" | "failed";
+  available?: boolean;
+  outlineAvailable?: boolean;
 }
 
 /* ── MCQ Generation trigger ─────────────────────────────── */
@@ -239,9 +241,30 @@ export async function getCourseOutline(
   userId?: string
 ): Promise<CourseOutlineResponse> {
   const uid = userId ?? await getCurrentUserId();
-  return request<CourseOutlineResponse>(
-    `/api/courses/${courseId}/outline?userId=${encodeURIComponent(uid)}`
-  );
+  const res = await fetch(`${API_URL}/api/courses/${courseId}/outline?userId=${encodeURIComponent(uid)}`, {
+    headers: { "Content-Type": "application/json" },
+  });
+
+  const payload = await res.json().catch(() => null) as Partial<CourseOutlineResponse> | null;
+  const outlineAvailable = payload?.outlineAvailable === true || payload?.available === true;
+  const outlineStatus = outlineAvailable
+    ? "ready"
+    : payload?.outlineStatus ?? (res.status === 400 ? "generating" : "failed");
+  const mcqStatus = payload?.mcqStatus ?? "none";
+
+  if (!res.ok && res.status !== 400) {
+    const error = typeof payload === "object" && payload !== null ? JSON.stringify(payload) : await res.text().catch(() => "");
+    throw new Error(`API error ${res.status}: ${error}`);
+  }
+
+  return {
+    courseId: payload?.courseId ?? courseId,
+    outlineStatus,
+    outline: payload?.outline ?? null,
+    mcqStatus,
+    available: payload?.available,
+    outlineAvailable: payload?.outlineAvailable,
+  };
 }
 
 /* ── AI Tutor ───────────────────────────────────────────── */
