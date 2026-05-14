@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import path from "path";
-import fs from "fs";
+import { put } from "@vercel/blob";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,12 +13,9 @@ export async function POST(req: NextRequest) {
     const buffer   = Buffer.from(await file.arrayBuffer());
     const safeName = `${Date.now()}-${file.name.replace(/[^a-z0-9.\-_]/gi, "_")}`;
 
-    /* Save to public/uploads/ so Next.js serves it as a static file */
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    fs.writeFileSync(path.join(uploadsDir, safeName), buffer);
-
-    const url = `/uploads/${safeName}`;
+    /* Upload to Vercel Blob */
+    const blob = await put(safeName, buffer, { access: "public", contentType: "application/pdf" });
+    const url  = blob.url;
 
     /* Extract per-page text with pdf-parse */
     let slideTexts: string[] = [];

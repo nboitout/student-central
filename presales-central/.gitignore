@@ -1,12 +1,14 @@
-.next/
+# Dependencies
 node_modules/
-.env
+
+# Next.js
+.next/
+out/
+
+# Env
 .env.local
-.vercel
-*.tsbuildinfo
+.env*.local
 
-# Local SQLite database
-local.db
-
-# Uploaded PDFs (binary files, not tracked)
-public/uploads/*.pdf
+# OS
+.DS_Store
+Thumbs.db
