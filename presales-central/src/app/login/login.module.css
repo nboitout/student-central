@@ -1,0 +1,214 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  font-family: var(--font-body);
+}
+
+.brand {
+  background: var(--on-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 48px;
+}
+
+.brandInner {
+  max-width: 360px;
+  width: 100%;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.logoDot {
+  width: 28px;
+  height: 28px;
+  background: var(--primary-gradient);
+  flex-shrink: 0;
+}
+
+.logoName {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.brandTagline {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  margin-bottom: 40px;
+}
+
+.brandFeatures {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.brandFeature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
+}
+
+.brandDot {
+  width: 5px;
+  height: 5px;
+  background: var(--primary-container);
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.form {
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 48px;
+}
+
+.formInner {
+  max-width: 360px;
+  width: 100%;
+}
+
+.heading {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.sub {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--on-surface-variant);
+  margin-bottom: 36px;
+  line-height: 1.5;
+}
+
+.googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 20px;
+  background: var(--surface-lowest);
+  border: none;
+  box-shadow: 0 2px 8px rgba(26, 28, 46, 0.08), 0 0 0 1px rgba(26, 28, 46, 0.08);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+  letter-spacing: -0.01em;
+}
+.googleBtn:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(26, 28, 46, 0.12), 0 0 0 1px rgba(26, 28, 46, 0.1);
+  transform: translateY(-1px);
+}
+.googleBtn:disabled { opacity: 0.5; cursor: default; }
+
+.googleIcon { width: 20px; height: 20px; flex-shrink: 0; }
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+}
+.dividerLine { flex: 1; height: 1px; background: var(--outline-variant); }
+.dividerText {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.emailForm { display: flex; flex-direction: column; gap: 8px; }
+
+.emailLabel {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.emailInput {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(67, 70, 86, 0.2);
+  padding: 12px 0;
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.emailInput::placeholder { color: var(--on-surface-variant); opacity: 0.35; }
+.emailInput:focus { border-bottom-color: var(--primary); }
+
+.errorMsg {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: #b3261e;
+  padding: 8px 0;
+}
+
+.emailBtn {
+  background: var(--primary-gradient);
+  color: #fff;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 13px 24px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 8px;
+  letter-spacing: 0.01em;
+  border-radius: 0.25rem;
+}
+.emailBtn:hover:not(:disabled) { opacity: 0.88; }
+.emailBtn:disabled { opacity: 0.35; cursor: default; }
+.emailBtnLoading { opacity: 0.6; cursor: default; }
+
+.legal {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  opacity: 0.5;
+  margin-top: 24px;
+  line-height: 1.6;
+}
+.legalLink { color: var(--on-surface-variant); text-decoration: underline; text-underline-offset: 3px; }
+.legalLink:hover { color: var(--primary); opacity: 1; }
+
+@media (max-width: 768px) {
+  .page { grid-template-columns: 1fr; }
+  .brand { display: none; }
+  .form { padding: 48px 24px; }
+}
