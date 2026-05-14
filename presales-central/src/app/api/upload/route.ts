@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import path from "path";
+import fs from "fs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,13 +12,19 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer   = Buffer.from(await file.arrayBuffer());
-    const filename = `decks/${Date.now()}-${file.name.replace(/[^a-z0-9.\-_]/gi, "_")}`;
+    const safeName = `${Date.now()}-${file.name.replace(/[^a-z0-9.\-_]/gi, "_")}`;
 
-    /* Extract per-page text */
+    /* Save to public/uploads/ so Next.js serves it as a static file */
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    fs.writeFileSync(path.join(uploadsDir, safeName), buffer);
+
+    const url = `/uploads/${safeName}`;
+
+    /* Extract per-page text with pdf-parse */
     let slideTexts: string[] = [];
     let pageCount = 0;
     try {
-      /* Dynamic import — pdf-parse has CJS-only exports */
       const pdfParse = (await import("pdf-parse")).default;
       const pages: string[] = [];
       await pdfParse(buffer, {
@@ -31,19 +38,10 @@ export async function POST(req: NextRequest) {
       slideTexts = pages;
       pageCount  = pages.length;
     } catch (pdfErr) {
-      console.warn("[upload] pdf-parse extraction failed:", pdfErr);
-      /* Fall back: upload still proceeds, slideTexts will be empty */
+      console.warn("[upload] pdf-parse failed, continuing without slide texts:", pdfErr);
     }
 
-    /* Upload to Vercel Blob */
-    const blob = await put(filename, buffer, { access: "public", contentType: "application/pdf" });
-
-    return NextResponse.json({
-      url:        blob.url,
-      filename:   file.name,
-      pageCount,
-      slideTexts,
-    });
+    return NextResponse.json({ url, filename: file.name, pageCount, slideTexts });
   } catch (err) {
     console.error("[POST /api/upload]", err);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });

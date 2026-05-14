@@ -4,3 +4,9 @@ node_modules/
 .env.local
 .vercel
 *.tsbuildinfo
+
+# Local SQLite database
+local.db
+
+# Uploaded PDFs (binary files, not tracked)
+public/uploads/*.pdf

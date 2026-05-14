@@ -3,6 +3,7 @@ const nextConfig = {
   transpilePackages: ["next-auth"],
   experimental: {
     serverActions: { bodySizeLimit: "20mb" },
+    serverComponentsExternalPackages: ["better-sqlite3"],
   },
 };
 

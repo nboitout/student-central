@@ -40,7 +40,7 @@ Return valid JSON only, no markdown fences:
       system:     "You are a helpful, concise AI pre-sales specialist. Always respond with valid JSON only.",
       messages:   [
         ...((chatHistory as { role: string; text: string }[])?.slice(-8).map(m => ({
-          role:    m.role === "ai" ? "assistant" : "user",
+          role:    (m.role === "ai" ? "assistant" : "user") as "assistant" | "user",
           content: m.text,
         })) ?? []),
         { role: "user", content: prompt },
