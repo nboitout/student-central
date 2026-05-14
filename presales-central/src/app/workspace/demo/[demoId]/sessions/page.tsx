@@ -31,15 +31,10 @@ export default function SessionsListPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [deckRes, authRes] = await Promise.all([
-          fetch(`/api/decks/${demoId}`),
-          fetch("/api/auth/session"),
-        ]);
+        const deckRes = await fetch(`/api/decks/${demoId}`);
         const d: DemoDeck = await deckRes.json();
-        const auth = await authRes.json();
         setDeck(d);
-        const repId = auth?.user?.email ?? auth?.user?.id ?? "";
-        const sessRes = await fetch(`/api/sessions?deckId=${demoId}&repId=${encodeURIComponent(repId)}`);
+        const sessRes = await fetch(`/api/sessions?deckId=${demoId}`);
         const s: ProspectSession[] = sessRes.ok ? await sessRes.json() : [];
         setSessions(s);
       } catch (err) {

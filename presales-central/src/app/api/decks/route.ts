@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as db from "@/lib/db";
-import { auth } from "@/auth";
+
+const REP_ID = "default";
 
 export async function GET(req: NextRequest) {
-  const repId = req.nextUrl.searchParams.get("repId") ?? "";
-  if (!repId) return NextResponse.json({ error: "repId required" }, { status: 400 });
+  const repId = req.nextUrl.searchParams.get("repId") ?? REP_ID;
   try {
     const decks = await db.listDecksByRep(repId);
     return NextResponse.json(decks);
@@ -15,13 +15,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
   const body = await req.json();
-  const repId = body.repId ?? session?.user?.email ?? session?.user?.id;
-  if (!repId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const deck = await db.createDeck({
-      repId,
+      repId:          body.repId ?? REP_ID,
       productName:    body.productName   ?? "Untitled",
       targetPersona:  body.targetPersona ?? "",
       differentiators: body.differentiators ?? [],
