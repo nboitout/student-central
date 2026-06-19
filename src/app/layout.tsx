@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/react";
 import AuthProvider from "@/components/AuthProvider";
 import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
+import VisitTracker from "@/components/VisitTracker";
 
 export const metadata: Metadata = {
   title: "StudentCentral - AI Tutor for Higher Education",
@@ -37,7 +38,10 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
-          <LanguageProvider>{children}</LanguageProvider>
+          <LanguageProvider>
+            <VisitTracker />
+            {children}
+          </LanguageProvider>
         </AuthProvider>
         <Analytics />
       </body>
