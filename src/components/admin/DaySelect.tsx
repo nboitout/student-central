@@ -20,7 +20,7 @@ export default function DaySelect({ days, selected, today }: Props) {
         borderRadius: 3,
         color: 'var(--adm-ink)',
         fontSize: '.8rem',
-        fontFamily: 'DM Sans, sans-serif',
+        fontFamily: 'Inter, system-ui, sans-serif',
         padding: '4px 8px',
         cursor: 'pointer',
       }}

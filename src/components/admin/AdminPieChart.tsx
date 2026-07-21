@@ -18,17 +18,19 @@ interface Props {
   data: PieDataPoint[]
 }
 
+// StudentCentral-flavoured qualitative palette: royal-blue / mint / navy family
+// with distinct, accessible hues for the remaining slices.
 const PALETTE = [
-  '#4a6b5a',
-  '#c9a35e',
-  '#7a9b8a',
-  '#a07c3a',
-  '#5a8b6a',
-  '#e0b97a',
-  '#3a5b4a',
-  '#b08c4e',
-  '#6a7b6a',
-  '#d0a96e',
+  '#0048d8',
+  '#00c664',
+  '#3d4a6b',
+  '#0091ea',
+  '#7a5aa0',
+  '#00a3a3',
+  '#101f49',
+  '#8aa0ff',
+  '#f2994a',
+  '#b42318',
 ]
 
 export default function AdminPieChart({ data }: Props) {
@@ -50,16 +52,16 @@ export default function AdminPieChart({ data }: Props) {
         </Pie>
         <Tooltip
           contentStyle={{
-            background: '#1a1a18',
-            border: '1px solid rgba(160,124,58,.3)',
+            background: '#0d1a38',
+            border: '1px solid rgba(0,72,216,.35)',
             borderRadius: 3,
-            color: '#f5f0e8',
+            color: '#ffffff',
             fontSize: 12,
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: 'Inter, system-ui, sans-serif',
           }}
         />
         <Legend
-          wrapperStyle={{ fontSize: 11, color: 'rgba(26,26,24,.62)', fontFamily: 'DM Sans, sans-serif' }}
+          wrapperStyle={{ fontSize: 11, color: 'rgba(13,26,56,.62)', fontFamily: 'Inter, system-ui, sans-serif' }}
         />
       </PieChart>
     </ResponsiveContainer>

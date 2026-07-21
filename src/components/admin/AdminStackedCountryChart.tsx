@@ -47,35 +47,35 @@ export default function AdminStackedCountryChart({
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }} barCategoryGap="18%">
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,26,24,.12)" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(13,26,56,.10)" vertical={false} />
         <XAxis
           dataKey="date"
-          tick={{ fill: 'rgba(26,26,24,.58)', fontSize: 11, fontFamily: 'DM Sans, sans-serif' }}
+          tick={{ fill: 'rgba(13,26,56,.55)', fontSize: 11, fontFamily: 'Inter, system-ui, sans-serif' }}
           axisLine={false}
           tickLine={false}
           tickFormatter={tickFormatter}
           interval={interval}
         />
         <YAxis
-          tick={{ fill: 'rgba(26,26,24,.58)', fontSize: 11, fontFamily: 'DM Sans, sans-serif' }}
+          tick={{ fill: 'rgba(13,26,56,.55)', fontSize: 11, fontFamily: 'Inter, system-ui, sans-serif' }}
           axisLine={false}
           tickLine={false}
           allowDecimals={false}
         />
         <Tooltip
           contentStyle={{
-            background: '#1a1a18',
-            border: '1px solid rgba(160,124,58,.3)',
+            background: '#0d1a38',
+            border: '1px solid rgba(0,72,216,.35)',
             borderRadius: 3,
-            color: '#f5f0e8',
+            color: '#ffffff',
             fontSize: 12,
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: 'Inter, system-ui, sans-serif',
           }}
-          labelStyle={{ color: 'rgba(245,240,232,.55)', marginBottom: 6, fontSize: 11 }}
-          cursor={{ fill: 'rgba(26,26,24,.04)' }}
+          labelStyle={{ color: 'rgba(255,255,255,.6)', marginBottom: 6, fontSize: 11 }}
+          cursor={{ fill: 'rgba(0,72,216,.05)' }}
         />
         <Legend
-          wrapperStyle={{ fontSize: 11, color: 'rgba(26,26,24,.62)', fontFamily: 'DM Sans, sans-serif', paddingTop: 12 }}
+          wrapperStyle={{ fontSize: 11, color: 'rgba(13,26,56,.62)', fontFamily: 'Inter, system-ui, sans-serif', paddingTop: 12 }}
         />
         {countries.map((country, i) => (
           <Bar

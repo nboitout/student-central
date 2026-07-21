@@ -48,7 +48,7 @@ export default async function AdminOverviewPage({
     ;({ leads, visits, errors } = await fetchAllSheets())
   } catch (err) {
     return (
-      <div style={{ padding: 40, color: 'var(--adm-ink)', fontFamily: 'DM Sans, sans-serif' }}>
+      <div style={{ padding: 40, color: 'var(--adm-ink)', fontFamily: 'Inter, system-ui, sans-serif' }}>
         <p className="adm-section-title">Dashboard error</p>
         <pre style={{ color: 'rgba(200,60,40,.9)', fontSize: 13, marginTop: 12 }}>{String(err)}</pre>
         <p style={{ color: 'var(--adm-i50)', marginTop: 12, fontSize: '.82rem', lineHeight: 1.6 }}>Check that GOOGLE_SHEETS_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY are set correctly in Vercel.</p>
