@@ -4,6 +4,21 @@ import Credentials from "next-auth/providers/credentials";
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60;
 
+/* ── Admin allowlist ────────────────────────────────────────────────
+   The /admin dashboard is gated by email. Set ADMIN_EMAILS in the
+   environment to a comma-separated list (e.g. "you@x.com, teammate@y.com").
+   Comparison is case-insensitive. Enforced server-side in the admin
+   layout — see src/app/admin/layout.tsx.                              */
+export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+export function isAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     /* ── Temporary: email-only access for controlled testing phase ──────
