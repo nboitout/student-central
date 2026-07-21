@@ -197,10 +197,13 @@ export async function fetchSheetData(sheetName: string): Promise<string[][]> {
     return cached.data
   }
 
-  const spreadsheetId = process.env.GOOGLE_SHEETS_ID
-  if (!spreadsheetId) {
+  const rawSheetId = process.env.GOOGLE_SHEETS_ID
+  if (!rawSheetId) {
     throw new Error('Missing GOOGLE_SHEETS_ID environment variable.')
   }
+  // Accept either a bare spreadsheet id or a full Sheet URL pasted by mistake
+  // (…/spreadsheets/d/<ID>/edit) — extract the id in that case.
+  const spreadsheetId = rawSheetId.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1] ?? rawSheetId.trim()
 
   const accessToken = await getAccessToken()
   const range = encodeURIComponent(`${sheetName}!A:ZZ`)
