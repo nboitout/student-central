@@ -217,6 +217,15 @@ export async function fetchSheetData(sheetName: string): Promise<string[][]> {
 
   if (!res.ok) {
     const err = await res.text()
+    // A tab that doesn't exist yet returns 400 "Unable to parse range". That's
+    // not a failure — it just means no rows of that kind have been written yet
+    // (e.g. Leads/Events before anything posts to them, or Visits on a brand-new
+    // sheet). Treat it as empty so the dashboard renders cleanly instead of
+    // showing an error box.
+    if (res.status === 400 && /Unable to parse range/i.test(err)) {
+      cache.set(sheetName, { data: [], ts: Date.now() })
+      return []
+    }
     throw new Error(`Failed to fetch sheet "${sheetName}": ${err}`)
   }
 
