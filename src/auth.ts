@@ -19,6 +19,34 @@ export function isAdminEmail(email?: string | null): boolean {
   return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 }
 
+/* ── Sign-up monitoring ─────────────────────────────────────────────
+   Log each successful sign-in (Google or email-only) as a row in the
+   "Leads" tab of the analytics Sheet, so the admin dashboard's Total
+   Readers / Conversion cards populate. `source` records which method was
+   used ("google" vs "email-only"). Fire-and-forget: a logging failure
+   never blocks the sign-in. Admin emails are skipped so signing in to
+   /admin doesn't inflate the reader count. The dashboard counts distinct
+   emails, so re-logins don't double-count.                             */
+async function logSignInAsLead(email?: string | null, name?: string | null, provider?: string) {
+  const url = process.env.APPS_SCRIPT_URL;
+  if (!url || !email || isAdminEmail(email)) return;
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "lead",
+        timestamp: new Date().toISOString(),
+        source: provider ?? "",
+        email,
+        fullName: name ?? "",
+      }),
+    });
+  } catch (err) {
+    console.error("[auth] sign-up lead logging failed:", err);
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     /* ── Temporary: email-only access for controlled testing phase ──────
@@ -87,6 +115,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user?.email) token.email = user.email;
       return token;
+    },
+  },
+
+  events: {
+    async signIn({ user, account }) {
+      await logSignInAsLead(user?.email, user?.name, account?.provider);
     },
   },
 });
