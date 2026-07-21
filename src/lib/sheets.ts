@@ -84,33 +84,77 @@ function base64url(input: string | Buffer): string {
   return b.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
+/**
+ * Load the service-account RSA key as a KeyObject, tolerant of how Vercel (and
+ * copy/paste) mangle PEM env vars. Two accepted sources:
+ *
+ *   1. GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_BASE64 — base64 of the whole PEM.
+ *      Immune to newline/escaping issues; recommended if the raw key misbehaves.
+ *   2. GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY — the raw `private_key` string.
+ *
+ * Whatever comes in, we reduce it to the pure base64 key body, drop any stray
+ * characters (smart quotes, non-breaking spaces, single/double-escaped \n), and
+ * rebuild a canonical PEM so the parser can't trip on formatting. This is what
+ * defeats the recurring `asn1 ... header too long` error.
+ */
+function loadServiceAccountKey() {
+  let pem: string | null = null
+
+  const b64 = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_BASE64
+  if (b64 && b64.trim()) {
+    const decoded = Buffer.from(b64.trim(), 'base64').toString('utf8')
+    if (decoded.includes('PRIVATE KEY')) pem = decoded
+  }
+
+  if (!pem) {
+    let raw = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+    if (!raw) {
+      throw new Error(
+        'Missing Google service account private key — set GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_BASE64.'
+      )
+    }
+    raw = raw.trim()
+    // Unwrap a single layer of surrounding quotes.
+    if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+      raw = raw.slice(1, -1)
+    }
+    // Normalise escaped newlines: \r\n, \n, and double-escaped \\n → real newline.
+    raw = raw.replace(/\\r/g, '').replace(/\\+n/g, '\n').replace(/\r/g, '')
+    pem = raw
+  }
+
+  // Reduce to the pure base64 body: drop PEM markers, then every character that
+  // isn't part of the base64 alphabet (kills stray backslashes, smart quotes,
+  // NBSP, and any residual whitespace).
+  const body = pem
+    .replace(/-----BEGIN [^-]+-----/g, '')
+    .replace(/-----END [^-]+-----/g, '')
+    .replace(/[^A-Za-z0-9+/=]/g, '')
+
+  if (body.length < 1000) {
+    throw new Error(
+      `Private key looks truncated (${body.length} base64 chars) — check GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY is complete.`
+    )
+  }
+
+  const wrapped = body.match(/.{1,64}/g)!.join('\n')
+  const canonicalPem = `-----BEGIN PRIVATE KEY-----\n${wrapped}\n-----END PRIVATE KEY-----\n`
+
+  try {
+    return createPrivateKey({ key: canonicalPem, format: 'pem' })
+  } catch {
+    // Last resort: decode the body as DER PKCS#8 directly.
+    return createPrivateKey({ key: Buffer.from(body, 'base64'), format: 'der', type: 'pkcs8' })
+  }
+}
+
 async function getAccessToken(): Promise<string> {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-  const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-
-  if (!email || !rawKey) {
-    throw new Error('Missing Google service account credentials in environment variables.')
+  if (!email) {
+    throw new Error('Missing GOOGLE_SERVICE_ACCOUNT_EMAIL environment variable.')
   }
 
-  // Extract raw base64 from PEM — strip markers, quotes and all whitespace/escape variants
-  const pemBase64 = rawKey
-    .replace(/^["']|["']$/g, '')          // unwrap surrounding quotes
-    .replace(/\\n/g, '\n')                // literal \n → real newline
-    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-    .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/\s/g, '')                   // remove all whitespace
-    .trim()
-
-  if (!pemBase64) throw new Error('Private key is empty after stripping PEM headers.')
-
-  // A 2048-bit RSA PKCS#8 key base64-encodes to ~2176 chars. Flag if suspiciously short.
-  if (pemBase64.length < 1000) {
-    throw new Error(`Private key base64 is too short (${pemBase64.length} chars) — likely truncated in Vercel. Expected ~2176 chars.`)
-  }
-
-  // Load key from raw DER bytes — bypasses OpenSSL PEM decoder (source of DECODER errors)
-  const derBytes = Buffer.from(pemBase64, 'base64')
-  const privateKey = createPrivateKey({ key: derBytes, format: 'der', type: 'pkcs8' })
+  const privateKey = loadServiceAccountKey()
 
   const now = Math.floor(Date.now() / 1000)
   const header  = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
