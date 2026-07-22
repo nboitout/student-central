@@ -1,15 +1,24 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
+import type { FormEvent } from "react";
+import { signIn } from "next-auth/react";
 import styles from "./Hero.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
 import EarlyAccessModal from "./EarlyAccessModal";
 
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
 export default function Hero() {
   const { lang } = useLanguage();
   const tx = getT(lang).hero;
+  // Optional/new i18n keys not yet in every locale — read loosely with fallbacks.
+  const t = tx as unknown as Record<string, string | undefined>;
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showAccessForm, setShowAccessForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailErr, setEmailErr] = useState("");
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -18,6 +27,20 @@ export default function Hero() {
       .catch(() => {});
   }, []);
   const [active, setActive] = useState(0);
+
+  // Email-first funnel: one submit captures the lead (logged via the NextAuth
+  // sign-in event) and drops the visitor straight into their workspace.
+  const handleEmailFirst = (e: FormEvent) => {
+    e.preventDefault();
+    if (!isValidEmail(email)) {
+      setEmailErr(t.emailInvalid ?? "Please enter a valid email address.");
+      return;
+    }
+    startTransition(async () => {
+      setEmailErr("");
+      await signIn("email-only", { email: email.trim(), callbackUrl: "/workspace" });
+    });
+  };
 
   return (
     <section id="hero" className={styles.hero}>
@@ -30,20 +53,42 @@ export default function Hero() {
             {tx.h1a}{" "}<em className={styles.em}>{tx.h1em}</em>
           </h1>
           <p className={styles.sub}>{tx.sub}</p>
-          <div className={styles.actions}>
-            <a className="btn-p" href={isLoggedIn ? "/workspace" : "/login"}>
-              {isLoggedIn ? (tx.myWorkspace ?? "My Workspace") : (tx.tryIt ?? "Try it")}
-            </a>
-            {!isLoggedIn && (
+          {isLoggedIn ? (
+            <div className={styles.actions}>
+              <a className="btn-p" href="/workspace">{tx.myWorkspace ?? "My Workspace"}</a>
               <button className="btn-s" type="button" onClick={() => setShowAccessForm(true)}>
-                {tx.requestAccess ?? "Request early access"}
+                {t.refer ?? "Refer a colleague"}
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className={styles.emailWrap}>
+              <form className={styles.emailCta} onSubmit={handleEmailFirst} noValidate>
+                <input
+                  className={styles.emailField}
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder={t.emailPlaceholder ?? "you@university.edu"}
+                  aria-label={t.email ?? "Email"}
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setEmailErr(""); }}
+                  required
+                />
+                <button className="btn-p" type="submit" disabled={isPending}>
+                  {isPending ? (t.submitting ?? "…") : (t.getAccess ?? "Get early access")}
+                </button>
+              </form>
+              {emailErr && <p className={styles.emailErr}>{emailErr}</p>}
+              <p className={styles.signinHint}>
+                {t.haveAccess ?? "Already have access?"}{" "}
+                <a href="/login" className={styles.signinLink}>{t.signIn ?? "Sign in"}</a>
+              </p>
+            </div>
+          )}
           <div className={styles.trustStrip}>
-            {tx.trust.map((t) => (
-              <div key={t} className={styles.trustItem}>
-                <span className={styles.trustDot} />{t}
+            {tx.trust.map((item) => (
+              <div key={item} className={styles.trustItem}>
+                <span className={styles.trustDot} />{item}
               </div>
             ))}
           </div>
@@ -129,7 +174,7 @@ export default function Hero() {
           </div>
         </div>
       </div>
-      <EarlyAccessModal open={showAccessForm} onClose={() => setShowAccessForm(false)} />
+      <EarlyAccessModal open={showAccessForm} onClose={() => setShowAccessForm(false)} source="referral" />
     </section>
   );
 }

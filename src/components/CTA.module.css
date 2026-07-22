@@ -101,3 +101,29 @@
 @media (max-width: 768px) {
   .section { padding: 80px 24px; }
 }
+
+/* ── Email-first lead capture (dark section) ──────────────── */
+.emailCta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.emailField {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 13px 16px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.375rem;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.emailField::placeholder { color: rgba(255, 255, 255, 0.5); }
+.emailField:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(98, 255, 149, 0.18); }
+.emailErr { color: #ffb4a8; font-size: 0.82rem; margin-top: 10px; text-align: center; }

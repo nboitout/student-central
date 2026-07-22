@@ -9,22 +9,51 @@ import styles from "./EarlyAccessModal.module.css";
 interface EarlyAccessModalProps {
   open: boolean;
   onClose: () => void;
+  /** Where this lead came from — recorded in the Leads sheet's `source` column. */
+  source?: string;
 }
 
-export default function EarlyAccessModal({ open, onClose }: EarlyAccessModalProps) {
+export default function EarlyAccessModal({ open, onClose, source = "early-access" }: EarlyAccessModalProps) {
   const { lang } = useLanguage();
   const tx = getT(lang).hero;
+  // Optional/new i18n keys not yet in every locale — read loosely with fallbacks.
+  const t = tx as unknown as Record<string, string | undefined>;
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
   if (!open) return null;
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    setSending(true);
+    setError("");
+    try {
+      const res = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source,
+          firstName: String(data.get("firstName") ?? ""),
+          lastName: String(data.get("familyName") ?? ""),
+          email: String(data.get("email") ?? ""),
+          lang,
+        }),
+      });
+      if (!res.ok) throw new Error("request failed");
+      setSubmitted(true);
+    } catch {
+      setError(t.accessError ?? "Something went wrong — please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleClose = () => {
     setSubmitted(false);
+    setError("");
     onClose();
   };
 
@@ -56,8 +85,9 @@ export default function EarlyAccessModal({ open, onClose }: EarlyAccessModalProp
                 {tx.email ?? "Email"}
                 <input className={styles.fieldInput} name="email" type="email" autoComplete="email" required />
               </label>
-              <button className={styles.submitAccess} type="submit">
-                {tx.submitAccess ?? "Submit request"}
+              {error && <p className={styles.accessError}>{error}</p>}
+              <button className={styles.submitAccess} type="submit" disabled={sending}>
+                {sending ? (t.submitting ?? "Sending…") : (tx.submitAccess ?? "Submit request")}
               </button>
             </form>
           </>
