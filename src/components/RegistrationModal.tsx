@@ -40,7 +40,7 @@ export default function RegistrationModal({ open, onClose, initialEmail = "", so
     if (!firstName.trim()) { setError("Please enter your first name."); return; }
     if (!isValidEmail(email)) { setError("Please enter a valid email address."); return; }
     if (role === "professor" && isConsumerEmail(email)) {
-      setError("Professors & trainers must use a professional (institutional) email to access the faculty section. Use your university/organisation address, or choose Student.");
+      setError("That's a personal email. Professors and trainers need an institutional address to unlock faculty access — or continue as a Student.");
       return;
     }
 
@@ -75,7 +75,7 @@ export default function RegistrationModal({ open, onClose, initialEmail = "", so
 
         <h2 id="reg-title" className={styles.modalTitle}>Create your account</h2>
         <p className={styles.modalCopy}>
-          Tell us a little about you, then jump straight into the workspace to try it with your own material.
+          A few details and you&apos;re in — try StudentCentral with your own course material.
         </p>
 
         <form className={styles.accessForm} onSubmit={handleSubmit} noValidate>
@@ -104,7 +104,7 @@ export default function RegistrationModal({ open, onClose, initialEmail = "", so
                 <input className={styles.roleRadio} type="radio" name="role" checked={role === "professor"} onChange={() => { setRole("professor"); setError(""); }} />
                 <span className={styles.roleText}>
                   <span className={styles.roleName}>Professor / Trainer</span>
-                  <span className={styles.roleHint}>Professional email required</span>
+                  <span className={styles.roleHint}>Institutional email required</span>
                 </span>
               </label>
             </div>
@@ -128,20 +128,20 @@ export default function RegistrationModal({ open, onClose, initialEmail = "", so
             <p className={styles.proNote}>
               <span aria-hidden="true">🎓</span>
               <span>
-                <strong>Faculty access requires a professional email.</strong> Sign up with your university or
-                organisation address — personal emails (Gmail, Outlook, iCloud…) don&apos;t unlock the faculty section.
+                <strong>Faculty access needs a professional email.</strong> Use your university or organisation
+                address — personal emails (Gmail, Outlook…) won&apos;t unlock the faculty tools.
               </span>
             </p>
           )}
 
           {(error || professorNeedsProEmail) && (
             <p className={styles.accessError}>
-              {error || "This looks like a personal email — professors & trainers need a professional address for faculty access."}
+              {error || "That's a personal email — professors and trainers need an institutional address to unlock faculty access."}
             </p>
           )}
 
           <button className={styles.submitAccess} type="submit" disabled={sending}>
-            {sending ? "Creating your account…" : "Create account & start"}
+            {sending ? "Creating your account…" : "Create account"}
           </button>
         </form>
       </div>
