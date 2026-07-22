@@ -119,7 +119,22 @@ const DOMAINS: string[] = [
   'ixir.com', 'e-kolay.net', 'excite.com.tr', 'yandex.com.tr',
 ]
 
-export const CONSUMER_DOMAINS = new Set(DOMAINS)
+// Microsoft (Hotmail/Outlook/Live) and Yahoo localise by country-code domain.
+// Rather than hand-list every variant (and miss some, e.g. outlook.it), we
+// generate brand × covered-locale ccTLD for all markets the app serves. Any
+// generated domain that doesn't actually exist is harmless — no institution
+// uses a consumer webmail domain.
+const LOCALE_TLDS = [
+  'fr', 'de', 'at', 'es', 'it', 'gr', 'nl', 'be', 'pt', 'pl', 'se', 'dk', 'fi',
+  'ro', 'ua', 'ru', 'hu', 'hr', 'rs', 'bg', 'cz', 'ie', 'co.uk', 'com.tr',
+  'com.mx', 'com.ar', 'com.br',
+]
+const LOCALIZED_BRANDS = ['hotmail', 'outlook', 'live', 'yahoo']
+const LOCALIZED_DOMAINS = LOCALIZED_BRANDS.flatMap((brand) =>
+  LOCALE_TLDS.map((tld) => `${brand}.${tld}`)
+)
+
+export const CONSUMER_DOMAINS = new Set([...DOMAINS, ...LOCALIZED_DOMAINS])
 
 export function emailDomain(email: string): string {
   const at = email.lastIndexOf('@')
