@@ -70,6 +70,12 @@ export default async function AdminOverviewPage({
   // --- Total readers (distinct emails — populated once sign-ins are logged as Leads) ---
   const totalLeads = new Set(filteredLeads.map((l) => l.email.toLowerCase()).filter(Boolean)).size
 
+  // --- Recent leads (newest first) — the lead inbox: email · source · when ---
+  const recentLeads = [...leads]
+    .filter((l) => l.email)
+    .sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1))
+    .slice(0, 12)
+
   // --- Conversion rate ---
   const convRate = uniqueVisitors > 0 ? (totalLeads / uniqueVisitors) * 100 : 0
 
@@ -243,6 +249,38 @@ export default async function AdminOverviewPage({
           value={formatDuration(avgHome)}
           subtitle="page_leave events"
         />
+      </div>
+
+      <p className="adm-section-title">Recent leads</p>
+      <div className="adm-chart-card" style={{ marginBottom: 24 }}>
+        <p className="adm-page-sub" style={{ marginTop: -4, marginBottom: 16 }}>
+          Latest sign-ups &amp; requests · newest first
+        </p>
+        <div className="adm-table-wrap">
+          <table className="adm-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Source</th>
+                <th>When (Paris)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentLeads.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="muted">No leads yet</td>
+                </tr>
+              )}
+              {recentLeads.map((l, i) => (
+                <tr key={`${l.email}-${l.timestamp}-${i}`}>
+                  <td>{l.email}</td>
+                  <td className="muted">{l.source || '—'}</td>
+                  <td className="muted">{fmtParis(l.timestamp)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <p className="adm-section-title">Visitors — Since {START_DATE}</p>
