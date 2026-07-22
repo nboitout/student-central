@@ -40,6 +40,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     [firstName, lastName].filter(Boolean).join(' ') ||
     (typeof body.fullName === 'string' ? body.fullName.trim() : '')
   const source = typeof body.source === 'string' && body.source ? body.source : 'early-access'
+  // Role ("Student" / "Professor / Trainer") is stored in the Leads sheet's
+  // `profession` column so the dashboard can show who each lead is.
+  const role = typeof body.role === 'string' ? body.role.trim() : ''
   const lang = typeof body.lang === 'string' ? body.lang : ''
   const country = req.headers.get('x-vercel-ip-country') ?? ''
   const readerId = req.cookies.get('reader_id')?.value ?? ''
@@ -53,6 +56,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     lastName,
     fullName,
     email,
+    profession: role,
     lang,
     country,
     userAgent: req.headers.get('user-agent') ?? '',

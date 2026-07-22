@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
-import { signIn } from "next-auth/react";
 import styles from "./Hero.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
+import RegistrationModal from "./RegistrationModal";
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
@@ -16,7 +16,7 @@ export default function Hero() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [emailErr, setEmailErr] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -26,18 +26,15 @@ export default function Hero() {
   }, []);
   const [active, setActive] = useState(0);
 
-  // Email-first funnel: one submit captures the lead (logged via the NextAuth
-  // sign-in event) and drops the visitor straight into their workspace.
+  // Email teaser → open the full registration form (name + role), pre-filled.
   const handleEmailFirst = (e: FormEvent) => {
     e.preventDefault();
     if (!isValidEmail(email)) {
       setEmailErr(t.emailInvalid ?? "Please enter a valid email address.");
       return;
     }
-    startTransition(async () => {
-      setEmailErr("");
-      await signIn("email-only", { email: email.trim(), callbackUrl: "/workspace" });
-    });
+    setEmailErr("");
+    setShowRegister(true);
   };
 
   return (
@@ -69,8 +66,8 @@ export default function Hero() {
                   onChange={(e) => { setEmail(e.target.value); setEmailErr(""); }}
                   required
                 />
-                <button className="btn-p" type="submit" disabled={isPending}>
-                  {isPending ? (t.submitting ?? "…") : (t.getAccess ?? "Get early access")}
+                <button className="btn-p" type="submit">
+                  {t.getAccess ?? "Get early access"}
                 </button>
               </form>
               {emailErr && <p className={styles.emailErr}>{emailErr}</p>}
@@ -169,6 +166,7 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      <RegistrationModal open={showRegister} onClose={() => setShowRegister(false)} initialEmail={email} source="hero" />
     </section>
   );
 }

@@ -150,6 +150,7 @@ export default async function LeadsPage({
             <tr>
               <th>When (Paris)</th>
               <th>Name</th>
+              <th>Role</th>
               <th>Email</th>
               <th>Institution</th>
               <th>Source</th>
@@ -164,7 +165,8 @@ export default async function LeadsPage({
               return (
                 <tr key={`${l.email}-${l.timestamp}-${i}`}>
                   <td className="muted" style={{ whiteSpace: 'nowrap' }}>{fmtParis(l.timestamp)}</td>
-                  <td style={{ maxWidth: 200 }}>{name || <span className="muted">—</span>}</td>
+                  <td style={{ maxWidth: 180 }}>{name || <span className="muted">—</span>}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{l.profession || <span className="muted">—</span>}</td>
                   <td>{l.email}</td>
                   <td className={consumer ? 'muted' : undefined} style={{ whiteSpace: 'nowrap' }}>
                     {domain ? (consumer ? `${domain} (personal)` : domain) : '—'}
@@ -176,7 +178,7 @@ export default async function LeadsPage({
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="muted">No leads yet</td>
+                <td colSpan={7} className="muted">No leads yet</td>
               </tr>
             )}
           </tbody>

@@ -120,6 +120,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   events: {
     async signIn({ user, account }) {
+      // Email sign-ups come through the registration form, which already logs a
+      // richer lead (name, role) via /api/lead — so only log the Google path
+      // here to avoid duplicate rows.
+      if (account?.provider === "email-only") return;
       await logSignInAsLead(user?.email, user?.name, account?.provider);
     },
   },

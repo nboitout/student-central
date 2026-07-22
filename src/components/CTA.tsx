@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
-import { signIn } from "next-auth/react";
 import styles from "./CTA.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
+import RegistrationModal from "./RegistrationModal";
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
@@ -16,7 +16,7 @@ export default function CTA() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [emailErr, setEmailErr] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -31,10 +31,8 @@ export default function CTA() {
       setEmailErr(t.emailInvalid ?? "Please enter a valid email address.");
       return;
     }
-    startTransition(async () => {
-      setEmailErr("");
-      await signIn("email-only", { email: email.trim(), callbackUrl: "/workspace" });
-    });
+    setEmailErr("");
+    setShowRegister(true);
   };
 
   return (
@@ -62,14 +60,15 @@ export default function CTA() {
                 onChange={(e) => { setEmail(e.target.value); setEmailErr(""); }}
                 required
               />
-              <button className={styles.primary} type="submit" disabled={isPending}>
-                {isPending ? "…" : (t.getAccess ?? tx.primary ?? "Get early access")}
+              <button className={styles.primary} type="submit">
+                {t.getAccess ?? tx.primary ?? "Get early access"}
               </button>
             </form>
             {emailErr && <p className={styles.emailErr}>{emailErr}</p>}
           </>
         )}
       </div>
+      <RegistrationModal open={showRegister} onClose={() => setShowRegister(false)} initialEmail={email} source="cta" />
     </section>
   );
 }
