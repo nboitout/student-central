@@ -5,7 +5,6 @@ import { signIn } from "next-auth/react";
 import styles from "./Hero.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import EarlyAccessModal from "./EarlyAccessModal";
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
@@ -15,7 +14,6 @@ export default function Hero() {
   // Optional/new i18n keys not yet in every locale — read loosely with fallbacks.
   const t = tx as unknown as Record<string, string | undefined>;
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showAccessForm, setShowAccessForm] = useState(false);
   const [email, setEmail] = useState("");
   const [emailErr, setEmailErr] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -56,9 +54,6 @@ export default function Hero() {
           {isLoggedIn ? (
             <div className={styles.actions}>
               <a className="btn-p" href="/workspace">{tx.myWorkspace ?? "My Workspace"}</a>
-              <button className="btn-s" type="button" onClick={() => setShowAccessForm(true)}>
-                {t.refer ?? "Refer a colleague"}
-              </button>
             </div>
           ) : (
             <div className={styles.emailWrap}>
@@ -174,7 +169,6 @@ export default function Hero() {
           </div>
         </div>
       </div>
-      <EarlyAccessModal open={showAccessForm} onClose={() => setShowAccessForm(false)} source="referral" />
     </section>
   );
 }

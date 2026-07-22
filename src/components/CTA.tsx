@@ -5,7 +5,6 @@ import { signIn } from "next-auth/react";
 import styles from "./CTA.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { tx as getT } from "@/i18n/translations";
-import EarlyAccessModal from "./EarlyAccessModal";
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
@@ -14,7 +13,6 @@ export default function CTA() {
   const tx = getT(lang).cta;
   // Optional/new i18n keys not yet in every locale — read loosely with fallbacks.
   const t = tx as unknown as Record<string, string | undefined>;
-  const [showAccessForm, setShowAccessForm] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [emailErr, setEmailErr] = useState("");
@@ -49,9 +47,6 @@ export default function CTA() {
         {isLoggedIn ? (
           <div className={styles.actions}>
             <a className={styles.primary} href="/workspace">{tx.myWorkspace ?? "My Workspace"}</a>
-            <button className={styles.ghost} type="button" onClick={() => setShowAccessForm(true)}>
-              {t.refer ?? "Refer a colleague"}
-            </button>
           </div>
         ) : (
           <>
@@ -75,7 +70,6 @@ export default function CTA() {
           </>
         )}
       </div>
-      <EarlyAccessModal open={showAccessForm} onClose={() => setShowAccessForm(false)} source="referral" />
     </section>
   );
 }

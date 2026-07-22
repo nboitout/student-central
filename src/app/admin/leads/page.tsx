@@ -28,6 +28,19 @@ function sourceLabel(s: string): string {
   return map[s] ?? (s || 'Unknown')
 }
 
+// Common personal-email providers — leads on these aren't an institution we can
+// extend the test to, so we flag them as personal rather than a target org.
+const CONSUMER_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'hotmail.fr', 'live.com',
+  'yahoo.com', 'yahoo.fr', 'icloud.com', 'me.com', 'proton.me', 'protonmail.com',
+  'aol.com', 'gmx.com', 'free.fr', 'orange.fr', 'wanadoo.fr', 'laposte.net',
+])
+
+function emailDomain(email: string): string {
+  const at = email.lastIndexOf('@')
+  return at < 0 ? '' : email.slice(at + 1).toLowerCase()
+}
+
 export default async function LeadsPage({
   searchParams,
 }: {
@@ -56,6 +69,13 @@ export default async function LeadsPage({
   const uniquePeople = new Set(allLeads.map((l) => l.email.toLowerCase())).size
   const todayParis = parisDate(new Date())
   const todayCount = allLeads.filter((l) => parisDate(l.timestamp) === todayParis).length
+
+  // Distinct institutional domains (exclude personal providers) — outreach targets.
+  const institutions = new Set(
+    allLeads
+      .map((l) => emailDomain(l.email))
+      .filter((d) => d && !CONSUMER_DOMAINS.has(d))
+  ).size
 
   // Source tallies for the quick-filter chips.
   const bySource = new Map<string, number>()
@@ -94,6 +114,7 @@ export default async function LeadsPage({
       <div className="adm-scorecards">
         <Scorecard label="Total Leads" value={allLeads.length.toLocaleString()} subtitle="all captured events" />
         <Scorecard label="Unique People" value={uniquePeople.toLocaleString()} subtitle="distinct emails" />
+        <Scorecard label="Institutions" value={institutions.toLocaleString()} subtitle="distinct org domains" />
         <Scorecard label="Today" value={todayCount.toLocaleString()} subtitle="captured today (Paris)" />
       </div>
 
@@ -130,6 +151,7 @@ export default async function LeadsPage({
               <th>When (Paris)</th>
               <th>Name</th>
               <th>Email</th>
+              <th>Institution</th>
               <th>Source</th>
               <th>Country</th>
             </tr>
@@ -137,11 +159,16 @@ export default async function LeadsPage({
           <tbody>
             {rows.map((l, i) => {
               const name = [l.firstName, l.lastName].filter(Boolean).join(' ').trim() || l.fullName.trim()
+              const domain = emailDomain(l.email)
+              const consumer = !domain || CONSUMER_DOMAINS.has(domain)
               return (
                 <tr key={`${l.email}-${l.timestamp}-${i}`}>
                   <td className="muted" style={{ whiteSpace: 'nowrap' }}>{fmtParis(l.timestamp)}</td>
                   <td style={{ maxWidth: 200 }}>{name || <span className="muted">—</span>}</td>
                   <td>{l.email}</td>
+                  <td className={consumer ? 'muted' : undefined} style={{ whiteSpace: 'nowrap' }}>
+                    {domain ? (consumer ? `${domain} (personal)` : domain) : '—'}
+                  </td>
                   <td className="muted">{sourceLabel(l.source)}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{countryLabel(l.country)}</td>
                 </tr>
@@ -149,7 +176,7 @@ export default async function LeadsPage({
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="muted">No leads yet</td>
+                <td colSpan={6} className="muted">No leads yet</td>
               </tr>
             )}
           </tbody>
